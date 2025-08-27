@@ -16,7 +16,6 @@ O objetivo é aplicar entrevistas estruturadas com empresas reais para gerar dia
 - [Requisitos Não Funcionais](#-requisitos-não-funcionais)
 - [Tecnologias Utilizadas](#-tecnologias)
 - [Manuais e Documentação](#-manuais-e-documentação)
-- [Licença](#-licença)
 
 ---
 
