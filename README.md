@@ -34,9 +34,9 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 | ---------- | ---------- | ---------- | ---------- | ---------- |
 | 1    | Alta       | Como usuário, quero responder questionários e acessar relatórios personalizados para receber diagnósticos das minhas necessidades                     | 5          | 1      |
 | 2    | Média      | Como usuário, quero acessar uma página inicial clara para entender o propósito do Radar Entrenova e acessar as principais funções                     | 3          | 1      |
-| 5    | Alta       | Como usuário, quero acessar o sistema com meu e-mail e senha para visualizar meus diagnósticos e receber minha trilha personalizada                   | 5          | 1      |
-| 3    | Alta       | Como usuário, quero acesso a um questionário aprofundado para receber relatórios mais específicos                                                     | 5          | 2      |
-| 4    | Alta       | Como usuário que respondeu aos questionários, quero receber um diagnóstico personalizado para entender minhas necessidades e oportunidades            | 13         | 2      |
+| 3    | Alta       | Como usuário, quero acessar o sistema com meu e-mail e senha para visualizar meus diagnósticos e receber minha trilha personalizada                   | 5          | 1      |
+| 4    | Alta       | Como usuário, quero acesso a um questionário aprofundado para receber relatórios mais específicos                                                     | 5          | 2      |
+| 5    | Alta       | Como usuário que respondeu aos questionários, quero receber um diagnóstico personalizado para entender minhas necessidades e oportunidades            | 13         | 2      |
 | 6    | Alta       | Como cliente, quero um relatório visual dos dados estratégicos que possibilite a tomada de decisão em projetos futuros                                 | 13         | 3     |
 ---
 
