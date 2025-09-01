@@ -32,12 +32,12 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 ## 📋 Backlog do Produto <a id="backlog-do-produto"></a>
 | Rank | Prioridade | User Story                                                                                                                                            | Estimativa | Sprint |
 | ---------- | ---------- | ---------- | ---------- | ---------- |
-| 1    | Alta       | Como usuário, quero responder questionários e acessar relatórios personalizados para receber diagnosticos das minhas necessidades                     | 5          | 1      |
+| 1    | Alta       | Como usuário, quero responder questionários e acessar relatórios personalizados para receber diagnósticos das minhas necessidades                     | 5          | 1      |
 | 2    | Média      | Como usuário, quero acessar uma página inicial clara para entender o propósito do Radar Entrenova e acessar as principais funções                     | 3          | 1      |
-| 3    | Alta       | Como usuário, quero acesso a um questionario aprofundado para receber relatórios mais específicos                                                     | 5          | 1      |
+| 5    | Alta       | Como usuário, quero acessar o sistema com meu e-mail e senha para visualizar meus diagnósticos e receber minha trilha personalizada                   | 5          | 1      |
+| 3    | Alta       | Como usuário, quero acesso a um questionário aprofundado para receber relatórios mais específicos                                                     | 5          | 2      |
 | 4    | Alta       | Como usuário que respondeu aos questionários, quero receber um diagnóstico personalizado para entender minhas necessidades e oportunidades            | 13         | 2      |
-| 5    | Alta       | Como usuário, quero acessar o sistema com meu e-mail e senha para visualizar meus diagnósticos e receber minha trilha personalizada                   | 5          | 2      |
-| 6    | Alta       | Como cliente, quero um relatório visual dos dados estratégicos que posibilite a tomada de decisão em projetos futuros                                 | 13         | 3     |
+| 6    | Alta       | Como cliente, quero um relatório visual dos dados estratégicos que possibilite a tomada de decisão em projetos futuros                                 | 13         | 3     |
 ---
 
 ## 📅 Cronograma de Sprints <a id="sprint"></a>
@@ -102,16 +102,22 @@ Projeto desenvolvido pelos alunos do **3º semestre de ADS – FATEC SJC (2025-2
       <th>Linkedin</th>
     </tr>
     <tr>
-      <td>Kayan Matta</td>
-      <td>Product Owner</td>
-      <td><a href="https://github.com/kayanmatta"><img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white"></a></td>
-      <td><a href="https://www.linkedin.com/in/kayan-da-matta-453905253/"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white"></a></td>
-    </tr>
-    <tr>
       <td>Taylor Henrique</td>
       <td>Scrum Master</td>
       <td><a href="https://github.com/TaylorSilva2"><img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white"></a></td>
       <td><a href="https://www.linkedin.com/in/taylor-silva-859300330/"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white"></a></td>
+    </tr>
+    <tr>
+      <td>Gabriel Sarubi</td>
+      <td>Product Owner</td>
+      <td><a href="https://github.com/GabrielSarubi-7"><img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white"></a></td>
+      <td><a href="https://www.linkedin.com/in/gabriel-sarubi-3050442b4/"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white"></a></td>
+    </tr>
+    <tr>
+      <td>Kayan Matta</td>
+      <td>Desenvolvedor</td>
+      <td><a href="https://github.com/kayanmatta"><img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white"></a></td>
+      <td><a href="https://www.linkedin.com/in/kayan-da-matta-453905253/"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white"></a></td>
     </tr>
     <tr>
       <td>Bruna Matsunaga</td>
@@ -130,12 +136,6 @@ Projeto desenvolvido pelos alunos do **3º semestre de ADS – FATEC SJC (2025-2
       <td>Desenvolvedor</td>
       <td><a href="https://github.com/Rafa2-bit"><img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white"></a></td>
       <td><a href="https://www.linkedin.com/in/rafael-candido-155705317/"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white"></a></td>
-    </tr>
-    <tr>
-      <td>Gabriel Sarubi</td>
-      <td>Desenvolvedor</td>
-      <td><a href="https://github.com/GabrielSarubi-7"><img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white"></a></td>
-      <td><a href="https://www.linkedin.com/in/gabriel-sarubi-3050442b4/"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white"></a></td>
     </tr>
     <tr>
       <td>Wesley Xavier</td>
