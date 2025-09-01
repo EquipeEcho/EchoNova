@@ -33,13 +33,11 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 | Rank | Prioridade | User Story                                                                                                                                            | Estimativa | Sprint |
 | ---------- | ---------- | ---------- | ---------- | ---------- |
 | 1    | Alta       | Como usuário, quero responder questionários e acessar relatórios personalizados para receber diagnosticos das minhas necessidades                     | 5          | 1      |
-| 6    | Média      | Como usuário, quero acessar uma página inicial clara para entender o propósito do Radar Entrenova e acessar as principais funções                     | 5          | 1      |
-| 4    | Alta       | Como usuário, quero acesso a um questionario aprofundado para receber relatórios mais específicos                                                     | 5          | 1      |
-| 5    | Alta       | Como usuário que respondeu aos questionários, quero receber um diagnóstico personalizado para entender minhas necessidades e oportunidades            | 13         | 1      |
-| 3    | Alta       | Como usuário, quero acessar o sistema com meu e-mail e senha para visualizar meus diagnósticos e receber minha trilha personalizada                   | 5          | 2      |
-| 2    | Alta       | Como cliente, quero um relatório visual dos dados estratégicos que posibilite a tomada de decisão em projetos futuros                                 | 13         | 2      |
-| 7    | Média      | Como usuário que busca suporte extra, quero receber orientações claras para contratar serviços ou pacotes sob medida                                  | 8          | 3      |
-| 8    | Baixa      | Como usuário, quero ser direcionado a conteúdos recomendados (treinamentos, cinema, educação) para aproveitar melhor os materiais disponíveis         | 8          | 3      | 
+| 2    | Média      | Como usuário, quero acessar uma página inicial clara para entender o propósito do Radar Entrenova e acessar as principais funções                     | 3          | 1      |
+| 3    | Alta       | Como usuário, quero acesso a um questionario aprofundado para receber relatórios mais específicos                                                     | 5          | 1      |
+| 4    | Alta       | Como usuário que respondeu aos questionários, quero receber um diagnóstico personalizado para entender minhas necessidades e oportunidades            | 13         | 2      |
+| 5    | Alta       | Como usuário, quero acessar o sistema com meu e-mail e senha para visualizar meus diagnósticos e receber minha trilha personalizada                   | 5          | 2      |
+| 6    | Alta       | Como cliente, quero um relatório visual dos dados estratégicos que posibilite a tomada de decisão em projetos futuros                                 | 13         | 3     |
 ---
 
 ## 📅 Cronograma de Sprints <a id="sprint"></a>
