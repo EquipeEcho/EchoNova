@@ -8,28 +8,29 @@ O objetivo é aplicar entrevistas estruturadas com empresas reais para gerar dia
 ---
 
 ## 📖 Sumário
-- [Sobre o Projeto](#-sobre-o-projeto)
-- [Objetivo do Desafio](#-objetivo-do-desafio)
-- [Backlog do Produto](#-backlog-do-produto)
-- [Cronograma de Sprints](#-sprint)
-- [Funcionalidades](#-funcionalidades)
-- [Requisitos Não Funcionais](#-requisitos-não-funcionais)
-- [Tecnologias Utilizadas](#-tecnologias)
-- [Manuais e Documentação](#-manuais-e-documentação)
+- [Sobre o Projeto](#about)
+- [Objetivo do Desafio](#objetivo-do-desafio)
+- [Backlog do Produto](#backlog-do-produto)
+- [Cronograma de Sprints](#sprint)
+- [Funcionalidades](#funcionalidades)
+- [Requisitos não Funcionais](#requisitos-não-funcionais)
+- [Tecnologias Utilizadas](#tecnologias)
+- [Manuais e Documentação](#manuais-e-docs)
+- [Autores](#authors)
 
 ---
 
-## 📌 Sobre o Projeto
+## 📌 <span id="about">Sobre o Projeto</span>
 Este projeto visa criar uma solução para **diagnóstico inteligente** de treinamentos, combinando **entrevistas estruturadas** com análise automática de dados.
 
 ---
 
-## 🎯 Objetivo do Desafio
+## 🎯 <span id="objetivo-do-desafio">Objetivo do Desafio</span>
 - Entregar **relatórios personalizados** às empresas, apontando necessidades, oportunidades e melhorias.  
 - Fornecer **dados estratégicos** para a Entrenova validar produtos de treinamentos online e atender demandas do mercado.
 
 ---
-## 📋 Backlog do Produto <a id="backlog-do-produto"></a>
+## 📋 <span id="backlog-do-produto">Backlog do Produto</span>
 | Rank | Prioridade | User Story                                                                                                                                            | Estimativa | Sprint |
 | ---------- | ---------- | ---------- | ---------- | ---------- |
 | 1    | Alta       | Como usuário, quero responder questionários e acessar relatórios personalizados para receber diagnósticos das minhas necessidades                     | 5          | 1      |
@@ -40,7 +41,7 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 | 6    | Alta       | Como cliente, quero um relatório visual dos dados estratégicos que possibilite a tomada de decisão em projetos futuros                                 | 13         | 3     |
 ---
 
-## 📅 Cronograma de Sprints <a id="sprint"></a>
+## 📅 <span id="sprint">Cronograma de Sprints </span>
 
 | Sprint          |    Período    |
 | --------------- | :-----------: | 
@@ -50,7 +51,7 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 
 ---
 
-## ⚙️ Funcionalidades
+## ⚙️ <span id="funcionalidades">Funcionalidades</span>
 -  Aplicação de entrevistas estruturadas  
 -  Geração de relatórios personalizados  
 -  Diagnóstico inteligente com IA offline  
@@ -59,14 +60,14 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 
 ---
 
-## 🔧 Requisitos Não Funcionais
+## 🔧 <span id="requisitos-não-funcionais">Requisitos Não Funcionais</span>
 - IA offline.  
 - Manual de instalação (no repositório).  
 - Manual do usuário (no repositório).  
 - Documentação da API.  
 
 ---
-## 💻 Tecnologias <a id="tecnologias"></a>
+## 💻 <span id="tecnologias">Tecnologias</span>
 
 <h4 align="center">
  <a href="https://developer.mozilla.org/pt-BR/docs/Web/JavaScript"><img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black"></a>
@@ -83,14 +84,14 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 ---
 
 
-## 📚 Manuais e Documentação
+## 📚 <span id="manuais-e-docs">Manuais e Documentação</span>
 - 📖 [Manual de Instalação](docs/manual-instalacao.md)  
 - 👨‍💻 [Manual do Usuário](docs/manual-usuario.md)  
 - 🔌 [Documentação da API](docs/api.md)  
 
 ---
 
-## 👥 Autores
+## 👥 <span id="authors">Autores</span>
 Projeto desenvolvido pelos alunos do **3º semestre de ADS – FATEC SJC (2025-2)** em parceria com a **Entrenova**.  
 
 <div align="center">
