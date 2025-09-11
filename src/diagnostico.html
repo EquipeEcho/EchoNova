@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico de Dimensões com Relatório</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 2em;
+            background-color: #f4f7f9;
+            color: #333;
+            transition: background-color 0.5s;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2em;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+            border-bottom: 2px solid #e1e8f0;
+            padding-bottom: 10px;
+        }
+        fieldset {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 1.5em;
+            margin-bottom: 2em;
+            background-color: #fdfdfd;
+        }
+        legend {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2c3e50;
+            padding: 0 10px;
+        }
+        .question-block {
+            margin-bottom: 2em;
+            padding-left: 1em;
+            border-left: 3px solid #e1e8f0;
+        }
+        label { display: block; font-weight: bold; margin-bottom: 0.75em; }
+        .radio-group label, .checkbox-group label {
+            display: flex; align-items: center; font-weight: normal; margin-bottom: 0.5em; cursor: pointer;
+        }
+        input[type="radio"], input[type="checkbox"] {
+            margin-right: 12px; transform: scale(1.1);
+        }
+        .dimension-questions {
+            display: none; margin-top: 2em; animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .submit-button {
+            display: block; width: 100%; padding: 15px; background-color: #27ae60;
+            color: white; border: none; border-radius: 5px; font-size: 1.2em; cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .submit-button:hover { background-color: #229954; }
+        .alert-box {
+            display: none; padding: 1em; margin-bottom: 1.5em; background-color: #e74c3c;
+            color: white; border-radius: 5px; text-align: center;
+        }
+        /* --- Estilos do Relatório --- */
+        #report-section { display: none; }
+        .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2em; margin-top: 1.5em; }
+        .report-card { background-color: #f8f9fa; border-radius: 8px; padding: 1.5em; border: 1px solid #e1e8f0; }
+        .report-card h3 { margin-top: 0; }
+        .dimension-bar { margin-bottom: 1em; }
+        .dimension-bar-label { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 5px; }
+        .bar-container { background-color: #e9ecef; border-radius: 5px; overflow: hidden; }
+        .bar-fill {
+            height: 20px; border-radius: 5px; color: white; text-align: right; padding-right: 5px;
+            font-size: 0.8em; line-height: 20px;
+            transition: width 1s ease-in-out;
+        }
+        .stage-1 { background-color: #e74c3c; } /* Inicial */
+        .stage-2 { background-color: #f39c12; } /* Básico */
+        .stage-3 { background-color: #3498db; } /* Intermediário */
+        .stage-4 { background-color: #27ae60; } /* Avançado */
+        #trilhas-list { list-style-type: '💡'; padding-left: 20px; }
+        #trilhas-list li { margin-bottom: 10px; padding-left: 10px; }
+    </style>
+</head>
+<body>
+    <div id="form-container" class="container">
+        <h1>Diagnóstico de Dimensões</h1>
+        <p>Escolha até 3 dimensões para analisar, responda às perguntas e veja o relatório completo da sua organização.</p>
+
+        <form id="diagnosticoForm">
+            <fieldset>
+                <legend>1. Seleção de Dimensões</legend>
+                <p>Escolha até 3 dimensões que você deseja analisar.</p>
+                <div class="alert-box" id="selection-alert">Você só pode escolher no máximo 3 dimensões.</div>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" name="dimensao" value="pessoas"> Pessoas & Cultura</label>
+                    <label><input type="checkbox" name="dimensao" value="estrutura"> Estrutura & Operações</label>
+                    <label><input type="checkbox" name="dimensao" value="mercado"> Mercado & Clientes</label>
+                    <label><input type="checkbox" name="dimensao" value="direcao"> Direção & Futuro</label>
+                </div>
+            </fieldset>
+            
+            <div class="alert-box" id="validation-alert">Por favor, responda todas as perguntas das dimensões selecionadas.</div>
+
+            <div id="pessoas-questions" class="dimension-questions">
+                <fieldset>
+                    <legend>Dimensão: Pessoas & Cultura</legend>
+                    <div class="question-block"><label>1. Comunicação Interna:</label><div class="radio-group">
+                        <label><input type="radio" name="p_q1" value="1"> Inexistente ou muito problemática.</label>
+                        <label><input type="radio" name="p_q1" value="2"> Frágil, dependente de canais informais.</label>
+                        <label><input type="radio" name="p_q1" value="3"> Boa, mas com falhas pontuais de alinhamento.</label>
+                        <label><input type="radio" name="p_q1" value="4"> Prática avançada, com canais claros e escuta ativa.</label>
+                    </div></div>
+                    <div class="question-block"><label>2. Estilo de Liderança:</label><div class="radio-group">
+                        <label><input type="radio" name="p_q2" value="1"> Autocrático e desmotivador.</label>
+                        <label><input type="radio" name="p_q2" value="2"> Centralizador, com pouca delegação.</label>
+                        <label><input type="radio" name="p_q2" value="3"> Participativo, mas inconsistente entre líderes.</label>
+                        <label><input type="radio" name="p_q2" value="4"> Inspirador, focado no desenvolvimento e autonomia.</label>
+                    </div></div>
+                    <div class="question-block"><label>3. Resolução de Problemas:</label><div class="radio-group">
+                        <label><input type="radio" name="p_q3" value="1"> Novas ideias são desencorajadas ou ignoradas.</label>
+                        <label><input type="radio" name="p_q3" value="2"> A resolução é reativa e focada em poucas pessoas.</label>
+                        <label><input type="radio" name="p_q3" value="3"> Há incentivo, mas sem um processo estruturado.</label>
+                        <label><input type="radio" name="p_q3" value="4"> A cultura de inovação é forte e todos contribuem.</label>
+                    </div></div>
+                    <div class="question-block"><label>4. Organização do Trabalho:</label><div class="radio-group">
+                        <label><input type="radio" name="p_q4" value="1"> O trabalho é desorganizado e as prioridades são confusas.</label>
+                        <label><input type="radio" name="p_q4" value="2"> Dependente de microgerenciamento para funcionar.</label>
+                        <label><input type="radio" name="p_q4" value="3"> A maioria das equipes é organizada, mas algumas têm dificuldades.</label>
+                        <label><input type="radio" name="p_q4" value="4"> Alta autonomia e autogestão com foco em resultados.</label>
+                    </div></div>
+                    <div class="question-block"><label>5. Valores e Propósito:</label><div class="radio-group">
+                        <label><input type="radio" name="p_q5" value="1"> Os valores são apenas decorativos e não são praticados.</label>
+                        <label><input type="radio" name="p_q5" value="2"> Apenas uma parte da liderança demonstra os valores.</label>
+                        <label><input type="radio" name="p_q5" value="3"> Os valores são conhecidos, mas nem sempre aplicados.</label>
+                        <label><input type="radio" name="p_q5" value="4"> O propósito e os valores guiam todas as ações e decisões.</label>
+                    </div></div>
+                    <div class="question-block"><label>6. Ferramentas de Apoio (Pessoas):</label><div class="radio-group">
+                        <label><input type="radio" name="p_q6" value="1"> Ferramentas inexistentes ou obsoletas.</label>
+                        <label><input type="radio" name="p_q6" value="2"> Existem, mas são complexas e pouco utilizadas.</label>
+                        <label><input type="radio" name="p_q6" value="3"> Boas ferramentas, mas falta treinamento para uso pleno.</label>
+                        <label><input type="radio" name="p_q6" value="4"> Ferramentas modernas e integradas, essenciais para a cultura.</label>
+                    </div></div>
+                </fieldset>
+            </div>
+            <div id="estrutura-questions" class="dimension-questions">
+                <fieldset>
+                    <legend>Dimensão: Estrutura & Operações</legend>
+                    <div class="question-block"><label>1. Fluxo de Informação entre Processos:</label><div class="radio-group">
+                        <label><input type="radio" name="e_q1" value="1"> A comunicação é isolada (silos) e cheia de ruídos.</label>
+                        <label><input type="radio" name="e_q1" value="2"> A informação depende de pessoas, gerando gargalos.</label>
+                        <label><input type="radio" name="e_q1" value="3"> Existe um fluxo definido, mas ainda ocorrem falhas.</label>
+                        <label><input type="radio" name="e_q1" value="4"> A informação é transparente, acessível e flui de forma integrada.</label>
+                    </div></div>
+                    <div class="question-block"><label>2. Gestão de Processos:</label><div class="radio-group">
+                        <label><input type="radio" name="e_q2" value="1"> Processos não são gerenciados, o caos predomina.</label>
+                        <label><input type="radio" name="e_q2" value="2"> O controle é reativo, focado apenas em apagar incêndios.</label>
+                        <label><input type="radio" name="e_q2" value="3"> Há gestão de processos, mas sem foco em melhoria contínua.</label>
+                        <label><input type="radio" name="e_q2" value="4"> Liderança proativa, com processos otimizados e baseados em dados.</label>
+                    </div></div>
+                    <div class="question-block"><label>3. Otimização de Processos (Criatividade):</label><div class="radio-group">
+                        <label><input type="radio" name="e_q3" value="1"> "Sempre foi feito assim" é a mentalidade dominante.</label>
+                        <label><input type="radio" name="e_q3" value="2"> Melhorias ocorrem, mas apenas por iniciativa da alta gestão.</label>
+                        <label><input type="radio" name="e_q3" value="3"> Sugestões são bem-vindas, mas raramente implementadas.</label>
+                        <label><input type="radio" name="e_q3" value="4"> Melhoria contínua é um valor, com canais para sugestões.</label>
+                    </div></div>
+                    <div class="question-block"><label>4. Clareza de Processos (Autogestão):</label><div class="radio-group">
+                        <label><input type="radio" name="e_q4" value="1"> Processos não documentados, dependentes do conhecimento individual.</label>
+                        <label><input type="radio" name="e_q4" value="2"> Documentados, mas complexos ou desatualizados.</label>
+                        <label><input type="radio" name="e_q4" value="3"> Claros para tarefas rotineiras, mas não para exceções.</label>
+                        <label><input type="radio" name="e_q4" value="4"> Processos simples e acessíveis, permitindo alta autonomia.</label>
+                    </div></div>
+                    <div class="question-block"><label>5. Cultura de Eficiência:</label><div class="radio-group">
+                        <label><input type="radio" name="e_q5" value="1"> A cultura valoriza a burocracia e o esforço, não o resultado.</label>
+                        <label><input type="radio" name="e_q5" value="2"> A estrutura cria silos e competição interna.</label>
+                        <label><input type="radio" name="e_q5" value="3"> Há esforço para colaboração, mas a estrutura ainda é um obstáculo.</label>
+                        <label><input type="radio" name="e_q5" value="4"> A estrutura é ágil e a cultura é voltada à eficiência colaborativa.</label>
+                    </div></div>
+                    <div class="question-block"><label>6. Infraestrutura de TI:</label><div class="radio-group">
+                        <label><input type="radio" name="e_q6" value="1"> Sistemas instáveis e inadequados.</label>
+                        <label><input type="radio" name="e_q6" value="2"> Funcionam, mas são legados e geram muito trabalho manual.</label>
+                        <label><input type="radio" name="e_q6" value="3"> São adequados, mas não se integram bem entre si.</label>
+                        <label><input type="radio" name="e_q6" value="4"> Infraestrutura moderna, integrada e que habilita a eficiência.</label>
+                    </div></div>
+                </fieldset>
+            </div>
+            <div id="mercado-questions" class="dimension-questions">
+                <fieldset>
+                    <legend>Dimensão: Mercado & Clientes</legend>
+                    <div class="question-block"><label>1. Comunicação com Clientes:</label><div class="radio-group">
+                        <label><input type="radio" name="m_q1" value="1"> A comunicação é unilateral e pouco frequente.</label>
+                        <label><input type="radio" name="m_q1" value="2"> Coletamos feedback, mas de forma passiva (só quando reclamam).</label>
+                        <label><input type="radio" name="m_q1" value="3"> Existem canais de comunicação, mas o feedback não é usado estrategicamente.</label>
+                        <label><input type="radio" name="m_q1" value="4"> A voz do cliente (VoC) é uma prática central, com múltiplos canais e ações.</label>
+                    </div></div>
+                    <div class="question-block"><label>2. Visão de Mercado (Liderança):</label><div class="radio-group">
+                        <label><input type="radio" name="m_q2" value="1"> A liderança tem uma visão reativa e focada apenas na concorrência direta.</label>
+                        <label><input type="radio" name="m_q2" value="2"> A visão de mercado é pouco clara e não compartilhada com a equipe.</label>
+                        <label><input type="radio" name="m_q2" value="3"> Há uma boa compreensão do mercado atual, mas pouca visão de futuro.</label>
+                        <label><input type="radio" name="m_q2" value="4"> Liderança com visão de futuro, que antecipa tendências e necessidades dos clientes.</label>
+                    </div></div>
+                    <div class="question-block"><label>3. Adaptação ao Mercado (Criatividade):</label><div class="radio-group">
+                        <label><input type="radio" name="m_q3" value="1"> A empresa é lenta e resistente a mudanças nas demandas do mercado.</label>
+                        <label><input type="radio" name="m_q3" value="2"> As adaptações são lentas e ocorrem apenas em resposta a grandes perdas.</label>
+                        <label><input type="radio" name="m_q3" value="3"> A empresa se adapta, mas com dificuldade e de forma não estruturada.</label>
+                        <label><input type="radio" name="m_q3" value="4"> Agilidade e inovação são pilares para responder rapidamente ao mercado.</label>
+                    </div></div>
+                    <div class="question-block"><label>4. Autonomia da Linha de Frente:</label><div class="radio-group">
+                        <label><input type="radio" name="m_q4" value="1"> As equipes de frente não têm autonomia para resolver problemas dos clientes.</label>
+                        <label><input type="radio" name="m_q4" value="2"> A autonomia é limitada e requer aprovações para quase tudo.</label>
+                        <label><input type="radio" name="m_q4" value="3"> Existe autonomia para problemas simples, mas não para casos complexos.</label>
+                        <label><input type="radio" name="m_q4" value="4"> As equipes são empoderadas para resolver problemas e encantar os clientes.</label>
+                    </div></div>
+                    <div class="question-block"><label>5. Cultura Focada no Cliente:</label><div class="radio-group">
+                        <label><input type="radio" name="m_q5" value="1"> O foco da cultura é interno, no produto ou nos processos.</label>
+                        <label><input type="radio" name="m_q5" value="2"> O cliente é importante, mas as decisões priorizam a conveniência interna.</label>
+                        <label><input type="radio" name="m_q5" value="3"> Há uma forte intenção de foco no cliente, mas nem todas as áreas praticam.</label>
+                        <label><input type="radio" name="m_q5" value="4"> "Customer-centricity" é um valor central, guiando decisões em toda a empresa.</label>
+                    </div></div>
+                    <div class="question-block"><label>6. Ferramentas de Mercado (CRM, Analytics):</label><div class="radio-group">
+                        <label><input type="radio" name="m_q6" value="1"> Não usamos ferramentas para gerenciar o relacionamento com clientes.</label>
+                        <label><input type="radio"name="m_q6" value="2"> As ferramentas são básicas (ex: planilhas) e descentralizadas.</label>
+                        <label><input type="radio" name="m_q6" value="3"> Usamos um CRM, mas de forma subutilizada ou apenas pela equipe de vendas.</label>
+                        <label><input type="radio" name="m_q6" value="4"> Ferramentas de CRM e Analytics são integradas e geram insights estratégicos.</label>
+                    </div></div>
+                </fieldset>
+            </div>
+            <div id="direcao-questions" class="dimension-questions">
+                <fieldset>
+                    <legend>Dimensão: Direção & Futuro</legend>
+                    <div class="question-block"><label>1. Comunicação da Estratégia:</label><div class="radio-group">
+                        <label><input type="radio" name="d_q1" value="1"> A estratégia da empresa é desconhecida pela maioria dos colaboradores.</label>
+                        <label><input type="radio" name="d_q1" value="2"> A estratégia é comunicada apenas para o nível de gestão.</label>
+                        <label><input type="radio" name="d_q1" value="3"> Comunicada a todos, mas de forma esporádica e sem clareza de como contribuir.</label>
+                        <label><input type="radio" name="d_q1" value="4"> A estratégia é clara, constantemente reforçada e conectada ao trabalho de todos.</label>
+                    </div></div>
+                    <div class="question-block"><label>2. Liderança Estratégica:</label><div class="radio-group">
+                        <label><input type="radio" name="d_q2" value="1"> A liderança foca apenas no operacional e apaga incêndios do dia a dia.</label>
+                        <label><input type="radio" name="d_q2" value="2"> A direção estratégica muda com frequência, gerando insegurança.</label>
+                        <label><input type="radio" name="d_q2" value="3"> A liderança tem uma visão de futuro, mas dificuldade em executá-la.</label>
+                        <label><input type="radio" name="d_q2" value="4"> A liderança inspira confiança com uma visão clara e um plano de execução sólido.</label>
+                    </div></div>
+                    <div class="question-block"><label>3. Inovação e Tendências:</label><div class="radio-group">
+                        <label><input type="radio" name="d_q3" value="1"> A empresa ignora tendências e não tem práticas de inovação.</label>
+                        <label><input type="radio" name="d_q3" value="2"> A inovação é um discurso, mas não há investimento ou ação prática.</label>
+                        <label><input type="radio" name="d_q3" value="3"> Existem projetos de inovação isolados, mas não uma estratégia.</label>
+                        <label><input type="radio" name="d_q3" value="4"> A prospecção de tendências e a inovação são processos estratégicos contínuos.</label>
+                    </div></div>
+                    <div class="question-block"><label>4. Desdobramento de Metas:</label><div class="radio-group">
+                        <label><input type="radio" name="d_q4" value="1"> As metas estratégicas não são desdobradas em metas táticas ou operacionais.</label>
+                        <label><input type="radio" name="d_q4" value="2"> As metas individuais não têm conexão clara com a estratégia da empresa.</label>
+                        <label><input type="radio" name="d_q4" value="3"> O desdobramento existe, mas as equipes têm dificuldade em acompanhar seu progresso.</label>
+                        <label><input type="radio" name="d_q4" value="4"> As metas são desdobradas em cascata (OKRs, etc.) e todos sabem sua contribuição.</label>
+                    </div></div>
+                    <div class="question-block"><label>5. Alinhamento com o Propósito:</label><div class="radio-group">
+                        <label><input type="radio" name="d_q5" value="1"> A visão de futuro foca apenas em metas financeiras, ignorando o propósito.</label>
+                        <label><input type="radio" name="d_q5" value="2"> O propósito existe, mas não está conectado à estratégia de longo prazo.</label>
+                        <label><input type="radio" name="d_q5" value="3"> Há uma tentativa de alinhar propósito e estratégia, mas ainda é um discurso.</label>
+                        <label><input type="radio" name="d_q5" value="4"> O propósito é o pilar central que guia a visão de futuro e a estratégia da empresa.</label>
+                    </div></div>
+                    <div class="question-block"><label>6. Preparação Tecnológica:</label><div class="radio-group">
+                        <label><input type="radio" name="d_q6" value="1"> A empresa não investe em tecnologia pensando no futuro.</label>
+                        <label><input type="radio" name="d_q6" value="2"> Investimentos são reativos, apenas para substituir o que está obsoleto.</label>
+                        <label><input type="radio" name="d_q6" value="3"> Há investimento em novas tecnologias, mas sem um plano estratégico claro.</label>
+                        <label><input type="radio" name="d_q6" value="4"> A empresa investe estrategicamente em tecnologias que a preparam para o futuro.</label>
+                    </div></div>
+                </fieldset>
+            </div>
+
+            <button type="submit" class="submit-button">Finalizar e Gerar Relatório</button>
+        </form>
+    </div>
+
+    <div id="report-section" class="container">
+        <h1>Relatório de Diagnóstico</h1>
+        
+        <div id="report-summary-text"></div>
+        
+        <div class="report-grid">
+            <div class="report-card">
+                <h3>Radar das Dimensões</h3>
+                <div id="radar-chart"></div>
+            </div>
+            <div class="report-card">
+                <h3>Resumo Executivo</h3>
+                <div id="executive-summary"></div>
+            </div>
+        </div>
+
+        <div class="report-card" style="margin-top: 2em;">
+            <h3>Trilhas de Melhoria Sugeridas</h3>
+            <p>Com base nas respostas de menor pontuação, estas são as áreas prioritárias para desenvolvimento:</p>
+            <ul id="trilhas-list"></ul>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('diagnosticoForm');
+            const checkboxes = document.querySelectorAll('input[name="dimensao"]');
+            const maxAllowed = 3;
+            
+            const dimensionData = {
+                pessoas: { name: "Pessoas & Cultura", prefix: "p" },
+                estrutura: { name: "Estrutura & Operações", prefix: "e" },
+                mercado: { name: "Mercado & Clientes", prefix: "m" },
+                direcao: { name: "Direção & Futuro", prefix: "d" },
+            };
+            
+            const trilhasMap = {
+                q1: { meta: 'Comunicação', trilha: 'Desenvolver práticas de feedback, escuta ativa e comunicação transparente entre áreas.' },
+                q2: { meta: 'Liderança', trilha: 'Capacitar líderes em delegação, engajamento de equipes e desenvolvimento de pessoas.' },
+                q3: { meta: 'Criatividade', trilha: 'Implementar processos de brainstorming, design thinking e cultura de inovação incremental.' },
+                q4: { meta: 'Autogestão', trilha: 'Promover treinamentos em gestão de tempo, priorização de tarefas e metodologias ágeis.' },
+                q5: { meta: 'Cultura & Valores', trilha: 'Reforçar o propósito e os valores da empresa em rituais, decisões e comunicação interna.' },
+                q6: { meta: 'Ferramentas', trilha: 'Avaliar e investir em ferramentas (LMS, CRM, ERP) que suportem a colaboração e a eficiência.' },
+            };
+
+            // --- Lógica de Seleção de Dimensões ---
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const checkedCount = document.querySelectorAll('input[name="dimensao"]:checked').length;
+                    
+                    if (checkedCount > maxAllowed) {
+                        this.checked = false;
+                        showAlert('selection-alert');
+                        return;
+                    }
+                    
+                    const questionBlock = document.getElementById(this.value + '-questions');
+                    questionBlock.style.display = this.checked ? 'block' : 'none';
+                });
+            });
+
+            // --- Lógica de Submissão do Formulário e Geração do Relatório ---
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                
+                const selectedDimensions = document.querySelectorAll('input[name="dimensao"]:checked');
+                
+                if (selectedDimensions.length === 0) {
+                    showAlert('validation-alert', 'Selecione pelo menos uma dimensão para continuar.');
+                    return;
+                }
+
+                let results = [];
+                let allValid = true;
+
+                selectedDimensions.forEach(cb => {
+                    const dimKey = cb.value;
+                    const prefix = dimensionData[dimKey].prefix;
+                    let totalScore = 0;
+                    let questionCount = 0;
+                    let lowestScore = { value: 5, question: '' };
+
+                    for (let i = 1; i <= 6; i++) {
+                        const questionName = `${prefix}_q${i}`;
+                        const selectedAnswer = document.querySelector(`input[name="${questionName}"]:checked`);
+                        
+                        if (selectedAnswer) {
+                            const score = parseInt(selectedAnswer.value, 10);
+                            totalScore += score;
+                            questionCount++;
+                            if (score < lowestScore.value) {
+                                lowestScore.value = score;
+                                lowestScore.question = `q${i}`;
+                            }
+                        }
+                    }
+
+                    if (questionCount < 6) {
+                        allValid = false;
+                    } else {
+                        const average = totalScore / 6;
+                        results.push({
+                            key: dimKey,
+                            name: dimensionData[dimKey].name,
+                            average: average,
+                            lowestScoreTrilha: trilhasMap[lowestScore.question]
+                        });
+                    }
+                });
+
+                if (!allValid) {
+                    showAlert('validation-alert');
+                    return;
+                }
+                
+                renderReport(results);
+            });
+
+            function renderReport(results) {
+                document.getElementById('form-container').style.display = 'none';
+                document.getElementById('report-section').style.display = 'block';
+                window.scrollTo(0, 0);
+
+                const radarContainer = document.getElementById('radar-chart');
+                const summaryContainer = document.getElementById('report-summary-text');
+                const trilhasContainer = document.getElementById('trilhas-list');
+                const executiveContainer = document.getElementById('executive-summary');
+
+                radarContainer.innerHTML = '';
+                summaryContainer.innerHTML = '';
+                trilhasContainer.innerHTML = '';
+                executiveContainer.innerHTML = '';
+                
+                results.sort((a, b) => b.average - a.average); // Ordena do maior para o menor
+                const forcaMaior = results[0];
+                const fragilidadeMaior = results[results.length - 1];
+
+                results.forEach(res => {
+                    const { stage, stageClass } = getStageInfo(res.average);
+                    
+                    // Radar Chart (Barras)
+                    const barHtml = `
+                        <div class="dimension-bar">
+                            <div class="dimension-bar-label">
+                                <span>${res.name}</span>
+                                <span>${res.average.toFixed(1)} / 4.0</span>
+                            </div>
+                            <div class="bar-container">
+                                <div class="bar-fill ${stageClass}" style="width: ${ (res.average / 4) * 100 }%;">
+                                    ${stage}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    radarContainer.innerHTML += barHtml;
+
+                    // Texto por Dimensão
+                    summaryContainer.innerHTML += `<p>Sua empresa está em nível <strong>${stage}</strong> em <strong>${res.name}</strong>.</p>`;
+                    
+                    // Trilhas de Melhoria
+                    const trilhaItem = document.createElement('li');
+                    trilhaItem.innerHTML = `<strong>${res.name} (Meta: ${res.lowestScoreTrilha.meta}):</strong> ${res.lowestScoreTrilha.trilha}`;
+                    trilhasContainer.appendChild(trilhaItem);
+                });
+                
+                // Resumo Executivo
+                executiveContainer.innerHTML = `
+                    <p><strong>Força Maior:</strong> Sua maturidade em <strong>${forcaMaior.name}</strong> (${getStageInfo(forcaMaior.average).stage}) é um ponto de destaque. Utilize as boas práticas desta área como inspiração para as demais.</p>
+                    <p><strong>Fragilidade Maior:</strong> A dimensão <strong>${fragilidadeMaior.name}</strong> (${getStageInfo(fragilidadeMaior.average).stage}) requer atenção prioritária. As trilhas de melhoria sugeridas para esta área devem ser o foco inicial de ação.</p>
+                `;
+            }
+
+            function getStageInfo(average) {
+                if (average >= 3.5) return { stage: 'Avançado', stageClass: 'stage-4' };
+                if (average >= 2.5) return { stage: 'Intermediário', stageClass: 'stage-3' };
+                if (average >= 2.0) return { stage: 'Básico', stageClass: 'stage-2' };
+                return { stage: 'Inicial', stageClass: 'stage-1' };
+            }
+            
+            function showAlert(elementId, message = '') {
+                const alertBox = document.getElementById(elementId);
+                if (message) alertBox.textContent = message;
+                alertBox.style.display = 'block';
+                setTimeout(() => { alertBox.style.display = 'none'; }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulário de Classificação de Lead</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            background-color: #f4f7f9;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 25px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        fieldset {
+            border: 1px solid #dcdcdc;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            padding: 15px;
+        }
+        legend {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #34495e;
+            padding: 0 10px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        .radio-group label, .checkbox-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: normal;
+        }
+        input[type="radio"], input[type="range"] {
+            margin-right: 10px;
+        }
+        input[type="range"] {
+            width: 80%;
+        }
+        .range-container {
+            margin-bottom: 15px;
+        }
+        .range-value {
+            font-weight: bold;
+            color: #3498db;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            min-height: 100px;
+            resize: vertical;
+        }
+        button {
+            display: inline-block;
+            background-color: #3498db;
+            color: #ffffff;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #result {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 5px;
+            font-size: 1.3em;
+            font-weight: bold;
+            text-align: center;
+        }
+        .frio { background-color: #eaf2f8; color: #3498db; }
+        .morno { background-color: #fef5e7; color: #f39c12; }
+        .quente { background-color: #f9ebea; color: #e74c3c; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Manual Técnico – Classificação de Lead</h1>
+        <p>Este formulário calcula uma classificação objetiva (Frio, Morno, Quente) para leads com base nos critérios definidos.</p>
+
+        <form id="leadForm">
+
+            <fieldset>
+                <legend>Perfil da Empresa</legend>
+                <div class="radio-group">
+                    <label><strong>Número de colaboradores:</strong></label>
+                    <label><input type="radio" name="colaboradores" value="1" required> Até 10</label>
+                    <label><input type="radio" name="colaboradores" value="2"> 11 a 30</label>
+                    <label><input type="radio" name="colaboradores" value="3"> 31 a 100</label>
+                    <label><input type="radio" name="colaboradores" value="4"> 101 a 500</label>
+                    <label><input type="radio" name="colaboradores" value="5"> Acima de 500</label>
+                </div>
+                <br>
+                <div class="radio-group">
+                    <label><strong>Porte da empresa:</strong></label>
+                    <label><input type="radio" name="porte" value="2" required> Startup</label>
+                    <label><input type="radio" name="porte" value="3"> PME</label>
+                    <label><input type="radio" name="porte" value="5"> Grande empresa</label>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Investimento Disponível</legend>
+                <div class="radio-group">
+                    <label><input type="radio" name="investimento" value="1" required> Até R$ 10 mil</label>
+                    <label><input type="radio" name="investimento" value="3"> Entre R$ 10 mil e R$ 50 mil</label>
+                    <label><input type="radio" name="investimento" value="5"> Acima de R$ 50 mil</label>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Decisor Principal</legend>
+                <div class="radio-group">
+                    <label><input type="radio" name="decisor" value="3" required> CEO / Diretor</label>
+                    <label><input type="radio" name="decisor" value="2"> RH / T&D</label>
+                    <label><input type="radio" name="decisor" value="1"> Marketing / Comunicação</label>
+                    <label><input type="radio" name="decisor" value="0"> Outro</label>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Cultura de Inovação & Desenvolvimento Humano</legend>
+                <div class="range-container">
+                    <label for="aberturaInovacao">De 1 a 5, qual a abertura da empresa para ideias inovadoras em treinamentos? <span id="aberturaInovacaoValue" class="range-value">3</span></label>
+                    <input type="range" id="aberturaInovacao" name="aberturaInovacao" min="1" max="5" value="3" oninput="document.getElementById('aberturaInovacaoValue').innerText = this.value;">
+                </div>
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                <label>De 1 a 5, qual a importância atribuída a:</label>
+                <div class="range-container">
+                    <label for="investirDev">Investir em desenvolvimento profissional: <span id="investirDevValue" class="range-value">3</span></label>
+                    <input type="range" id="investirDev" name="investirDev" min="1" max="5" value="3" oninput="document.getElementById('investirDevValue').innerText = this.value;">
+                </div>
+                <div class="range-container">
+                    <label for="softSkills">Desenvolver soft skills (comunicação, liderança, etc.): <span id="softSkillsValue" class="range-value">3</span></label>
+                    <input type="range" id="softSkills" name="softSkills" min="1" max="5" value="3" oninput="document.getElementById('softSkillsValue').innerText = this.value;">
+                </div>
+                <div class="range-container">
+                    <label for="culturaHobbies">Incentivar cultura, arte e hobbies: <span id="culturaHobbiesValue" class="range-value">3</span></label>
+                    <input type="range" id="culturaHobbies" name="culturaHobbies" min="1" max="5" value="3" oninput="document.getElementById('culturaHobbiesValue').innerText = this.value;">
+                </div>
+                <div class="range-container">
+                    <label for="impactoDev">Reconhecer impacto do desenvolvimento humano na performance: <span id="impactoDevValue" class="range-value">3</span></label>
+                    <input type="range" id="impactoDev" name="impactoDev" min="1" max="5" value="3" oninput="document.getElementById('impactoDevValue').innerText = this.value;">
+                </div>
+            </fieldset>
+            
+            <fieldset>
+                <legend>Histórico de Projetos</legend>
+                <label><strong>A empresa já realizou projetos inovadores anteriormente?</strong></label>
+                <div class="radio-group">
+                    <label><input type="radio" name="projetosAnteriores" value="2" required> Sim</label>
+                    <label><input type="radio" name="projetosAnteriores" value="0"> Não</label>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Urgência</legend>
+                <label><strong>Qual a urgência para o início do projeto?</strong></label>
+                <div class="radio-group">
+                    <label><input type="radio" name="urgencia" value="3" required> Imediatamente</label>
+                    <label><input type="radio" name="urgencia" value="2"> Até 3 meses</label>
+                    <label><input type="radio" name="urgencia" value="1"> 6 meses ou mais</label>
+                </div>
+            </fieldset>
+            
+            <hr>
+            
+            <h2>Informações Adicionais (Não Pontuam)</h2>
+            <fieldset>
+                <legend>Orientações para Discurso Consultivo</legend>
+                <label for="desafios">Desafios prioritários:</label>
+                <textarea id="desafios" name="desafios" rows="4"></textarea>
+                <br><br>
+                <label for="objetivos">Objetivos principais:</label>
+                <textarea id="objetivos" name="objetivos" rows="4"></textarea>
+            </fieldset>
+            
+            <button type="button" onclick="calculateScore()">Calcular Classificação</button>
+        </form>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function getRadioValue(name) {
+            const radio = document.querySelector(`input[name="${name}"]:checked`);
+            return radio ? parseInt(radio.value) : 0;
+        }
+
+        function calculateScore() {
+            const form = document.getElementById('leadForm');
+            if (!form.checkValidity()) {
+                alert("Por favor, preencha todos os campos obrigatórios antes de calcular.");
+                return;
+            }
+
+            let totalScore = 0;
+
+            // Perfil da Empresa
+            totalScore += getRadioValue('colaboradores');
+            totalScore += getRadioValue('porte');
+            
+            // Investimento
+            totalScore += getRadioValue('investimento');
+            
+            // Decisor
+            totalScore += getRadioValue('decisor');
+
+            // Cultura de Inovação
+            const aberturaInovacao = parseInt(document.getElementById('aberturaInovacao').value);
+            if (aberturaInovacao >= 5) totalScore += 3;
+            else if (aberturaInovacao >= 4) totalScore += 2;
+            else if (aberturaInovacao >= 3) totalScore += 1;
+            
+            // Média de Desenvolvimento Humano
+            const devProfissional = parseInt(document.getElementById('investirDev').value);
+            const softSkills = parseInt(document.getElementById('softSkills').value);
+            const culturaHobbies = parseInt(document.getElementById('culturaHobbies').value);
+            const impactoDev = parseInt(document.getElementById('impactoDev').value);
+            const mediaDev = (devProfissional + softSkills + culturaHobbies + impactoDev) / 4;
+            
+            if (mediaDev >= 5) totalScore += 3;
+            else if (mediaDev >= 4) totalScore += 2;
+            else if (mediaDev >= 3) totalScore += 1;
+            
+            // Projetos anteriores
+            totalScore += getRadioValue('projetosAnteriores');
+            
+            // Urgência
+            totalScore += getRadioValue('urgencia');
+
+            // Exibir resultado
+            const resultDiv = document.getElementById('result');
+            let classification = '';
+            let classificationClass = '';
+
+            // Definindo faixas de classificação (pontuação máxima possível é 29)
+            if (totalScore <= 10) {
+                classification = 'Frio';
+                classificationClass = 'frio';
+            } else if (totalScore <= 20) {
+                classification = 'Morno';
+                classificationClass = 'morno';
+            } else {
+                classification = 'Quente';
+                classificationClass = 'quente';
+            }
+
+            resultDiv.innerHTML = `Pontuação Total: ${totalScore}<br>Classificação: ${classification}`;
+            resultDiv.className = classificationClass;
+        }
+    </script>
+
+</body>
+</html>
