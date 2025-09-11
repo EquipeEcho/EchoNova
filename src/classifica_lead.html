@@ -4,98 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Formulário de Classificação de Lead</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-            background-color: #f4f7f9;
-            color: #333;
-            line-height: 1.6;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 25px;
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
-        h1, h2 {
-            color: #2c3e50;
-            border-bottom: 2px solid #e0e0e0;
-            padding-bottom: 10px;
-        }
-        fieldset {
-            border: 1px solid #dcdcdc;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            padding: 15px;
-        }
-        legend {
-            font-weight: bold;
-            font-size: 1.2em;
-            color: #34495e;
-            padding: 0 10px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-        }
-        .radio-group label, .checkbox-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: normal;
-        }
-        input[type="radio"], input[type="range"] {
-            margin-right: 10px;
-        }
-        input[type="range"] {
-            width: 80%;
-        }
-        .range-container {
-            margin-bottom: 15px;
-        }
-        .range-value {
-            font-weight: bold;
-            color: #3498db;
-        }
-        textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            min-height: 100px;
-            resize: vertical;
-        }
-        button {
-            display: inline-block;
-            background-color: #3498db;
-            color: #ffffff;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 5px;
-            font-size: 1.1em;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        button:hover {
-            background-color: #2980b9;
-        }
-        #result {
-            margin-top: 25px;
-            padding: 20px;
-            border-radius: 5px;
-            font-size: 1.3em;
-            font-weight: bold;
-            text-align: center;
-        }
-        .frio { background-color: #eaf2f8; color: #3498db; }
-        .morno { background-color: #fef5e7; color: #f39c12; }
-        .quente { background-color: #f9ebea; color: #e74c3c; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -259,14 +168,14 @@
             let classification = '';
             let classificationClass = '';
 
-            // Definindo faixas de classificação (pontuação máxima possível é 29)
+            // Corrigindo a faixa de classificação conforme o PDF
             if (totalScore <= 10) {
                 classification = 'Frio';
                 classificationClass = 'frio';
-            } else if (totalScore <= 20) {
+            } else if (totalScore >= 11 && totalScore <= 18) {
                 classification = 'Morno';
                 classificationClass = 'morno';
-            } else {
+            } else { // 19+ pontos
                 classification = 'Quente';
                 classificationClass = 'quente';
             }
