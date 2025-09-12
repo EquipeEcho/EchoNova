@@ -1,26 +1,131 @@
+/*
+===============================================
+  IMPORTS DO TAILWIND CSS
+===============================================
+*/
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== ESTILOS BASE ===== */
+body {
+  @apply bg-slate-900 text-white;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ===== COMPONENTE DA LOGO ===== */
+.logo-container {
+  @apply flex items-center;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+.logo-container img {
+  @apply transition-all duration-300 ease-in-out;
+  /* Sombra sutil para destacar a logo sobre o fundo */
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  /* Melhor qualidade de renderização em tamanhos pequenos */
+  image-rendering: high-quality;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+/* Logo escura para navbar branca */
+.filter-dark {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+/* Efeito hover da logo */
+.logo-container img:hover {
+  @apply scale-105;
+  /* Sombra mais intensa no hover */
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+
+.filter-dark:hover {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* ===== FUNDO PRINCIPAL ===== */
+.main-bg {
+  /* Gradiente escuro sobreposto à imagem para melhor legibilidade do texto */
+  background-image: 
+    linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+    url('/img/background.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  min-height: 100vh;
+}
+
+/* ===== UTILITÁRIOS DE TRANSIÇÃO ===== */
+.transition-smooth {
+  /* Curva de easing personalizada para transições mais naturais */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== BOTÃO COM GRADIENTE ===== */
+.btn-gradient {
+  /* Gradiente rosa que muda no hover */
+  @apply bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700;
+  /* Efeito de escala e transição suave */
+  @apply transform hover:scale-105 transition-all duration-300;
+  /* Sombras para profundidade */
+  @apply shadow-lg hover:shadow-xl;
+}
+
+/* ===== ANIMAÇÕES ===== */
+
+/* Animação de entrada: elementos aparecem de baixo para cima */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Aplicação da animação fadeInUp */
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease-out;
+}
+
+/* Animação com delay de 0.2s para efeito sequencial */
+.animate-fade-in-up-delay {
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+/* Animação com delay de 0.4s para efeito sequencial */
+.animate-fade-in-up-delay-2 {
+  animation: fadeInUp 0.8s ease-out 0.4s both;
+}
+
+/* ===== EFEITO DE BRILHO DO BOTÃO ===== */
+
+/* Animação de brilho pulsante para o botão principal */
+@keyframes pulse-glow {
+  0%, 100% {
+    /* Sombra base */
+    box-shadow: 0 4px 20px rgba(236, 72, 153, 0.3);
+  }
+  50% {
+    /* Sombra mais intensa no meio da animação */
+    box-shadow: 0 4px 30px rgba(236, 72, 153, 0.6);
+  }
+}
+
+/* Aplicação do efeito pulsante */
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ===== RESPONSIVIDADE ===== */
+
+/* Logo extra pequena para dispositivos muito pequenos */
+@media (max-width: 320px) {
+  .logo-container img {
+    height: 1.25rem !important; /* 20px */
+    width: auto !important;
+  }
 }
