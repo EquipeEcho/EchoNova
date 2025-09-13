@@ -21,16 +21,9 @@ body {
 
 .logo-container img {
   @apply transition-all duration-300 ease-in-out;
-  /* Sombra sutil para destacar a logo sobre o fundo */
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
   /* Melhor qualidade de renderização em tamanhos pequenos */
   image-rendering: high-quality;
   image-rendering: -webkit-optimize-contrast;
-}
-
-/* Logo escura para navbar branca */
-.filter-dark {
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 }
 
 /* Efeito hover da logo */
@@ -46,12 +39,6 @@ body {
 
 /* ===== FUNDO PRINCIPAL ===== */
 .main-bg {
-  /* Gradiente escuro sobreposto à imagem para melhor legibilidade do texto */
-  background-image: 
-    linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
-    url('/img/background.png');
-  background-size: cover;
-  background-repeat: no-repeat;
   background-position: center;
   min-height: 100vh;
 }
@@ -129,3 +116,4 @@ body {
     width: auto !important;
   }
 }
+
