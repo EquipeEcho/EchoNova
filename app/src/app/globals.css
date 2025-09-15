@@ -52,7 +52,7 @@ body {
 /* ===== BOTÃO COM GRADIENTE ===== */
 .btn-gradient {
   /* Gradiente rosa que muda no hover */
-  @apply bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700;
+  @apply bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700;
   /* Efeito de escala e transição suave */
   @apply transform hover:scale-105 transition-all duration-300;
   /* Sombras para profundidade */
@@ -115,5 +115,33 @@ body {
     height: 1.25rem !important; /* 20px */
     width: auto !important;
   }
+}
+/* ===== BOTÕES DE REDES SOCIAIS ===== */
+.social-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  opacity: 0.6;
+  cursor: pointer;
+  background: linear-gradient(to right, #ec4899, #db2777);
+}
+
+.social-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+  background: linear-gradient(to right, #db2777, #be185d);
+  box-shadow: 0 4px 20px rgba(236, 72, 153, 0.4);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+/* ===== TEXTO POÉTICO ===== */
+.poetic-text {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-style: italic;
+  transform: rotate(-5deg);
+  display: inline-block;
 }
 
