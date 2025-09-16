@@ -105,24 +105,6 @@ body {
   animation: fadeInUp 0.8s ease-out 0.4s both;
 }
 
-/* ===== EFEITO DE BRILHO DO BOTÃO ===== */
-
-/* Animação de brilho pulsante para o botão principal */
-@keyframes pulse-glow {
-  0%, 100% {
-    /* Sombra base */
-    box-shadow: 0 4px 20px rgba(236, 72, 153, 0.3);
-  }
-  50% {
-    /* Sombra mais intensa no meio da animação */
-    box-shadow: 0 4px 30px rgba(236, 72, 153, 0.6);
-  }
-}
-
-/* Aplicação do efeito pulsante */
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
 
 /* ===== RESPONSIVIDADE ===== */
 

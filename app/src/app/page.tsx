@@ -15,9 +15,9 @@ export default function Home() {
         </p>
         
         {/* Botão principal com efeito gradiente */}
-        <button className="px-6 xs:px-8 sm:px-10 py-3 xs:py-4 sm:py-5 bg-gradient-to-r from-fuchsia-700 to-fuchsia-800 rounded-lg text-base xs:text-lg sm:text-xl font-semibold text-white hover:from-fuchsia-800 hover:to-fuchsia-900 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl animate-fade-in-up-delay-2 animate-pulse-glow touch-manipulation">
+        <button className="px-6 xs:px-8 sm:px- py-3 xs:py-4 sm:py-5 bg-gradient-to-r from-fuchsia-700 to-fuchsia-800 rounded-lg text-base xs:text-lg sm:text-xl font-semibold text-white hover:from-fuchsia-800 hover:to-fuchsia-900 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl animate-fade-in-up-delay-2 animate-pulse-glow touch-manipulation">
           Começar Diagnóstico
-        </button>
+        </button>
           <div className="-z-10">
             <Ondas />
           </div>
