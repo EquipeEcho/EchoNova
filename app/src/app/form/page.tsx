@@ -1,261 +1,198 @@
 "use client";
-import Image from "next/image";
-import { useDiagnostico, perguntasDiagnostico, Pergunta, RespostasDiagnostico } from "./PerfilDesafioObjetivo";
+import { useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import DiagnosticoPage from "./utils";
+import { perguntasPerfil, RespostasPerfil } from "./Perfil";
+import { perguntasPC, RespostasPC } from "./PessoasCultura";
+import { perguntasEO, RespostasEO } from "./EstruturaOperacoes";
+import { perguntasMC, RespostasMC } from "./MercadoClientes";
+import { perguntasDF, RespostasDF } from "./DirecaoFuturo";
 
-// Componente da barra de progresso
-function ProgressBar({ etapaAtual, totalEtapas }: { etapaAtual: number; totalEtapas: number }) {
-  const porcentagem = Math.round(((etapaAtual + 1) / totalEtapas) * 100);
+type DimensaoRespostas = {
+    "Pessoas e Cultura": RespostasPC;
+    "Estrutura e Operações": RespostasEO;
+    "Direção e Futuro": RespostasDF;
+    "Mercado e Clientes": RespostasMC;
+};
 
-  return (
-    <div className="mb-8">
-      <div className="flex justify-between items-center mb-4">
-        <span className="text-white text-sm font-medium">
-          Pergunta {etapaAtual + 1} de {totalEtapas}
-        </span>
-        <span className="text-white text-sm">
-          {porcentagem}%
-        </span>
-      </div>
-      <div className="w-full bg-white/20 rounded-full h-2">
-        <div
-          className="bg-gradient-to-r from-pink-500 to-pink-600 h-2 rounded-full transition-all duration-500 ease-out"
-          style={{ width: `${porcentagem}%` }}
-        ></div>
-      </div>
-    </div>
-  );
-}
+type Dimensao = keyof DimensaoRespostas;
 
-// Componente dos campos de input
-function InputField({ pergunta, valor, onChange, respostas }: {
-  pergunta: Pergunta;
-  valor: string;
-  onChange: (campo: keyof RespostasDiagnostico, valor: string) => void
-  respostas: RespostasDiagnostico;
-}) {
-  const mostraTextAreaOutros = pergunta.temOutros && valor === "outros";
+export default function Diagnostico() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
 
-  switch (pergunta.tipo) {
-    case "texto":
-      return (
-        <input
-          type="text"
-          value={valor}
-          onChange={(e) => onChange(pergunta.id, e.target.value)}
-          className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-center"
-          placeholder={pergunta.placeholder}
-          autoFocus
-        />
-      );
-    case "select":
-      return (
-        <div className="space-y-4">
-          <select
-            value={valor}
-            onChange={(e) => onChange(pergunta.id, e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-center"
-            autoFocus={!mostraTextAreaOutros}
-          >
-            {pergunta.opcoes?.map((opcao) => (
-              <option key={opcao.valor} value={opcao.valor} className="text-gray-800 bg-white">
-                {opcao.texto}
-              </option>
-            ))}
-          </select>
+    // Fase do diagnóstico
+    const [fase, setFase] = useState<"perfil" | "selecionarDimensoes" | "dimensao">("perfil");
 
-          {/* Textarea adicional para "outros" */}
-          {mostraTextAreaOutros && pergunta.campoOutros && (
-            <div className="animate-fade-in-up">
-              <label className="block text-white text-sm font-medium mb-2">
-                Por favor, especifique:
-              </label>
-              <textarea
-                value={respostas[pergunta.campoOutros]}
-                onChange={(e) => onChange(pergunta.campoOutros!, e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
-                placeholder="Descreva qual é o setor da sua empresa..."
-                rows={3}
-                autoFocus
-              />
-            </div>
-          )}
-        </div>
-      ); 
-    case "textarea":
-      return (
-        <textarea
-          value={valor}
-          onChange={(e) => onChange(pergunta.id, e.target.value)}
-          className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
-          placeholder={pergunta.placeholder}
-          rows={pergunta.rows || 4}
-          autoFocus
-        />
-      );
-    case "radio":
-      return (
-        <div className="space-y-3">
-          {pergunta.opcoes?.map((opcao) => (
-            <label key={opcao.valor} className="flex items-center text-white cursor-pointer p-3 rounded-lg hover:bg-white/10 transition-colors">
-              <input
-                type="radio"
-                name={pergunta.id}
-                value={opcao.valor}
-                checked={valor === opcao.valor}
-                onChange={(e) => onChange(pergunta.id, e.target.value)}
-                className="mr-3 w-4 h-4 text-pink-500 focus:ring-pink-500 focus:ring-2"
-              />
-              <span className="text-lg">{opcao.texto}</span>
-            </label>
-          ))}
-        </div>
-      );
-    default:
-      return null;
-  }
-}
+    // Dimensões selecionadas pelo usuário
+    const [dimensoesSelecionadas, setDimensoesSelecionadas] = useState<Dimensao[]>([]);
 
-// Componente dos botões de navegação
-function NavigationButtons({
-  etapaAtual,
-  totalEtapas,
-  podeAvancar,
-  onProximo,
-  onAnterior,
-  onSubmit
-}: {
-  etapaAtual: number;
-  totalEtapas: number;
-  podeAvancar: boolean;
-  onProximo: () => void;
-  onAnterior: () => void;
-  onSubmit: (e: React.FormEvent) => void;
-}) {
-  const ehUltimaEtapa = etapaAtual === totalEtapas - 1;
+    // Dimensão atual que está sendo preenchida
+    const [indiceDimensaoAtual, setIndiceDimensaoAtual] = useState(0);
 
-  return (
-    <div className="flex justify-between items-center pt-6">
-      <button
-        type="button"
-        onClick={onAnterior}
-        disabled={etapaAtual === 0}
-        className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${etapaAtual === 0
-            ? "bg-gray-500/50 text-gray-400 cursor-not-allowed"
-            : "bg-white/20 text-white hover:bg-white/30 transform hover:scale-105"
-          }`}
-      >
-        Anterior
-      </button>
+    // Estado das respostas
+    const [respostasPerfil, setRespostasPerfil] = useState<RespostasPerfil>({
+        empresa: "",
+        setor: "",
+        porte: "",
+        setorOutro: "",
+    });
 
-      {ehUltimaEtapa ? (
-        <button
-          onClick={onSubmit}
-          disabled={!podeAvancar}
-          className={`px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar
-              ? "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white transform hover:scale-105 shadow-lg hover:shadow-xl"
-              : "bg-gray-500/50 text-gray-400 cursor-not-allowed"
-            }`}
-        >
-          Finalizar Diagnóstico
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={onProximo}
-          disabled={!podeAvancar}
-          className={`px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar
-              ? "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white transform hover:scale-105 shadow-lg hover:shadow-xl"
-              : "bg-gray-500/50 text-gray-400 cursor-not-allowed"
-            }`}
-        >
-          Próxima
-        </button>
-      )}
-    </div>
-  );
-}
+    const [respostasDimensoes, setRespostasDimensoes] = useState<DimensaoRespostas>({
+        "Pessoas e Cultura": { pergunta1: "", pergunta2: "", pergunta3: "", pergunta4: "", pergunta5: "", pergunta6: "" },
+        "Estrutura e Operações": { pergunta1: "", pergunta2: "", pergunta3: "", pergunta4: "", pergunta5: "", pergunta6: "" },
+        "Direção e Futuro": { pergunta1: "", pergunta2: "", pergunta3: "", pergunta4: "", pergunta5: "", pergunta6: "" },
+        "Mercado e Clientes": { pergunta1: "", pergunta2: "", pergunta3: "", pergunta4: "", pergunta5: "", pergunta6: "" },
+    });
 
-// Componente principal da página
-export default function DiagnosticoPage() {
-  // Hook customizado para gerenciar o estado do diagnóstico
-  const {
-    etapaAtual,
-    respostas,
-    handleInputChange,
-    proximaEtapa,
-    etapaAnterior,
-    handleSubmit
-  } = useDiagnostico();
+    // Função para lidar com o envio do perfil
+    const handlePerfilSubmit = (respostas: RespostasPerfil) => {
+        setRespostasPerfil(respostas);
+        setFase("selecionarDimensoes");
+    };
 
-  // Pergunta atual e validações
-  const perguntaAtual = perguntasDiagnostico[etapaAtual];
-  const valorAtual = respostas[perguntaAtual.id];
-  // Validação: se for "outros" e tiver campo adicional, valida ambos
-  let podeAvancar = true;
-  if (perguntaAtual.required) {
-    podeAvancar = valorAtual.trim() !== "";
+    // Função para lidar com o envio das dimensões
+    const handleDimensaoSubmit = (respostas: DimensaoRespostas[Dimensao]) => {
+        const dimAtual = dimensoesSelecionadas[indiceDimensaoAtual];
+        const novasRespostasDimensoes = {
+            ...respostasDimensoes,
+            [dimAtual]: respostas
+        } as DimensaoRespostas;
+        
+        setRespostasDimensoes(novasRespostasDimensoes);
+        proximaDimensao(novasRespostasDimensoes);
+    };
 
-    // Se selecionou "outros" e tem campo adicional, valida o campo adicional também
-    if (perguntaAtual.temOutros && valorAtual === "outros" && perguntaAtual.campoOutros) {
-      const valorOutros = respostas[perguntaAtual.campoOutros];
-      podeAvancar = podeAvancar && valorOutros.trim() !== "";
+    // Função para avançar para a próxima dimensão
+    const proximaDimensao = (respostasAtualizadas?: DimensaoRespostas) => {
+        if (indiceDimensaoAtual < dimensoesSelecionadas.length - 1) {
+            setIndiceDimensaoAtual(indiceDimensaoAtual + 1);
+        } else {
+            // Finalizou todas as dimensões - redirecionar para página de resultados
+            const respostasFinais = respostasAtualizadas || respostasDimensoes;
+            console.log("Respostas finais:", { respostasPerfil, respostasDimensoes: respostasFinais });
+            
+            // Salvar dados no localStorage para acessar na página de resultados
+            localStorage.setItem('diagnosticoCompleto', JSON.stringify({
+                perfil: respostasPerfil,
+                dimensoes: respostasFinais,
+                dimensoesSelecionadas,
+                dataFinalizacao: new Date().toISOString()
+            }));
+            
+            // Redirecionar para página de resultados
+            router.push('/resultados');
+        }
+    };
+
+    // Função para selecionar dimensões (máx 3)
+    const toggleDimensao = (d: Dimensao) => {
+        if (dimensoesSelecionadas.includes(d)) {
+            setDimensoesSelecionadas(dimensoesSelecionadas.filter(x => x !== d));
+        } else if (dimensoesSelecionadas.length < 3) {
+            setDimensoesSelecionadas([...dimensoesSelecionadas, d]);
+        }
+    };
+
+    // Renderização
+    if (fase === "perfil") {
+        return (
+            <DiagnosticoPage
+                perguntas={perguntasPerfil}
+                respostasIniciais={respostasPerfil}
+                titulo="Perfil"
+                onSubmit={handlePerfilSubmit}
+            />
+        );
     }
-  }  
 
-  return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center px-4 py-8">
-      <div className="max-w-2xl w-full bg-white/10 backdrop-blur-sm rounded-2xl p-8 shadow-xl relative overflow-hidden">
+    if (fase === "selecionarDimensoes") {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-8 relative">
+                {/* Botão Home no canto superior esquerdo */}
+                <Link 
+                    href="/" 
+                    className="absolute top-6 left-6 z-10 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all duration-300 transform hover:scale-105 backdrop-blur-sm border border-white/30 flex items-center gap-2"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    <span className="hidden sm:inline">Home</span>
+                </Link>
+                <h1 className="text-2xl font-bold mb-6">Escolha até 3 dimensões</h1>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 max-w-2xl">
+                    {([
+                        { id: "Pessoas e Cultura", nome: "Pessoas & Cultura", codigo: "PC" },
+                        { id: "Estrutura e Operações", nome: "Estrutura e Operações", codigo: "EO" },
+                        { id: "Direção e Futuro", nome: "Direção e Futuro", codigo: "DF" },
+                        { id: "Mercado e Clientes", nome: "Mercado e Clientes", codigo: "MC" }
+                    ] as { id: Dimensao; nome: string; codigo: string }[]).map(dimensao => (
+                        <button
+                            key={dimensao.id}
+                            onClick={() => toggleDimensao(dimensao.id)}
+                            className={`px-6 py-4 rounded-lg font-semibold border transition-all duration-300 text-center ${
+                                dimensoesSelecionadas.includes(dimensao.id) 
+                                    ? "bg-pink-600 border-pink-500 text-white transform scale-105 shadow-lg" 
+                                    : "bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/50"
+                            }`}
+                        >
+                            <div className="text-lg font-bold mb-1">{dimensao.codigo}</div>
+                            <div className="text-sm opacity-90">{dimensao.nome}</div>
+                        </button>
+                    ))}
+                </div>
+                <p className="text-white/80 mb-4 text-center">
+                    Dimensões selecionadas: {dimensoesSelecionadas.length}/3
+                </p>
+                <button
+                    onClick={() => setFase("dimensao")}
+                    disabled={dimensoesSelecionadas.length === 0}
+                    className="px-8 py-3 rounded-lg bg-gradient-to-r from-pink-500 to-pink-600 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:from-pink-600 hover:to-pink-700 transition-all duration-300 transform hover:scale-105"
+                >
+                    Começar Diagnóstico
+                </button>
+            </div>
+        );
+    }
 
-        {/* Barra de progresso */}
-        <ProgressBar
-          etapaAtual={etapaAtual}
-          totalEtapas={perguntasDiagnostico.length}
-        />
+    if (fase === "dimensao") {
+        const dimAtual = dimensoesSelecionadas[indiceDimensaoAtual];
+        const isUltimaDimensao = indiceDimensaoAtual === dimensoesSelecionadas.length - 1;
+        let perguntas = perguntasPC;
+        let respostasIniciais = respostasDimensoes[dimAtual];
+        let titulo = "";
 
-        {/* Header com logo */}
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <Image
-              src="/img/logo.png"
-              alt="EchoNova - Diagnóstico Inteligente"
-              width={120}
-              height={40}
-              className="h-10 w-auto object-contain"
-              priority
+        switch (dimAtual) {
+            case "Pessoas e Cultura":
+                perguntas = perguntasPC;
+                titulo = "Pessoas & Cultura";
+                break;
+            case "Estrutura e Operações":
+                perguntas = perguntasEO;
+                titulo = "Estrutura e Operações";
+                break;
+            case "Mercado e Clientes":
+                perguntas = perguntasMC;
+                titulo = "Mercado e Clientes";
+                break;
+            case "Direção e Futuro":
+                perguntas = perguntasDF;
+                titulo = "Direção e Futuro";
+                break;
+        }
+
+        return (
+            <DiagnosticoPage
+                key={`dimensao-${indiceDimensaoAtual}-${dimAtual}`}
+                perguntas={perguntas}
+                respostasIniciais={respostasIniciais}
+                titulo={titulo}
+                onSubmit={handleDimensaoSubmit}
+                isUltimaDimensao={isUltimaDimensao}
             />
-          </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white mb-2">
-            Diagnóstico Empresarial
-          </h1>
-        </div>
+        );
+    }
 
-        {/* Pergunta atual */}
-        <div className="mb-8 min-h-[200px] flex flex-col justify-center">
-          <h2 className="text-lg sm:text-xl font-semibold text-white mb-6 text-center leading-relaxed">
-            {perguntaAtual.titulo}
-          </h2>
-
-          {/* Campo de input baseado no tipo */}
-          <div className="space-y-4">
-            <InputField
-              pergunta={perguntaAtual}
-              valor={valorAtual}
-              onChange={handleInputChange}
-              respostas={respostas}
-            />
-          </div>
-        </div>
-
-        {/* Botões de navegação */}
-        <NavigationButtons
-          etapaAtual={etapaAtual}
-          totalEtapas={perguntasDiagnostico.length}
-          podeAvancar={podeAvancar}
-          onProximo={() => proximaEtapa(perguntasDiagnostico)}
-          onAnterior={etapaAnterior}
-          onSubmit={handleSubmit}
-        />
-      </div>
-    </main>
-  );
+    return null;
 }
