@@ -1,28 +1,27 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export interface RespostasDiagnostico {
+export interface RespostasPerfil {
     empresa: string;
     setor: string;
-    colaboradores: string;
     porte: string;
-    localizacao: string;
     setorOutro: string;
+    [key: string]: string;
 }
 
 export interface Pergunta {
-    id: keyof RespostasDiagnostico;
+    id: keyof RespostasPerfil;
     titulo: string;
-    tipo: "texto" | "select" | "textarea" | "radio";
+    tipo: "texto" | "select" | "textarea";
     placeholder?: string;
     rows?: number;
     required: boolean;
     opcoes?: { valor: string; texto: string }[];
     temOutros?: boolean;
-    campoOutros?: keyof RespostasDiagnostico;
+    campoOutros?: keyof RespostasPerfil;
 }
 
-export const perguntasDiagnostico: Pergunta[] = [
+export const perguntasPerfil: Pergunta[] = [
     {
         id: "empresa",
         titulo: "Qual o nome da sua empresa?",
@@ -42,25 +41,11 @@ export const perguntasDiagnostico: Pergunta[] = [
             { valor: "financeiro", texto: "Financeiro" },
             { valor: "varejo", texto: "Varejo" },
             { valor: "industrial", texto: "Industrial" },
-            { valor: "outros", texto: "Outros"}
+            { valor: "outros", texto: "Outros" }
         ],
         required: true,
         temOutros: true,
         campoOutros: "setorOutro",
-    },
-    {
-        id: "colaboradores",
-        titulo: "Quantos colaboradores sua empresa possui?",
-        tipo: "select",
-        opcoes: [
-            { valor: "", texto: "Selecione a quantidade" },
-            { valor: "1-10", texto: "Até 10" },
-            { valor: "11-3", texto: "Entre 11 e 30" },
-            { valor: "30-100", texto: "Entre 30 e 100" },
-            { valor: "100+", texto: "Acima de 100" },
-            { valor: "500+", texto: "Acima de 500" }
-        ],
-        required: true
     },
     {
         id: "porte",
@@ -74,35 +59,19 @@ export const perguntasDiagnostico: Pergunta[] = [
         ],
         required: true
     },
-    {
-        id: "localizacao",
-        titulo: "Quais os principais desafios da sua empresa?",
-        tipo: "select",
-        opcoes: [
-            { valor: "", texto: "Selecione o tamanho" },
-            { valor: "1-10", texto: "Até 10" },
-            { valor: "11-3", texto: "Entre 11 e 30" },
-            { valor: "30-100", texto: "Entre 30 e 100" },
-            { valor: "100+", texto: "Acima de 100" },
-            { valor: "500+", texto: "Acima de 500" }
-        ],
-        required: true
-    },
 ];
 
-export function useDiagnostico() {
+export function usePerfil() {
     const router = useRouter();
     const [etapaAtual, setEtapaAtual] = useState(0);
-    const [respostas, setRespostas] = useState<RespostasDiagnostico>({
+    const [respostas, setRespostas] = useState<RespostasPerfil>({
         empresa: "",
         setor: "",
         setorOutro: "",
-        colaboradores: "",
         porte: "",
-        localizacao: "",
     });
 
-    const handleInputChange = (campo: keyof RespostasDiagnostico, valor: string) => {
+    const handleInputChange = (campo: keyof RespostasPerfil, valor: string) => {
         setRespostas(prev => ({
             ...prev,
             [campo]: valor
