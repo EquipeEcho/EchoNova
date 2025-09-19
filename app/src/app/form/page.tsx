@@ -59,30 +59,53 @@ export default function Diagnostico() {
             ...respostasDimensoes,
             [dimAtual]: respostas
         } as DimensaoRespostas;
-        
+
         setRespostasDimensoes(novasRespostasDimensoes);
         proximaDimensao(novasRespostasDimensoes);
     };
 
     // Função para avançar para a próxima dimensão
-    const proximaDimensao = (respostasAtualizadas?: DimensaoRespostas) => {
+    const proximaDimensao = async (respostasAtualizadas?: DimensaoRespostas) => {
         if (indiceDimensaoAtual < dimensoesSelecionadas.length - 1) {
             setIndiceDimensaoAtual(indiceDimensaoAtual + 1);
         } else {
-            // Finalizou todas as dimensões - redirecionar para página de resultados
+            // Finalizou todas as dimensões
             const respostasFinais = respostasAtualizadas || respostasDimensoes;
-            console.log("Respostas finais:", { respostasPerfil, respostasDimensoes: respostasFinais });
-            
-            // Salvar dados no localStorage para acessar na página de resultados
-            localStorage.setItem('diagnosticoCompleto', JSON.stringify({
+            const dadosParaEnviar = {
                 perfil: respostasPerfil,
                 dimensoes: respostasFinais,
                 dimensoesSelecionadas,
-                dataFinalizacao: new Date().toISOString()
-            }));
-            
-            // Redirecionar para página de resultados
-            router.push('/resultados');
+            };
+
+            console.log("Enviando para o backend:", dadosParaEnviar);
+
+            try {
+                const response = await fetch('/api/diagnostico', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(dadosParaEnviar),
+                });
+
+                if (!response.ok) {
+                    // Se a resposta da API não for bem-sucedida, lança um erro
+                    throw new Error(`Erro da API: ${response.statusText}`);
+                }
+
+                const resultado = await response.json();
+
+                // Salvar o resultado processado (do backend) no localStorage
+                localStorage.setItem('diagnosticoCompleto', JSON.stringify(resultado));
+
+                // Redirecionar para página de resultados
+                router.push('/resultados');
+
+            } catch (error) {
+                console.error("Falha ao enviar diagnóstico:", error);
+                // Opcional: Mostrar uma mensagem de erro para o usuário
+                alert("Não foi possível processar seu diagnóstico. Tente novamente.");
+            }
         }
     };
 
@@ -111,8 +134,8 @@ export default function Diagnostico() {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-8 relative">
                 {/* Botão Home no canto superior esquerdo */}
-                <Link 
-                    href="/" 
+                <Link
+                    href="/"
                     className="absolute top-6 left-6 z-10 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all duration-300 transform hover:scale-105 backdrop-blur-sm border border-white/30 flex items-center gap-2"
                 >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,11 +154,10 @@ export default function Diagnostico() {
                         <button
                             key={dimensao.id}
                             onClick={() => toggleDimensao(dimensao.id)}
-                            className={`px-6 py-4 rounded-lg font-semibold border transition-all duration-300 text-center ${
-                                dimensoesSelecionadas.includes(dimensao.id) 
-                                    ? "bg-pink-600 border-pink-500 text-white transform scale-105 shadow-lg" 
+                            className={`px-6 py-4 rounded-lg font-semibold border transition-all duration-300 text-center ${dimensoesSelecionadas.includes(dimensao.id)
+                                    ? "bg-pink-600 border-pink-500 text-white transform scale-105 shadow-lg"
                                     : "bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/50"
-                            }`}
+                                }`}
                         >
                             <div className="text-lg font-bold mb-1">{dimensao.codigo}</div>
                             <div className="text-sm opacity-90">{dimensao.nome}</div>
