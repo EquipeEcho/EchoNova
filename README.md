@@ -1,5 +1,6 @@
 # EchoNova
-# 📌 Radar Entrenova – Diagnóstico Inteligente de Treinamentos e Mercado
+
+## 📌 Radar Entrenova – Diagnóstico Inteligente de Treinamentos e Mercado
 
 Sistema desenvolvido como parte do projeto **API – Aprendizagem por Projetos Integrados (FATEC – 2025-2)**, em parceria com a **Entrenova**.
 
@@ -8,6 +9,7 @@ O objetivo é aplicar entrevistas estruturadas com empresas reais para gerar dia
 ---
 
 ## 📖 Sumário
+
 - [Sobre o Projeto](#about)
 - [Objetivo do Desafio](#objetivo-do-desafio)
 - [Backlog do Produto](#backlog-do-produto)
@@ -21,16 +23,20 @@ O objetivo é aplicar entrevistas estruturadas com empresas reais para gerar dia
 ---
 
 ## 📌 <span id="about">Sobre o Projeto</span>
+
 Este projeto visa criar uma solução para **diagnóstico inteligente** de treinamentos, combinando **entrevistas estruturadas** com análise automática de dados.
 
 ---
 
 ## 🎯 <span id="objetivo-do-desafio">Objetivo do Desafio</span>
+
 - Entregar **relatórios personalizados** às empresas, apontando necessidades, oportunidades e melhorias.  
 - Fornecer **dados estratégicos** para a Entrenova validar produtos de treinamentos online e atender demandas do mercado.
 
 ---
+
 ## 📋 <span id="backlog-do-produto">Backlog do Produto</span>
+
 | Rank | Prioridade | User Story                                                                                                                                            | Estimativa | Sprint |
 | ---------- | ---------- | ---------- | ---------- | ---------- |
 | 1    | Alta       | Como usuário, quero responder questionários e acessar relatórios personalizados para receber diagnósticos das minhas necessidades                     | 5          | 1      |
@@ -41,46 +47,50 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 | 6    | Alta       | Como cliente, quero um relatório visual dos dados estratégicos que possibilite a tomada de decisão em projetos futuros                                 | 13         | 3     |
 
 ---
+
 ## 🏃‍ DoR - Definition of Ready
+
 - Problema proposto compreendido e discutido com a equipe
 - User Stories com Critérios de Aceitação
 - Subtarefas divididas a partir das US
 - Projeto bem definido e acordado com o cliente
 
-
 ## 🏆 DoD - Definition of Done
+
 - Relatórios gerados corretamente
 - Questionarios bem estruturados e funcionais
 - Manual do projeto
 - Vídeos de cada etapa de entrega
 
-
 ## 📅 <span id="sprint">Cronograma de Sprints </span>
 
 | Sprint          |    Período    |
-| --------------- | :-----------: | 
-| 🔖 **SPRINT 1** | 08/09 - 28/09 | 
-| 🔖 **SPRINT 2** | 06/10 - 26/10 | 
-| 🔖 **SPRINT 3** | 03/11 - 23/11 | 
+| --------------- | :-----------: |
+| 🔖 **SPRINT 1** | 08/09 - 28/09 |
+| 🔖 **SPRINT 2** | 06/10 - 26/10 |
+| 🔖 **SPRINT 3** | 03/11 - 23/11 |
 
 ---
 
 ## ⚙️ <span id="funcionalidades">Funcionalidades</span>
--  Aplicação de entrevistas estruturadas  
--  Geração de relatórios personalizados  
--  Diagnóstico inteligente com IA offline  
--  Integração com base de dados de treinamentos  
--  Dashboard para visualização de resultados  
+
+- Aplicação de entrevistas estruturadas  
+- Geração de relatórios personalizados  
+- Diagnóstico inteligente com IA offline  
+- Integração com base de dados de treinamentos  
+- Dashboard para visualização de resultados  
 
 ---
 
 ## 🔧 <span id="requisitos-não-funcionais">Requisitos Não Funcionais</span>
+
 - IA offline.  
 - Manual de instalação (no repositório).  
 - Manual do usuário (no repositório).  
 - Documentação da API.  
 
 ---
+
 ## 💻 <span id="tecnologias">Tecnologias</span>
 
 <h4 align="center">
@@ -97,8 +107,8 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 
 ---
 
-
 ## 📚 <span id="manuais-e-docs">Manuais e Documentação</span>
+
 - 📖 [Manual de Instalação](docs/manual-instalacao.md)  
 - 👨‍💻 [Manual do Usuário](docs/manual-usuario.md)  
 - 🔌 [Documentação da API](docs/api.md)  
@@ -106,6 +116,7 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 ---
 
 ## 👥 <span id="authors">Autores</span>
+
 Projeto desenvolvido pelos alunos do **3º semestre de ADS – FATEC SJC (2025-2)** em parceria com a **Entrenova**.  
 
 <div align="center">
@@ -166,4 +177,3 @@ Projeto desenvolvido pelos alunos do **3º semestre de ADS – FATEC SJC (2025-2
     </tr>
   </table>
 </div>
-
