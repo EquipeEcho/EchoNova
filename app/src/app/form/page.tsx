@@ -60,6 +60,7 @@ export default function Diagnostico() {
             [dimAtual]: respostas
         } as DimensaoRespostas;
 
+
         setRespostasDimensoes(novasRespostasDimensoes);
         proximaDimensao(novasRespostasDimensoes);
     };
