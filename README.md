@@ -40,6 +40,12 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 | 5    | Alta       | Como usuário que respondeu aos questionários, quero receber um diagnóstico personalizado para entender minhas necessidades e oportunidades            | 13         | 2      |
 | 6    | Alta       | Como cliente, quero um relatório visual dos dados estratégicos que possibilite a tomada de decisão em projetos futuros                                 | 13         | 3     |
 
+## 📈 Backlog da Sprint 1 - [Detalhes](./docs/Sprint-1/sprint1.backlog.md)
+| Rank | Prioridade | User Story | Estimativa |
+|------|------------|------------|------------|
+| 1 | Alta | Como usuário, quero responder questionários e acessar relatórios personalizados para receber diagnósticos das minhas necessidades | 5 |
+| 2 | Média | Como usuário, quero acessar uma página inicial clara para entender o propósito do Radar Entrenova e acessar as principais funções | 3 |
+| 3 | Alta | Como usuário, quero acessar o sistema com meu e-mail e senha para visualizar meus diagnósticos e receber minha trilha personalizada | 5 |
 ---
 ## 🏃‍ DoR - Definition of Ready
 - Problema proposto compreendido e discutido com a equipe
