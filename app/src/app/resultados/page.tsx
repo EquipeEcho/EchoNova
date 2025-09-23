@@ -1,44 +1,86 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Ondas } from "../clientFuncs";
 
 interface DiagnosticoData {
+    _id: string;
+    empresa: {
+        _id: string;
+        nome_empresa: string;
+        email: string;
+    };
     perfil: {
         empresa: string;
         setor: string;
         porte: string;
         setorOutro: string;
+        nome_empresa: string;
+        email: string;
     };
-    dimensoes: Record<string, Record<string, string>>;
     dimensoesSelecionadas: string[];
-    dataFinalizacao: string;
+    respostasDimensoes: Record<string, Record<string, string>>;
+    dataCriacao: string;
+    pontuacaoTotal: number;
 }
 
 export default function Resultados() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const diagnosticoId = searchParams.get('id');
+    
     const [diagnosticoData, setDiagnosticoData] = useState<DiagnosticoData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Recuperar dados do localStorage
+        const carregarDiagnostico = async () => {
+            if (diagnosticoId) {
+                // Buscar do banco de dados
+                await carregarDoBanco(diagnosticoId);
+            } else {
+                // Fallback para localStorage
+                carregarDoLocalStorage();
+            }
+        };
+
+        carregarDiagnostico();
+    }, [diagnosticoId]);
+
+    const carregarDoBanco = async (id: string) => {
+        try {
+            const response = await fetch(`/api/diagnosticos/${id}`);
+            const data = await response.json();
+            
+            if (response.ok) {
+                setDiagnosticoData(data.diagnostico);
+            } else {
+                console.error('Erro ao carregar diagnóstico:', data.error);
+                carregarDoLocalStorage();
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+            carregarDoLocalStorage();
+        }
+        setIsLoading(false);
+    };
+
+    const carregarDoLocalStorage = () => {
         const dados = localStorage.getItem('diagnosticoCompleto');
         if (dados) {
             try {
                 const parsedData = JSON.parse(dados);
                 setDiagnosticoData(parsedData);
             } catch (error) {
-                console.error('Erro ao carregar dados do diagnóstico:', error);
+                console.error('Erro ao carregar dados do localStorage:', error);
                 router.push('/form');
             }
         } else {
-            // Se não há dados, redirecionar para o formulário
             router.push('/form');
         }
         setIsLoading(false);
-    }, [router]);
+    };
 
     const handleDownloadReport = () => {
         if (!diagnosticoData) return;
@@ -51,7 +93,7 @@ export default function Resultados() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `diagnostico-${diagnosticoData.perfil.empresa.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.txt`;
+        link.download = `diagnostico-${diagnosticoData.perfil.nome_empresa.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.txt`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -59,7 +101,7 @@ export default function Resultados() {
     };
 
     const generateReportContent = (data: DiagnosticoData): string => {
-        const dataFormatada = new Date(data.dataFinalizacao).toLocaleDateString('pt-BR');
+        const dataFormatada = new Date(data.dataCriacao).toLocaleDateString('pt-BR');
         
         let content = `
 RELATÓRIO DE DIAGNÓSTICO EMPRESARIAL - ECHONOVA
@@ -70,6 +112,8 @@ Data de Finalização: ${dataFormatada}
 PERFIL DA EMPRESA
 -----------------
 Empresa: ${data.perfil.empresa}
+Nome da Empresa: ${data.perfil.nome_empresa}
+Email: ${data.perfil.email}
 Setor: ${data.perfil.setor === 'outros' ? data.perfil.setorOutro : data.perfil.setor}
 Porte: ${data.perfil.porte}
 
@@ -85,7 +129,7 @@ RESPOSTAS POR DIMENSÃO
             content += `\n${dimensao.toUpperCase()}\n`;
             content += '-'.repeat(dimensao.length) + '\n';
             
-            const respostas = data.dimensoes[dimensao];
+            const respostas = data.respostasDimensoes[dimensao];
             if (respostas) {
                 Object.entries(respostas).forEach(([pergunta, resposta], index) => {
                     content += `${index + 1}. ${resposta}\n`;
@@ -165,7 +209,7 @@ entre em contato com a Entrenova.
                         Diagnóstico Finalizado!
                     </h1>
                     <p className="text-white/80 text-lg">
-                        Parabéns, {diagnosticoData.perfil.empresa}!
+                        Parabéns, {diagnosticoData.perfil.nome_empresa}!
                     </p>
                 </div>
 
@@ -182,11 +226,12 @@ entre em contato com a Entrenova.
                 <div className="bg-white/10 rounded-lg p-6 mb-8">
                     <h2 className="text-xl font-semibold text-white mb-4">Resumo do Diagnóstico</h2>
                     <div className="space-y-2 text-white/90">
-                        <p><strong>Empresa:</strong> {diagnosticoData.perfil.empresa}</p>
+                        <p><strong>Empresa:</strong> {diagnosticoData.perfil.nome_empresa}</p>
+                        <p><strong>Email:</strong> {diagnosticoData.perfil.email}</p>
                         <p><strong>Setor:</strong> {diagnosticoData.perfil.setor === 'outros' ? diagnosticoData.perfil.setorOutro : diagnosticoData.perfil.setor}</p>
                         <p><strong>Porte:</strong> {diagnosticoData.perfil.porte}</p>
                         <p><strong>Dimensões Avaliadas:</strong> {diagnosticoData.dimensoesSelecionadas.length}</p>
-                        <p><strong>Data:</strong> {new Date(diagnosticoData.dataFinalizacao).toLocaleDateString('pt-BR')}</p>
+                        <p><strong>Data:</strong> {new Date(diagnosticoData.dataCriacao).toLocaleDateString('pt-BR')}</p>
                     </div>
                 </div>
 
