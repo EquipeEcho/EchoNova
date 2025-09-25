@@ -6,8 +6,8 @@ import Link from "next/link";
 import { Ondas } from "../clientFuncs";
 
 interface DiagnosticoData {
-    _id: string;
-    empresa: {
+    _id?: string;
+    empresa?: {
         _id: string;
         nome_empresa: string;
         email: string;
@@ -17,13 +17,14 @@ interface DiagnosticoData {
         setor: string;
         porte: string;
         setorOutro: string;
-        nome_empresa: string;
-        email: string;
+        nome_empresa?: string;
+        email?: string;
     };
     dimensoesSelecionadas: string[];
     respostasDimensoes: Record<string, Record<string, string>>;
-    dataCriacao: string;
-    pontuacaoTotal: number;
+    dataCriacao?: string;
+    dataFinalizacao?: string;
+    pontuacaoTotal?: number;
 }
 
 export default function Resultados() {
@@ -71,7 +72,14 @@ export default function Resultados() {
         if (dados) {
             try {
                 const parsedData = JSON.parse(dados);
-                setDiagnosticoData(parsedData);
+                // Mapear dados do localStorage para a interface DiagnosticoData
+                const diagnosticoMapeado: DiagnosticoData = {
+                    perfil: parsedData.perfil,
+                    respostasDimensoes: parsedData.dimensoes,
+                    dimensoesSelecionadas: parsedData.dimensoesSelecionadas,
+                    dataFinalizacao: parsedData.dataFinalizacao
+                };
+                setDiagnosticoData(diagnosticoMapeado);
             } catch (error) {
                 console.error('Erro ao carregar dados do localStorage:', error);
                 router.push('/form');
@@ -87,13 +95,14 @@ export default function Resultados() {
 
         // Gerar conteúdo do relatório
         const reportContent = generateReportContent(diagnosticoData);
-        
+
         // Criar e baixar arquivo
         const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `diagnostico-${diagnosticoData.perfil.nome_empresa.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.txt`;
+        const nomeEmpresa = diagnosticoData.perfil.nome_empresa || diagnosticoData.perfil.empresa;
+        link.download = `diagnostico-${nomeEmpresa.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.txt`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -101,8 +110,10 @@ export default function Resultados() {
     };
 
     const generateReportContent = (data: DiagnosticoData): string => {
-        const dataFormatada = new Date(data.dataCriacao).toLocaleDateString('pt-BR');
-        
+        const dataFormatada = data.dataCriacao
+            ? new Date(data.dataCriacao).toLocaleDateString('pt-BR')
+            : new Date(data.dataFinalizacao || Date.now()).toLocaleDateString('pt-BR');
+
         let content = `
 RELATÓRIO DE DIAGNÓSTICO EMPRESARIAL - ECHONOVA
 ================================================
@@ -112,8 +123,8 @@ Data de Finalização: ${dataFormatada}
 PERFIL DA EMPRESA
 -----------------
 Empresa: ${data.perfil.empresa}
-Nome da Empresa: ${data.perfil.nome_empresa}
-Email: ${data.perfil.email}
+${data.perfil.nome_empresa ? `Nome da Empresa: ${data.perfil.nome_empresa}` : ''}
+${data.perfil.email ? `Email: ${data.perfil.email}` : ''}
 Setor: ${data.perfil.setor === 'outros' ? data.perfil.setorOutro : data.perfil.setor}
 Porte: ${data.perfil.porte}
 
@@ -128,7 +139,7 @@ RESPOSTAS POR DIMENSÃO
         data.dimensoesSelecionadas.forEach(dimensao => {
             content += `\n${dimensao.toUpperCase()}\n`;
             content += '-'.repeat(dimensao.length) + '\n';
-            
+
             const respostas = data.respostasDimensoes[dimensao];
             if (respostas) {
                 Object.entries(respostas).forEach(([pergunta, resposta], index) => {
@@ -209,7 +220,7 @@ entre em contato com a Entrenova.
                         Diagnóstico Finalizado!
                     </h1>
                     <p className="text-white/80 text-lg">
-                        Parabéns, {diagnosticoData.perfil.nome_empresa}!
+                        Parabéns, {diagnosticoData.perfil.empresa}!
                     </p>
                 </div>
 
@@ -226,12 +237,13 @@ entre em contato com a Entrenova.
                 <div className="bg-white/10 rounded-lg p-6 mb-8">
                     <h2 className="text-xl font-semibold text-white mb-4">Resumo do Diagnóstico</h2>
                     <div className="space-y-2 text-white/90">
-                        <p><strong>Empresa:</strong> {diagnosticoData.perfil.nome_empresa}</p>
-                        <p><strong>Email:</strong> {diagnosticoData.perfil.email}</p>
+                        <p><strong>Empresa:</strong> {diagnosticoData.perfil.empresa}</p>
+                        {diagnosticoData.perfil.nome_empresa && <p><strong>Nome da Empresa:</strong> {diagnosticoData.perfil.nome_empresa}</p>}
+                        {diagnosticoData.perfil.email && <p><strong>Email:</strong> {diagnosticoData.perfil.email}</p>}
                         <p><strong>Setor:</strong> {diagnosticoData.perfil.setor === 'outros' ? diagnosticoData.perfil.setorOutro : diagnosticoData.perfil.setor}</p>
                         <p><strong>Porte:</strong> {diagnosticoData.perfil.porte}</p>
                         <p><strong>Dimensões Avaliadas:</strong> {diagnosticoData.dimensoesSelecionadas.length}</p>
-                        <p><strong>Data:</strong> {new Date(diagnosticoData.dataCriacao).toLocaleDateString('pt-BR')}</p>
+                        <p><strong>Data:</strong> {diagnosticoData.dataCriacao ? new Date(diagnosticoData.dataCriacao).toLocaleDateString('pt-BR') : new Date(diagnosticoData.dataFinalizacao || Date.now()).toLocaleDateString('pt-BR')}</p>
                     </div>
                 </div>
 
