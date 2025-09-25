@@ -59,31 +59,75 @@ export default function Diagnostico() {
             ...respostasDimensoes,
             [dimAtual]: respostas
         } as DimensaoRespostas;
-
+        
         setRespostasDimensoes(novasRespostasDimensoes);
         proximaDimensao(novasRespostasDimensoes);
     };
 
     // Função para avançar para a próxima dimensão
-    const proximaDimensao = (respostasAtualizadas?: DimensaoRespostas) => {
+    const proximaDimensao = async (respostasAtualizadas?: DimensaoRespostas) => {
         if (indiceDimensaoAtual < dimensoesSelecionadas.length - 1) {
             setIndiceDimensaoAtual(indiceDimensaoAtual + 1);
         } else {
-            // Finalizou todas as dimensões - redirecionar para página de resultados
+            // Finalizou todas as dimensões - salvar no banco e redirecionar
             const respostasFinais = respostasAtualizadas || respostasDimensoes;
             console.log("Respostas finais:", { respostasPerfil, respostasDimensoes: respostasFinais });
-
-            // Salvar dados no localStorage para acessar na página de resultados
-            localStorage.setItem('diagnosticoCompleto', JSON.stringify({
-                perfil: respostasPerfil,
-                dimensoes: respostasFinais,
-                dimensoesSelecionadas,
-                dataFinalizacao: new Date().toISOString()
-            }));
-
-            // Redirecionar para página de resultados
-            router.push('/resultados');
+            
+            await salvarDiagnostico(respostasFinais);
         }
+    };
+
+    // Função para salvar diagnóstico no banco de dados
+    const salvarDiagnostico = async (respostasFinais: DimensaoRespostas) => {
+        try {
+            // Usar o nome da empresa do perfil
+            const nomeEmpresa = respostasPerfil.empresa;
+
+            // Criar objeto com apenas as dimensões selecionadas
+            const respostasFiltradas: any = {};
+            dimensoesSelecionadas.forEach(dim => {
+                respostasFiltradas[dim] = respostasFinais[dim];
+            });
+
+            const response = await fetch('/api/diagnosticos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nomeEmpresa,
+                    perfil: respostasPerfil,
+                    dimensoesSelecionadas,
+                    respostasDimensoes: respostasFiltradas
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                console.log("Diagnóstico salvo com sucesso:", data.diagnostico);
+                // Redirecionar para resultados com ID do diagnóstico
+                router.push(`/resultados?id=${data.diagnostico._id}`);
+            } else {
+                console.error('Erro ao salvar diagnóstico:', data.error);
+                // Fallback para localStorage se der erro
+                salvarLocalStorage(respostasFinais);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+            salvarLocalStorage(respostasFinais);
+        }
+    };
+
+    // Função de fallback para localStorage
+    const salvarLocalStorage = (respostasFinais: DimensaoRespostas) => {
+        const diagnosticoCompleto = {
+            perfil: respostasPerfil,
+            dimensoes: respostasFinais,
+            dimensoesSelecionadas,
+            dataFinalizacao: new Date().toISOString()
+        };
+        
+        localStorage.setItem('diagnosticoCompleto', JSON.stringify(diagnosticoCompleto));
+        router.push('/resultados');
     };
 
     // Função para selecionar dimensões (máx 3)
@@ -111,8 +155,8 @@ export default function Diagnostico() {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-8 relative">
                 {/* Botão Home no canto superior esquerdo */}
-                <Link
-                    href="/"
+                <Link 
+                    href="/" 
                     className="absolute top-6 left-6 z-10 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all duration-300 transform hover:scale-105 backdrop-blur-sm border border-white/30 flex items-center gap-2"
                 >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,10 +175,11 @@ export default function Diagnostico() {
                         <button
                             key={dimensao.id}
                             onClick={() => toggleDimensao(dimensao.id)}
-                            className={`px-6 py-4 rounded-lg font-semibold border transition-all duration-300 text-center ${dimensoesSelecionadas.includes(dimensao.id)
-                                    ? "bg-pink-600 border-pink-500 text-white transform scale-105 shadow-lg"
+                            className={`px-6 py-4 rounded-lg font-semibold border transition-all duration-300 text-center ${
+                                dimensoesSelecionadas.includes(dimensao.id) 
+                                    ? "bg-pink-600 border-pink-500 text-white transform scale-105 shadow-lg" 
                                     : "bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/50"
-                                }`}
+                            }`}
                         >
                             <div className="text-lg font-bold mb-1">{dimensao.codigo}</div>
                             <div className="text-sm opacity-90">{dimensao.nome}</div>

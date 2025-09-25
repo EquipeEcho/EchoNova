@@ -1,44 +1,94 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Ondas } from "../clientFuncs";
 
 interface DiagnosticoData {
+    _id?: string;
+    empresa?: {
+        _id: string;
+        nome_empresa: string;
+        email: string;
+    };
     perfil: {
         empresa: string;
         setor: string;
         porte: string;
         setorOutro: string;
+        nome_empresa?: string;
+        email?: string;
     };
-    dimensoes: Record<string, Record<string, string>>;
     dimensoesSelecionadas: string[];
-    dataFinalizacao: string;
+    respostasDimensoes: Record<string, Record<string, string>>;
+    dataCriacao?: string;
+    dataFinalizacao?: string;
+    pontuacaoTotal?: number;
 }
 
 export default function Resultados() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const diagnosticoId = searchParams.get('id');
+    
     const [diagnosticoData, setDiagnosticoData] = useState<DiagnosticoData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Recuperar dados do localStorage
+        const carregarDiagnostico = async () => {
+            if (diagnosticoId) {
+                // Buscar do banco de dados
+                await carregarDoBanco(diagnosticoId);
+            } else {
+                // Fallback para localStorage
+                carregarDoLocalStorage();
+            }
+        };
+
+        carregarDiagnostico();
+    }, [diagnosticoId]);
+
+    const carregarDoBanco = async (id: string) => {
+        try {
+            const response = await fetch(`/api/diagnosticos/${id}`);
+            const data = await response.json();
+            
+            if (response.ok) {
+                setDiagnosticoData(data.diagnostico);
+            } else {
+                console.error('Erro ao carregar diagnóstico:', data.error);
+                carregarDoLocalStorage();
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+            carregarDoLocalStorage();
+        }
+        setIsLoading(false);
+    };
+
+    const carregarDoLocalStorage = () => {
         const dados = localStorage.getItem('diagnosticoCompleto');
         if (dados) {
             try {
                 const parsedData = JSON.parse(dados);
-                setDiagnosticoData(parsedData);
+                // Mapear dados do localStorage para a interface DiagnosticoData
+                const diagnosticoMapeado: DiagnosticoData = {
+                    perfil: parsedData.perfil,
+                    respostasDimensoes: parsedData.dimensoes,
+                    dimensoesSelecionadas: parsedData.dimensoesSelecionadas,
+                    dataFinalizacao: parsedData.dataFinalizacao
+                };
+                setDiagnosticoData(diagnosticoMapeado);
             } catch (error) {
-                console.error('Erro ao carregar dados do diagnóstico:', error);
+                console.error('Erro ao carregar dados do localStorage:', error);
                 router.push('/form');
             }
         } else {
-            // Se não há dados, redirecionar para o formulário
             router.push('/form');
         }
         setIsLoading(false);
-    }, [router]);
+    };
 
     const handleDownloadReport = () => {
         if (!diagnosticoData) return;
@@ -51,7 +101,8 @@ export default function Resultados() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `diagnostico-${diagnosticoData.perfil.empresa.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.txt`;
+        const nomeEmpresa = diagnosticoData.perfil.nome_empresa || diagnosticoData.perfil.empresa;
+        link.download = `diagnostico-${nomeEmpresa.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.txt`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -59,7 +110,9 @@ export default function Resultados() {
     };
 
     const generateReportContent = (data: DiagnosticoData): string => {
-        const dataFormatada = new Date(data.dataFinalizacao).toLocaleDateString('pt-BR');
+        const dataFormatada = data.dataCriacao
+            ? new Date(data.dataCriacao).toLocaleDateString('pt-BR')
+            : new Date(data.dataFinalizacao || Date.now()).toLocaleDateString('pt-BR');
 
         let content = `
 RELATÓRIO DE DIAGNÓSTICO EMPRESARIAL - ECHONOVA
@@ -70,6 +123,8 @@ Data de Finalização: ${dataFormatada}
 PERFIL DA EMPRESA
 -----------------
 Empresa: ${data.perfil.empresa}
+${data.perfil.nome_empresa ? `Nome da Empresa: ${data.perfil.nome_empresa}` : ''}
+${data.perfil.email ? `Email: ${data.perfil.email}` : ''}
 Setor: ${data.perfil.setor === 'outros' ? data.perfil.setorOutro : data.perfil.setor}
 Porte: ${data.perfil.porte}
 
@@ -85,7 +140,7 @@ RESPOSTAS POR DIMENSÃO
             content += `\n${dimensao.toUpperCase()}\n`;
             content += '-'.repeat(dimensao.length) + '\n';
 
-            const respostas = data.dimensoes[dimensao];
+            const respostas = data.respostasDimensoes[dimensao];
             if (respostas) {
                 Object.entries(respostas).forEach(([pergunta, resposta], index) => {
                     content += `${index + 1}. ${resposta}\n`;
@@ -138,8 +193,8 @@ entre em contato com a Entrenova.
     return (
         <main className="min-h-screen flex items-center justify-center px-4 py-8 relative">
             {/* Botão Home no canto superior esquerdo */}
-            <Link
-                href="/"
+            <Link 
+                href="/" 
                 className="absolute top-6 left-6 z-10 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all duration-300 transform hover:scale-105 backdrop-blur-sm border border-white/30 flex items-center gap-2"
             >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -183,10 +238,12 @@ entre em contato com a Entrenova.
                     <h2 className="text-xl font-semibold text-white mb-4">Resumo do Diagnóstico</h2>
                     <div className="space-y-2 text-white/90">
                         <p><strong>Empresa:</strong> {diagnosticoData.perfil.empresa}</p>
+                        {diagnosticoData.perfil.nome_empresa && <p><strong>Nome da Empresa:</strong> {diagnosticoData.perfil.nome_empresa}</p>}
+                        {diagnosticoData.perfil.email && <p><strong>Email:</strong> {diagnosticoData.perfil.email}</p>}
                         <p><strong>Setor:</strong> {diagnosticoData.perfil.setor === 'outros' ? diagnosticoData.perfil.setorOutro : diagnosticoData.perfil.setor}</p>
                         <p><strong>Porte:</strong> {diagnosticoData.perfil.porte}</p>
                         <p><strong>Dimensões Avaliadas:</strong> {diagnosticoData.dimensoesSelecionadas.length}</p>
-                        <p><strong>Data:</strong> {new Date(diagnosticoData.dataFinalizacao).toLocaleDateString('pt-BR')}</p>
+                        <p><strong>Data:</strong> {diagnosticoData.dataCriacao ? new Date(diagnosticoData.dataCriacao).toLocaleDateString('pt-BR') : new Date(diagnosticoData.dataFinalizacao || Date.now()).toLocaleDateString('pt-BR')}</p>
                     </div>
                 </div>
 
@@ -213,7 +270,7 @@ entre em contato com a Entrenova.
                     >
                         📥 Baixar Relatório Completo
                     </button>
-
+                    
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <button
                             onClick={handleNewDiagnostic}
@@ -221,7 +278,7 @@ entre em contato com a Entrenova.
                         >
                             🔄 Novo Diagnóstico
                         </button>
-
+                        
                         <button
                             onClick={handleGoHome}
                             className="px-6 py-3 bg-white/20 hover:bg-white/30 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105"
@@ -234,7 +291,7 @@ entre em contato com a Entrenova.
                 {/* Nota sobre os resultados */}
                 <div className="mt-8 p-4 bg-blue-500/20 rounded-lg border border-blue-500/30">
                     <p className="text-blue-200 text-sm text-center">
-                        💡 Seu relatório contém insights valiosos sobre as dimensões avaliadas.
+                        💡 Seu relatório contém insights valiosos sobre as dimensões avaliadas. 
                         Use essas informações para identificar oportunidades de melhoria e crescimento.
                     </p>
                 </div>
