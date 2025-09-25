@@ -34,6 +34,7 @@ export default function Diagnostico() {
     // Estado das respostas
     const [respostasPerfil, setRespostasPerfil] = useState<RespostasPerfil>({
         empresa: "",
+        email: "",
         setor: "",
         porte: "",
         setorOutro: "",
