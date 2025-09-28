@@ -2,17 +2,29 @@
 
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Ondas } from "../clientFuncs";
 
-// Estrutura de dados esperada da API após o processamento do diagnóstico
+// Interface mesclada para suportar tanto dados brutos quanto processados
 interface DiagnosticoData {
+    _id?: string;
+    empresa?: {
+        _id: string;
+        nome_empresa: string;
+        email: string;
+    };
     perfil: {
         empresa: string;
+        setor: string;
+        porte: string;
+        setorOutro: string;
+        nome_empresa?: string;
+        email?: string;
     };
-    resultados: Record<string, {
+    // Resultados processados (da branch HEAD) - opcional para o caso de fallback
+    resultados?: Record<string, {
         media: number;
         estagio: string;
         trilhasDeMelhoria: { meta: string; trilha: string }[];
@@ -22,33 +34,81 @@ interface DiagnosticoData {
         };
     }>;
     dimensoesSelecionadas: string[];
-    dataProcessamento: string;
+    // Respostas brutas (da branch main)
+    respostasDimensoes?: Record<string, Record<string, string>>;
+    dataProcessamento?: string; // Mantido para compatibilidade do relatório
+    dataCriacao?: string;
+    dataFinalizacao?: string;
 }
 
 export default function Resultados() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const diagnosticoId = searchParams.get('id');
+    
     const [diagnosticoData, setDiagnosticoData] = useState<DiagnosticoData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    // Lógica de carregamento de dados da branch `main`
     useEffect(() => {
+        const carregarDiagnostico = async () => {
+            if (diagnosticoId) {
+                // Buscar do banco de dados
+                await carregarDoBanco(diagnosticoId);
+            } else {
+                // Fallback para localStorage
+                carregarDoLocalStorage();
+            }
+        };
+
+        carregarDiagnostico();
+    }, [diagnosticoId]);
+
+    const carregarDoBanco = async (id: string) => {
+        try {
+            const response = await fetch(`/api/diagnosticos/${id}`);
+            const data = await response.json();
+            
+            if (response.ok) {
+                setDiagnosticoData(data.diagnostico);
+            } else {
+                console.error('Erro ao carregar diagnóstico:', data.error);
+                carregarDoLocalStorage();
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+            carregarDoLocalStorage();
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const carregarDoLocalStorage = () => {
         const dados = localStorage.getItem('diagnosticoCompleto');
         if (dados) {
             try {
                 const parsedData = JSON.parse(dados);
-                setDiagnosticoData(parsedData);
+                // Mapeia os dados do localStorage para a nova interface
+                const diagnosticoMapeado: DiagnosticoData = {
+                    perfil: parsedData.perfil,
+                    respostasDimensoes: parsedData.dimensoes,
+                    dimensoesSelecionadas: parsedData.dimensoesSelecionadas,
+                    dataFinalizacao: parsedData.dataFinalizacao
+                };
+                setDiagnosticoData(diagnosticoMapeado);
             } catch (error) {
-                console.error('Erro ao carregar dados do diagnóstico:', error);
+                console.error('Erro ao carregar dados do localStorage:', error);
                 router.push('/form');
             }
         } else {
             router.push('/form');
         }
         setIsLoading(false);
-    }, [router]);
+    };
 
-    // Gera o conteúdo de texto para o arquivo de download
+    // Função de geração de relatório da branch `HEAD` (mais analítica)
     const generateReportContent = (data: DiagnosticoData): string => {
-        const dataFormatada = new Date(data.dataProcessamento).toLocaleDateString('pt-BR');
+        const dataFormatada = new Date(data.dataProcessamento || data.dataFinalizacao || Date.now()).toLocaleDateString('pt-BR');
 
         let content = `
 RELATÓRIO DE DIAGNÓSTICO EMPRESARIAL - ECHONOVA
@@ -64,31 +124,36 @@ RESULTADOS POR DIMENSÃO
 -------------------------
 `;
 
-        data.dimensoesSelecionadas.forEach(dimensao => {
-            const resultado = data.resultados[dimensao];
-            if (!resultado) return;
+        if (data.resultados) {
+            data.dimensoesSelecionadas.forEach(dimensao => {
+                const resultado = data.resultados![dimensao];
+                if (!resultado) return;
 
-            content += `\nDIMENSÃO: ${dimensao.toUpperCase()}\n`;
-            content += '-'.repeat(9 + dimensao.length) + '\n';
-            content += `ESTÁGIO DE MATURIDADE: ${resultado.estagio}\n`;
-            content += `Média de Pontuação: ${resultado.media.toFixed(2)} / 4.00\n\n`;
+                content += `\nDIMENSÃO: ${dimensao.toUpperCase()}\n`;
+                content += '-'.repeat(9 + dimensao.length) + '\n';
+                content += `ESTÁGIO DE MATURIDADE: ${resultado.estagio}\n`;
+                content += `Média de Pontuação: ${resultado.media.toFixed(2)} / 4.00\n\n`;
 
-            content += 'PONTO FORTE PRINCIPAL (Pode inspirar outras áreas):\n';
-            content += `  - Meta: ${resultado.resumoExecutivo.forca?.meta || 'N/A'}\n\n`;
+                content += 'PONTO FORTE PRINCIPAL (Pode inspirar outras áreas):\n';
+                content += `  - Meta: ${resultado.resumoExecutivo.forca?.meta || 'N/A'}\n\n`;
 
-            content += 'PRIORIDADE DE AÇÃO (Maior oportunidade de impacto):\n';
-            content += `  - Meta: ${resultado.resumoExecutivo.fragilidade?.meta || 'N/A'}\n\n`;
+                content += 'PRIORIDADE DE AÇÃO (Maior oportunidade de impacto):\n';
+                content += `  - Meta: ${resultado.resumoExecutivo.fragilidade?.meta || 'N/A'}\n\n`;
 
-            content += 'TRILHAS DE MELHORIA RECOMENDADAS:\n';
-            if (resultado.trilhasDeMelhoria.length > 0) {
-                resultado.trilhasDeMelhoria.forEach(trilha => {
-                    content += `  - Meta: ${trilha.meta} -> Trilha Sugerida: ${trilha.trilha}\n`;
-                });
-            } else {
-                content += '  - Nenhum ponto crítico que exige ação imediata foi identificado. Ótimo trabalho!\n';
-            }
-            content += '\n';
-        });
+                content += 'TRILHAS DE MELHORIA RECOMENDADAS:\n';
+                if (resultado.trilhasDeMelhoria.length > 0) {
+                    resultado.trilhasDeMelhoria.forEach(trilha => {
+                        content += `  - Meta: ${trilha.meta} -> Trilha Sugerida: ${trilha.trilha}\n`;
+                    });
+                } else {
+                    content += '  - Nenhum ponto crítico que exige ação imediata foi identificado. Ótimo trabalho!\n';
+                }
+                content += '\n';
+            });
+        } else {
+            content += "\nNenhum resultado processado disponível. O relatório conterá as respostas brutas.\n";
+            // Aqui poderia-se adicionar a lógica de relatório da `main` como fallback
+        }
 
         content += `
 -------------------
@@ -99,7 +164,6 @@ aprofundado e um plano de ação detalhado, entre em contato.
         return content;
     };
 
-    // Aciona o download do arquivo .txt
     const handleDownloadReport = () => {
         if (!diagnosticoData) return;
         const reportContent = generateReportContent(diagnosticoData);
@@ -108,30 +172,28 @@ aprofundado e um plano de ação detalhado, entre em contato.
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `diagnostico-${diagnosticoData.perfil.empresa.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.txt`;
+        const nomeEmpresa = diagnosticoData.perfil.nome_empresa || diagnosticoData.perfil.empresa;
+        link.download = `diagnostico-${nomeEmpresa.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.txt`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
     };
 
-    // Limpa o localStorage e volta para o início do formulário
     const handleNewDiagnostic = () => {
         localStorage.removeItem('diagnosticoCompleto');
         router.push('/form');
     };
 
-    // Renderiza um estado de carregamento
     if (isLoading) {
         return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Carregando resultados...</div>;
     }
 
-    // Renderiza um estado de erro se os dados não forem encontrados
     if (!diagnosticoData) {
         return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Dados do diagnóstico não encontrados.</div>;
     }
 
-    // Renderização principal da página de resultados
+    // Renderização principal da página da branch `HEAD`
     return (
         <main className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden">
             <Link href="/" className="absolute top-6 left-6 z-10 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all duration-300 transform hover:scale-105 backdrop-blur-sm border border-white/30 flex items-center gap-2">
@@ -145,38 +207,46 @@ aprofundado e um plano de ação detalhado, entre em contato.
                     <p className="text-white/80 mt-2">Um resumo prático sobre a maturidade de <span className="font-bold text-white">{diagnosticoData.perfil.empresa}</span> em áreas-chave.</p>
                 </div>
 
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                    {diagnosticoData.dimensoesSelecionadas.map((dimensao) => {
-                        const resultado = diagnosticoData.resultados[dimensao];
-                        if (!resultado) return null;
+                {diagnosticoData.resultados ? (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                        {diagnosticoData.dimensoesSelecionadas.map((dimensao) => {
+                            const resultado = diagnosticoData.resultados![dimensao];
+                            if (!resultado) return null;
 
-                        return (
-                            <div key={dimensao} className="bg-white/5 p-6 rounded-lg border border-white/10 flex flex-col justify-between">
-                                <div>
-                                    <h3 className="text-xl font-bold text-pink-400 mb-2">{dimensao}</h3>
-                                    <p className="mb-4 text-white/90">Sua empresa está no estágio <span className="font-bold">{resultado.estagio}</span>.</p>
+                            return (
+                                <div key={dimensao} className="bg-white/5 p-6 rounded-lg border border-white/10 flex flex-col justify-between">
+                                    <div>
+                                        <h3 className="text-xl font-bold text-pink-400 mb-2">{dimensao}</h3>
+                                        <p className="mb-4 text-white/90">Sua empresa está no estágio <span className="font-bold">{resultado.estagio}</span>.</p>
+                                    </div>
+                                    <div className="mt-4">
+                                        <h4 className="font-semibold text-white mb-2">Trilhas de Melhoria:</h4>
+                                        {resultado.trilhasDeMelhoria.length > 0 ? (
+                                            <ul className="list-disc list-inside space-y-1 text-sm text-white/80">
+                                                {resultado.trilhasDeMelhoria.map(trilha => (
+                                                    <li key={trilha.meta}><strong>{trilha.meta}:</strong> {trilha.trilha}</li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p className="text-sm text-green-400">Nenhum ponto crítico identificado. Ótimo trabalho!</p>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="mt-4">
-                                    <h4 className="font-semibold text-white mb-2">Trilhas de Melhoria:</h4>
-                                    {resultado.trilhasDeMelhoria.length > 0 ? (
-                                        <ul className="list-disc list-inside space-y-1 text-sm text-white/80">
-                                            {resultado.trilhasDeMelhoria.map(trilha => (
-                                                <li key={trilha.meta}><strong>{trilha.meta}:</strong> {trilha.trilha}</li>
-                                            ))}
-                                        </ul>
-                                    ) : (
-                                        <p className="text-sm text-green-400">Nenhum ponto crítico identificado. Ótimo trabalho!</p>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="bg-white/10 rounded-lg p-6 mb-8 text-center">
+                        <h2 className="text-xl font-semibold text-white mb-2">Diagnóstico Recebido</h2>
+                        <p className="text-white/80">Os resultados detalhados não puderam ser carregados. Verifique o relatório para ver suas respostas.</p>
+                    </div>
+                )}
 
                 <div className="space-y-4">
                     <button onClick={handleDownloadReport} className="w-full px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
                         📥 Baixar Relatório Completo
                     </button>
+                    
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <button onClick={handleNewDiagnostic} className="px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105">
                             🔄 Fazer Novo Diagnóstico

@@ -34,6 +34,7 @@ export default function Diagnostico() {
     // Estado das respostas
     const [respostasPerfil, setRespostasPerfil] = useState<RespostasPerfil>({
         empresa: "",
+        email: "",
         setor: "",
         porte: "",
         setorOutro: "",
@@ -59,8 +60,6 @@ export default function Diagnostico() {
             ...respostasDimensoes,
             [dimAtual]: respostas
         } as DimensaoRespostas;
-
-
         setRespostasDimensoes(novasRespostasDimensoes);
         proximaDimensao(novasRespostasDimensoes);
     };
@@ -110,6 +109,59 @@ export default function Diagnostico() {
         }
     };
 
+    // Função para salvar diagnóstico no banco de dados
+    const salvarDiagnostico = async (respostasFinais: DimensaoRespostas) => {
+        try {
+            // Usar o nome da empresa do perfil
+            const nomeEmpresa = respostasPerfil.empresa;
+
+            // Criar objeto com apenas as dimensões selecionadas
+            const respostasFiltradas: any = {};
+            dimensoesSelecionadas.forEach(dim => {
+                respostasFiltradas[dim] = respostasFinais[dim];
+            });
+
+            const response = await fetch('/api/diagnosticos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nomeEmpresa,
+                    perfil: respostasPerfil,
+                    dimensoesSelecionadas,
+                    respostasDimensoes: respostasFiltradas
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                console.log("Diagnóstico salvo com sucesso:", data.diagnostico);
+                // Redirecionar para resultados com ID do diagnóstico
+                router.push(`/resultados?id=${data.diagnostico._id}`);
+            } else {
+                console.error('Erro ao salvar diagnóstico:', data.error);
+                // Fallback para localStorage se der erro
+                salvarLocalStorage(respostasFinais);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+            salvarLocalStorage(respostasFinais);
+        }
+    };
+
+    // Função de fallback para localStorage
+    const salvarLocalStorage = (respostasFinais: DimensaoRespostas) => {
+        const diagnosticoCompleto = {
+            perfil: respostasPerfil,
+            dimensoes: respostasFinais,
+            dimensoesSelecionadas,
+            dataFinalizacao: new Date().toISOString()
+        };
+
+        localStorage.setItem('diagnosticoCompleto', JSON.stringify(diagnosticoCompleto));
+        router.push('/resultados');
+    };
+
     // Função para selecionar dimensões (máx 3)
     const toggleDimensao = (d: Dimensao) => {
         if (dimensoesSelecionadas.includes(d)) {
@@ -156,8 +208,8 @@ export default function Diagnostico() {
                             key={dimensao.id}
                             onClick={() => toggleDimensao(dimensao.id)}
                             className={`px-6 py-4 rounded-lg font-semibold border transition-all duration-300 text-center ${dimensoesSelecionadas.includes(dimensao.id)
-                                    ? "bg-pink-600 border-pink-500 text-white transform scale-105 shadow-lg"
-                                    : "bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/50"
+                                ? "bg-pink-600 border-pink-500 text-white transform scale-105 shadow-lg"
+                                : "bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/50"
                                 }`}
                         >
                             <div className="text-lg font-bold mb-1">{dimensao.codigo}</div>
