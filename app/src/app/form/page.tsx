@@ -69,52 +69,16 @@ export default function Diagnostico() {
         if (indiceDimensaoAtual < dimensoesSelecionadas.length - 1) {
             setIndiceDimensaoAtual(indiceDimensaoAtual + 1);
         } else {
-            // Finalizou todas as dimensões
             const respostasFinais = respostasAtualizadas || respostasDimensoes;
-            const dadosParaEnviar = {
-                perfil: respostasPerfil,
-                dimensoes: respostasFinais,
-                dimensoesSelecionadas,
-            };
-
-            console.log("Enviando para o backend:", dadosParaEnviar);
-
-            try {
-                const response = await fetch('/api/diagnostico', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(dadosParaEnviar),
-                });
-
-                if (!response.ok) {
-                    // Se a resposta da API não for bem-sucedida, lança um erro
-                    throw new Error(`Erro da API: ${response.statusText}`);
-                }
-
-                const resultado = await response.json();
-
-                // Salvar o resultado processado (do backend) no localStorage
-                localStorage.setItem('diagnosticoCompleto', JSON.stringify(resultado));
-
-                // Redirecionar para página de resultados
-                router.push('/resultados');
-
-            } catch (error) {
-                console.error("Falha ao enviar diagnóstico:", error);
-                // Opcional: Mostrar uma mensagem de erro para o usuário
-                alert("Não foi possível processar seu diagnóstico. Tente novamente.");
-            }
+            console.log("Finalizado. Enviando para salvar:", { respostasPerfil, respostasDimensoes: respostasFinais });
+            await salvarDiagnostico(respostasFinais);
         }
+
     };
 
     // Função para salvar diagnóstico no banco de dados
     const salvarDiagnostico = async (respostasFinais: DimensaoRespostas) => {
         try {
-            // Usar o nome da empresa do perfil
-            const nomeEmpresa = respostasPerfil.empresa;
-
             // Criar objeto com apenas as dimensões selecionadas
             const respostasFiltradas: any = {};
             dimensoesSelecionadas.forEach(dim => {
@@ -125,7 +89,7 @@ export default function Diagnostico() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    nomeEmpresa,
+                    nomeEmpresa: respostasPerfil.empresa, // CORREÇÃO APLICADA AQUI
                     perfil: respostasPerfil,
                     dimensoesSelecionadas,
                     respostasDimensoes: respostasFiltradas
@@ -136,11 +100,9 @@ export default function Diagnostico() {
 
             if (response.ok) {
                 console.log("Diagnóstico salvo com sucesso:", data.diagnostico);
-                // Redirecionar para resultados com ID do diagnóstico
                 router.push(`/resultados?id=${data.diagnostico._id}`);
             } else {
                 console.error('Erro ao salvar diagnóstico:', data.error);
-                // Fallback para localStorage se der erro
                 salvarLocalStorage(respostasFinais);
             }
         } catch (error) {
