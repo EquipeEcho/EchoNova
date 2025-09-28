@@ -206,13 +206,13 @@ aprofundado e um plano de ação detalhado, entre em contato.
                 </div>
 
                 {diagnosticoData.resultados ? (
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                    <div className="flex flex-wrap gap-6 mb-8 justify-center">
                         {diagnosticoData.dimensoesSelecionadas.map((dimensao) => {
                             const resultado = diagnosticoData.resultados![dimensao];
                             if (!resultado) return null;
 
                             return (
-                                <div key={dimensao} className="bg-white/5 p-6 rounded-lg border border-white/10 flex flex-col justify-between">
+                                <div key={dimensao} className="bg-white/5 w-sm p-6 rounded-lg border border-white/10 flex flex-col">
                                     <div>
                                         <h3 className="text-xl font-bold text-pink-400 mb-2">{dimensao}</h3>
                                         <p className="mb-4 text-white/90">Sua empresa está no estágio <span className="font-bold">{resultado.estagio}</span>.</p>
