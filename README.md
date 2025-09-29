@@ -35,6 +35,7 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 
 ---
 
+
 ## 📋 <span id="backlog-do-produto">Backlog do Produto</span>
 
 | Rank | Prioridade | User Story                                                                                                                                            | Estimativa | Sprint |
@@ -45,13 +46,24 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 | 4    | Alta       | Como usuário, quero acesso a um questionário aprofundado para receber relatórios mais específicos                                                     | 5          | 2      |
 | 5    | Alta       | Como usuário que respondeu aos questionários, quero receber um diagnóstico personalizado para entender minhas necessidades e oportunidades            | 13         | 2      |
 | 6    | Alta       | Como cliente, quero um relatório visual dos dados estratégicos que possibilite a tomada de decisão em projetos futuros                                 | 13         | 3     |
+---
+## 🚀 MVP - Mínimo Produto Viável
 
-## 📈 Backlog da Sprint 1 - [Detalhes](./docs/Sprint-1/sprint1.backlog.md)
+### 🟢 Sprint 1 - Questionário Geral
+[![MVP SPRINT 1](https://img.youtube.com/vi/B-3Zbw5OlP4/0.jpg)](https://www.youtube.com/watch?v=B-3Zbw5OlP4)
+
+### 📈 Backlog da Sprint 1 - [Detalhes](./docs/Sprint-1/sprint1.backlog.md)
 | Rank | Prioridade | User Story | Estimativa |
 |------|------------|------------|------------|
 | 1 | Alta | Como usuário, quero responder questionários e acessar relatórios personalizados para receber diagnósticos das minhas necessidades | 5 |
 | 2 | Média | Como usuário, quero acessar uma página inicial clara para entender o propósito do Radar Entrenova e acessar as principais funções | 3 |
 | 3 | Alta | Como usuário, quero acessar o sistema com meu e-mail e senha para visualizar meus diagnósticos e receber minha trilha personalizada | 5 |
+
+
+### 🟡 Sprint 2 - Geração de Diagnósticos Personalizados
+
+### 🔵 Sprint 3 - Dashboard do Cliente
+
 ---
 
 ## 🏃‍ DoR - Definition of Ready
