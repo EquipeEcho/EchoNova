@@ -36,16 +36,25 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 ---
 
 
-## 📋 <span id="backlog-do-produto">Backlog do Produto</span>
+# 📋 Backlog do Produto
+| Rank | Prioridade | User Story                                                                                                                                                                           | Estimativa | Sprint |
+| ---- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | ------ |
+| 1    | Alta       | Como **empresa**, quero responder um questionário simplificado para receber um diagnóstico inicial e sugestões de trilha, entendendo rapidamente o valor da plataforma.              | 5          | 1      |
+| 2    | Alta       | Como **empresa**, quero visualizar de forma clara a página inicial com explicação do **Radar Entrenova**, para entender rapidamente o propósito e benefícios da plataforma.          | 3          | 1      |
+| 3    | Média      | Como **empresa**, quero receber relatórios pertinentes, para compreender o valor de se cadastrar na plataforma.                                                                      | 3          | 1      |
+| 4    | Média      | Como **empresa**, quero receber o diagnóstico inicial por email, para envolver outros decisores da minha equipe.                                                                     | 2          | 1      |
+| 5    | Alta      | Como **empresa**, quero receber um email de call-to-action após o diagnóstico e antes do cadastro, para ser incentivada a escolher um plano.                                         | 2          | 1      |
+| 6    | Alta       | Como **empresa**, quero receber junto ao diagnóstico inicial um convite para escolher um plano, para poder avançar para o pagamento e posteriormente o cadastro.                     | 3          | 2      |
+| 7    | Alta       | Como **empresa**, quero visualizar uma tela clara com diferentes planos da plataforma, para comparar opções e escolher o mais adequado antes do cadastro.                            | 3          | 2      |
+| 8    | Alta       | Como **empresa**, quero realizar o pagamento da taxa de adesão escolhendo um dos planos disponíveis, para desbloquear o cadastro.                                                    | 5          | 2      |
+| 9    | Média      | Como **empresa**, quero receber a confirmação de pagamento por email, para ter segurança de que meu plano foi registrado.                                                            | 3          | 2      |
+| 10   | Alta       | Como **empresa**, quero efetuar meu cadastro somente após o pagamento, para ter acesso aos diagnósticos completos da plataforma.                                                     | 3          | 2      |
+| 11   | Alta       | Como **empresa cadastrada**, quero responder um questionário aprofundado para obter um relatório detalhado e que me direcione para minhas trilhas necessárias.                       | 5          | 2      |
+| 12   | Alta       | Como **Empresa Proprietária da API**, quero visualizar quais trilhas foram recomendadas para cada empresa, para acompanhar a jornada de cada cliente e ajustar ofertas estratégicas. | 8          | 3      |
+| 13   | Média      | Como **Empresa Proprietária da API**, quero visualizar em um dashboard quais empresas responderam o questionário simplificado, para identificar potenciais clientes.                 | 5          | 3      |
+| 14   | Média      | Como **Empresa Proprietária da API**, quero visualizar no dashboard quais empresas se cadastraram e responderam o questionário completo, para acompanhar leads em potencial.         | 5          | 3      |
+| 15   | Alta      | Como **Empresa Proprietária da API**, quero ver quais trilhas são as mais escolhidas para auxiliar na produção de conteúdos específicos.                                             | 3          | 3      |
 
-| Rank | Prioridade | User Story                                                                                                                                            | Estimativa | Sprint |
-| ---------- | ---------- | ---------- | ---------- | ---------- |
-| 1    | Alta       | Como usuário, quero responder questionários e acessar relatórios personalizados para receber diagnósticos das minhas necessidades                     | 5          | 1      |
-| 2    | Média      | Como usuário, quero acessar uma página inicial clara para entender o propósito do Radar Entrenova e acessar as principais funções                     | 3          | 1      |
-| 3    | Alta       | Como usuário, quero acessar o sistema com meu e-mail e senha para visualizar meus diagnósticos e receber minha trilha personalizada                   | 5          | 1      |
-| 4    | Alta       | Como usuário, quero acesso a um questionário aprofundado para receber relatórios mais específicos                                                     | 5          | 2      |
-| 5    | Alta       | Como usuário que respondeu aos questionários, quero receber um diagnóstico personalizado para entender minhas necessidades e oportunidades            | 13         | 2      |
-| 6    | Alta       | Como cliente, quero um relatório visual dos dados estratégicos que possibilite a tomada de decisão em projetos futuros                                 | 13         | 3     |
 ---
 ## 🚀 MVP - Mínimo Produto Viável
 
@@ -53,14 +62,24 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 [![MVP SPRINT 1](https://img.youtube.com/vi/B-3Zbw5OlP4/0.jpg)](https://www.youtube.com/watch?v=B-3Zbw5OlP4)
 
 ### 📈 Backlog da Sprint 1 - [Detalhes](./docs/Sprint-1/sprint1.backlog.md)
-| Rank | Prioridade | User Story | Estimativa |
-|------|------------|------------|------------|
-| 1 | Alta | Como usuário, quero responder questionários e acessar relatórios personalizados para receber diagnósticos das minhas necessidades | 5 |
-| 2 | Média | Como usuário, quero acessar uma página inicial clara para entender o propósito do Radar Entrenova e acessar as principais funções | 3 |
-| 3 | Alta | Como usuário, quero acessar o sistema com meu e-mail e senha para visualizar meus diagnósticos e receber minha trilha personalizada | 5 |
+| Rank | Prioridade | User Story                                                               | Estimativa |
+| ---- | ---------- | ------------------------------------------------------------------------ | ---------- |
+| 1    | Alta       | Questionário simplificado com diagnóstico inicial e sugestões de trilha. | 5          |
+| 2    | Alta       | Página inicial clara com explicação do Radar Entrenova.                  | 3          |
+| 3    | Média      | Relatórios de exemplo para demonstrar valor do cadastro.                 | 3          |
+| 4    | Média      | Diagnóstico inicial enviado por email.                                   | 2          |
+| 5    | Baixa      | Email de call-to-action após diagnóstico, antes do cadastro.             | 2          |
 
 
-### 🟡 Sprint 2 - Geração de Diagnósticos Personalizados
+### 🟡 Sprint 2 - Geração de Diagnósticos Personalizados - [Detalhes](./docs/Sprint-2/sprint2.backlog.md)
+| Rank | Prioridade | User Story                                               | Estimativa |
+| ---- | ---------- | -------------------------------------------------------- | ---------- |
+| 6    | Alta       | Convite para escolher um plano após diagnóstico inicial. | 3          |
+| 7    | Alta       | Tela de planos para comparação antes do cadastro.        | 3          |
+| 8    | Alta       | Pagamento da taxa de adesão escolhendo plano.            | 5          |
+| 9    | Média      | Confirmação de pagamento enviada por email.              | 3          |
+| 10   | Alta       | Cadastro disponível somente após pagamento.              | 3          |
+| 11   | Alta       | Questionário aprofundado para relatório detalhado.       | 5          |
 
 ### 🔵 Sprint 3 - Dashboard do Cliente
 

@@ -1,14 +1,15 @@
-# 🏁 Sprint Backlog 1
+# 🏁 Sprint Backlog 2
 
 ## User Stories Selecionadas
 
 | Rank | Prioridade | User Story                                                               | Estimativa |
 | ---- | ---------- | ------------------------------------------------------------------------ | ---------- |
-| 1    | Alta       | Como **empresa**, quero responder um questionário simplificado para receber um diagnóstico inicial e sugestões de trilha, entendendo rapidamente o valor da plataforma.              | 5          |
-| 2    | Alta       | Como **empresa**, quero visualizar de forma clara a página inicial com explicação do **Radar Entrenova**, para entender rapidamente o propósito e benefícios da plataforma.          | 3          |
-| 3    | Média      | Como **empresa**, quero receber relatórios pertinentes, para compreender o valor de se cadastrar na plataforma.                                                                      | 3          |
-| 4    | Média      | Como **empresa**, quero receber o diagnóstico inicial por email, para envolver outros decisores da minha equipe.                                                                     | 2          |
-| 5    | Alta      | Como **empresa**, quero receber um email de call-to-action após o diagnóstico e antes do cadastro, para ser incentivada a escolher um plano.                                         | 2          |
+| 6    | Alta       | Como **empresa**, quero receber junto ao diagnóstico inicial um convite para escolher um plano, para poder avançar para o pagamento e posteriormente o cadastro.                     | 3          |
+| 7    | Alta       | Como **empresa**, quero visualizar uma tela clara com diferentes planos da plataforma, para comparar opções e escolher o mais adequado antes do cadastro.                            | 3          |
+| 8    | Alta       | Como **empresa**, quero realizar o pagamento da taxa de adesão escolhendo um dos planos disponíveis, para desbloquear o cadastro.                                                    | 5          | 
+| 9    | Média      | Como **empresa**, quero receber a confirmação de pagamento por email, para ter segurança de que meu plano foi registrado.                                                            | 3          |
+| 10   | Alta       | Como **empresa**, quero efetuar meu cadastro somente após o pagamento, para ter acesso aos diagnósticos completos da plataforma.                                                     | 3          | 
+| 11   | Alta       | Como **empresa cadastrada**, quero responder um questionário aprofundado para obter um relatório detalhado e que me direcione para minhas trilhas necessárias.                       | 5          |
 ---
 
 # 🏃 DoR - Definition of Ready
@@ -32,26 +33,33 @@
 | Validação do PO | O Product Owner validou a entrega com base nos critérios definidos. |
 
 ---
-## ✔ Critérios de Aceitação – Sprint 1
+## ✔ Critérios de Aceitação – Sprint 2
 
-### User Story 1 – Mini Questionário
-- **Dado** que o usuário acessa o mini questionário, **quando** ele preencher todas as perguntas e finalizar, **então** todas as respostas devem ser salvas no banco.  
-- **Dado** que o usuário finalizou o questionário, **quando** o sistema gerar o relatório, **então** deve ser exibido um relatório simples automático baseado nas respostas.  
+### User Story 6 – Convite para Planos
+- **Dado** que o usuário concluiu o mini diagnóstico, **quando** ele visualizar o resultado, **então** deve aparecer um convite claro para escolher um plano.  
+- **Dado** que o convite é exibido, **quando** o usuário clicar nele, **então** deve ser redirecionado para a tela de planos.  
 
-### User Story 2 – Página Inicial
-- **Dado** que o usuário acessa a página inicial, **então** deve exibir o título, descrição e propósito do Radar Entrenova.  
-- **Dado** que o usuário acessa a página inicial em diferentes dispositivos, **então** a interface deve ser responsiva, adaptando-se corretamente a desktop e mobile.  
+### User Story 7 – Tela de Planos
+- **Dado** que o usuário acessa a tela de planos, **então** deve visualizar as 3 opções comparáveis, com informações claras de preço e benefícios.  
+- **Dado** que o usuário clica em um plano, **então** esse plano deve ser marcado como selecionado.  
+- **Dado** que o usuário visualiza a tela, **então** a interface deve ser responsiva, funcionando corretamente em desktop e dispositivos móveis.  
 
-### User Story 3 – Relatórios de Exemplo
-- **Dado** que o usuário acessa a área de relatórios, **quando** visualizar os exemplos, **então** deve conseguir ver ao menos 2 relatórios de exemplo com dados fictícios representando possíveis diagnósticos.  
+### User Story 8 – Pagamento
+- **Dado** que o usuário escolheu um plano, **quando** inserir dados válidos de pagamento, **então** a transação deve ser processada com sucesso (simulada).  
+- **Dado** que o pagamento foi concluído, **então** deve ser exibida uma tela de confirmação com detalhes da transação.  
+- **Dado** que o pagamento falhar, **então** o sistema deve exibir uma mensagem clara e permitir nova tentativa.  
 
-### User Story 4 – Diagnóstico por Email
-- **Dado** que o usuário finalizou o mini questionário, **quando** o sistema processar as respostas, **então** deve enviar um email com o diagnóstico inicial para o endereço informado.  
-- **Dado** que o email for enviado, **então** deve ser registrado um log de envio para validação.  
+### User Story 9 – Confirmação de Pagamento por Email
+- **Dado** que o pagamento foi aprovado, **quando** o sistema receber a confirmação, **então** deve disparar um email de confirmação para o usuário.  
+- **Dado** que o email foi enviado, **então** ele deve conter o plano escolhido e os próximos passos para o cadastro.  
 
-### User Story 5 – Email de Call-to-Action
-- **Dado** que o usuário completou o diagnóstico inicial, **quando** o sistema enviar o email de call-to-action, **então** o email deve conter link para cadastro e convite para explorar o Radar Entrenova.  
-- **Dado** que o email foi enviado, **então** o envio deve ser registrado em log para acompanhamento.  
+### User Story 10 – Cadastro após Pagamento
+- **Dado** que o pagamento foi confirmado, **quando** o usuário acessar a plataforma, **então** o cadastro deve ser liberado.  
+- **Dado** que o usuário ainda não pagou, **então** o sistema não deve liberar o cadastro.  
+
+### User Story 11 – Questionário Aprofundado
+- **Dado** que o usuário é cadastrado, **quando** acessar o questionário aprofundado, **então** deve conseguir responder todas as perguntas obrigatórias.  
+- **Dado** que o questionário foi finalizado, **então** o sistema deve gerar um relatório detalhado com base nas respostas.  
 
 ---
 
