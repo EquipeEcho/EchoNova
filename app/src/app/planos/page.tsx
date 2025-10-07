@@ -1,12 +1,13 @@
 "use client";
 import { useState } from "react";
 import { Header, Ondas } from "../clientFuncs";
-import { Button } from "@/components/ui/button";
 import { CheckIcon, StarIcon } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function PlanosPage() {
-  const [planoSelecionado, setPlanoSelecionado] = useState<string | null>("Avançado"); // Avançado já vem selecionado
+  const [planoSelecionado, setPlanoSelecionado] = useState<string | null>("Avançado");
+  const router = useRouter();
 
   const planos = [
     {
@@ -66,7 +67,6 @@ export default function PlanosPage() {
     <main className="flex flex-col overflow-hidden min-h-screen">
       <Header />
       
-      
       <section className="flex-1 main-bg flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-16 sm:py-20 md:py-24 relative">
         {/* Título principal */}
         <div className="text-center mb-20">
@@ -74,7 +74,7 @@ export default function PlanosPage() {
             Planos e Assinaturas
           </h1>
           
-          {/* Seção que conecta ao diagnóstico */}
+          {/* Diagnóstico */}
           <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 backdrop-blur-lg rounded-2xl p-6 max-w-3xl mx-auto border border-green-400/30 animate-fade-in-up-delay shadow-lg">
             <div className="flex items-center justify-center gap-3 mb-4">
               <div className="w-4 h-4 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
@@ -107,10 +107,10 @@ export default function PlanosPage() {
                 animation: 'fadeInUp 0.8s ease-out both'
               }}
             >
-              {/* Efeito de brilho no hover */}
+              {/* Brilho hover */}
               <div className="absolute inset-0 bg-slate-800/30 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              
-         {/* Badge Popular/Selecionado - aparece no hover */}
+
+              {/* Badge */}
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <div className={`bg-gradient-to-r text-white px-6 py-2 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg ${
                   plano.nome === 'Essencial' ? 'from-indigo-500 via-purple-500 to-indigo-600' :
@@ -123,28 +123,14 @@ export default function PlanosPage() {
                 </div>
               </div>
 
-              {/* Header do Card */}
+              {/* Header */}
               <div className="text-center mb-8 relative z-10">
                 <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br ${plano.cor} mb-4 shadow-lg`}>
-                  {plano.nome === "Essencial" && (
-                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                  )}
-                  {plano.nome === "Avançado" && (
-                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                    </svg>
-                  )}
-                  {plano.nome === "Escalado" && (
-                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                  )}
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
                 </div>
-                
                 <h3 className="text-3xl font-bold text-white mb-3">{plano.nome}</h3>
-                
                 <div className="mb-6">
                   {plano.preco === "Sob Consulta" ? (
                     <div className="text-center">
@@ -159,13 +145,12 @@ export default function PlanosPage() {
                     </div>
                   )}
                 </div>
-                
                 <p className="text-gray-300 text-base leading-relaxed px-2">
                   {plano.descricao}
                 </p>
               </div>
 
-              {/* Lista de recursos aprimorada */}
+              {/* Recursos */}
               <div className="mb-8 relative z-10 flex-1">
                 <h4 className="text-white font-semibold mb-4 text-center">✨ Recursos Inclusos</h4>
                 <ul className="space-y-4">
@@ -182,14 +167,15 @@ export default function PlanosPage() {
                 </ul>
               </div>
 
-              {/* Botão de ação aprimorado */}
+              {/* Botão */}
               <div className="text-center relative z-10 mt-auto">
-                <button className={`w-full bg-gradient-to-r ${plano.cor} hover:shadow-2xl hover:shadow-fuchsia-500/25 transform transition-all duration-500 text-white font-bold py-4 px-6 rounded-2xl border-0 relative overflow-hidden group/btn ${
-                  plano.popular ? 'hover:scale-105' : 'hover:scale-102'
-                }`}>
-                  {/* Efeito de brilho animado */}
+                <Link
+                  href={`/pagamento?plano=${encodeURIComponent(plano.nome)}`}
+                  className={`block w-full bg-gradient-to-r ${plano.cor} text-white font-bold py-4 px-6 rounded-2xl border-0 relative overflow-hidden group/btn hover:shadow-2xl transform transition-all duration-500 ${
+                    plano.popular ? 'hover:scale-105' : 'hover:scale-102'
+                  }`}
+                >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000"></div>
-                  
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     {plano.preco === "Sob Consulta" ? (
                       <>
@@ -207,7 +193,7 @@ export default function PlanosPage() {
                       </>
                     )}
                   </span>
-                </button>
+                </Link>
               </div>
             </div>
           ))}
