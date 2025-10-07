@@ -27,6 +27,7 @@ export function CadastroLoginPag (){
   {/*Função de login*/}
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
+    
     try {
       const res = await fetch("/api/login", {
         method: "POST",
@@ -48,6 +49,7 @@ export function CadastroLoginPag (){
   {/*Função de cadastro*/}
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
+    
     if (registerPassword !== registerPassword2) {
       alert("As senhas não coincidem");
       return;

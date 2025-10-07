@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import validator from "validator";
 import { Ondas } from "../clientFuncs";
 
 // Tipos genéricos
@@ -28,9 +29,14 @@ export function useDiagnostico<Respostas extends Record<string, string>>(
     const router = useRouter();
     const [etapaAtual, setEtapaAtual] = useState(0);
     const [respostas, setRespostas] = useState<Respostas>(respostasIniciais);
+    const [showValidationError, setShowValidationError] = useState(false);
 
     const handleInputChange = (campo: keyof Respostas, valor: string) => {
         setRespostas(prev => ({ ...prev, [campo]: valor }));
+        // Limpar erro de validação quando o usuário começar a digitar
+        if (showValidationError) {
+            setShowValidationError(false);
+        }
     };
 
     const proximaEtapa = () => {
@@ -39,7 +45,10 @@ export function useDiagnostico<Respostas extends Record<string, string>>(
     };
 
     const etapaAnterior = () => {
-        if (etapaAtual > 0) setEtapaAtual(prev => prev - 1);
+        if (etapaAtual > 0) {
+            setEtapaAtual(prev => prev - 1);
+            setShowValidationError(false); // Limpar erros ao voltar
+        }
     };
 
     const finalizarFormulario = () => {
@@ -54,7 +63,16 @@ export function useDiagnostico<Respostas extends Record<string, string>>(
         finalizarFormulario();
     };
 
-    return { etapaAtual, respostas, handleInputChange, proximaEtapa, etapaAnterior, handleSubmit };
+    return { 
+        etapaAtual, 
+        respostas, 
+        handleInputChange, 
+        proximaEtapa, 
+        etapaAnterior, 
+        handleSubmit, 
+        showValidationError, 
+        setShowValidationError 
+    };
 }
 
 // Componente de barra de progresso
@@ -79,31 +97,52 @@ function ProgressBar({ etapaAtual, totalEtapas }: { etapaAtual: number; totalEta
     );
 }
 
+// Função simples de validação de email usando validator
+function isValidEmail(email: string): boolean {
+    return validator.isEmail(email);
+}
+
 // Componente InputField
 function InputField<Respostas extends Record<string, string>>({
     pergunta,
     valor,
     onChange,
-    respostas
+    respostas,
+    showValidationError = false
 }: {
     pergunta: Pergunta<Respostas>;
     valor: string;
     onChange: (campo: keyof Respostas, valor: string) => void;
     respostas: Respostas;
+    showValidationError?: boolean;
 }) {
     const mostraTextAreaOutros = pergunta.temOutros && valor === "outros";
+    
+    // Verificar se é um campo de email
+    const isEmailField = pergunta.id === 'email' || pergunta.placeholder?.toLowerCase().includes('email');
+    const isEmailValid = !isEmailField || valor === '' || isValidEmail(valor);
+    const shouldShowEmailError = isEmailField && showValidationError && valor && !isEmailValid;
 
     switch (pergunta.tipo) {
         case "texto":
             return (
-                <input
-                    type="text"
-                    value={valor}
-                    onChange={(e) => onChange(pergunta.id, e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-center"
-                    placeholder={pergunta.placeholder}
-                    autoFocus
-                />
+                <div className="space-y-2">
+                    <input
+                        type={isEmailField ? "email" : "text"}
+                        value={valor}
+                        onChange={(e) => onChange(pergunta.id, e.target.value)}
+                        className={`w-full px-4 py-3 rounded-lg bg-white/20 border text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-center ${
+                            shouldShowEmailError ? 'border-red-400' : 'border-white/30'
+                        }`}
+                        placeholder={pergunta.placeholder}
+                        autoFocus
+                    />
+                    {shouldShowEmailError && (
+                        <p className="text-red-400 text-sm text-center animate-fade-in-up">
+                            Por favor, insira um email válido
+                        </p>
+                    )}
+                </div>
             );
 
         case "select":
@@ -164,6 +203,7 @@ function NavigationButtons({
     onAnterior,
     onSubmit,
     isUltimaDimensao = true,
+    onTryAdvance,
 }: {
     etapaAtual: number;
     totalEtapas: number;
@@ -172,9 +212,23 @@ function NavigationButtons({
     onAnterior: () => void;
     onSubmit: (e: React.FormEvent) => void;
     isUltimaDimensao?: boolean;
+    onTryAdvance?: () => void;
 }) {
     const ehUltimaEtapa = etapaAtual === totalEtapas - 1;
     const ehFinalDiagnostico = ehUltimaEtapa && isUltimaDimensao;
+
+    const handleAdvanceClick = () => {
+        if (onTryAdvance) {
+            onTryAdvance(); // Mostrar erros de validação se necessário
+        }
+        if (podeAvancar) {
+            if (ehFinalDiagnostico || ehUltimaEtapa) {
+                onSubmit(new Event('submit') as any);
+            } else {
+                onProximo();
+            }
+        }
+    };
 
     return (
         <div className="flex justify-between items-center pt-6">
@@ -182,7 +236,7 @@ function NavigationButtons({
                 type="button"
                 onClick={onAnterior}
                 disabled={etapaAtual === 0}
-                className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${etapaAtual === 0
+                className={`cursor-pointer px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${etapaAtual === 0
                         ? "bg-gray-500/50 text-gray-400 cursor-not-allowed"
                         : "bg-white/20 text-white hover:bg-white/30 transform hover:scale-105"
                     }`}
@@ -192,9 +246,8 @@ function NavigationButtons({
 
             {ehFinalDiagnostico ? (
                 <button
-                    onClick={onSubmit}
-                    disabled={!podeAvancar}
-                    className={`px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar
+                    onClick={handleAdvanceClick}
+                    className={`cursor-pointer px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar
                             ? "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white transform hover:scale-105 shadow-lg hover:shadow-xl"
                             : "bg-gray-500/50 text-gray-400 cursor-not-allowed"
                         }`}
@@ -203,9 +256,8 @@ function NavigationButtons({
                 </button>
             ) : ehUltimaEtapa ? (
                 <button
-                    onClick={onSubmit}
-                    disabled={!podeAvancar}
-                    className={`px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar
+                    onClick={handleAdvanceClick}
+                    className={`cursor-pointer px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar
                             ? "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white transform hover:scale-105 shadow-lg hover:shadow-xl"
                             : "bg-gray-500/50 text-gray-400 cursor-not-allowed"
                         }`}
@@ -215,9 +267,8 @@ function NavigationButtons({
             ) : (
                 <button
                     type="button"
-                    onClick={onProximo}
-                    disabled={!podeAvancar}
-                    className={`px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar
+                    onClick={handleAdvanceClick}
+                    className={`cursor-pointer px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar
                             ? "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white transform hover:scale-105 shadow-lg hover:shadow-xl"
                             : "bg-gray-500/50 text-gray-400 cursor-not-allowed"
                         }`}
@@ -243,20 +294,39 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
     onSubmit: (respostas: Respostas) => void;
     isUltimaDimensao?: boolean;
 }) {
-    const { etapaAtual, respostas, handleInputChange, proximaEtapa, etapaAnterior, handleSubmit } =
-        useDiagnostico<Respostas>(perguntas, respostasIniciais, onSubmit);
+    const { 
+        etapaAtual, 
+        respostas, 
+        handleInputChange, 
+        proximaEtapa, 
+        etapaAnterior, 
+        handleSubmit, 
+        showValidationError, 
+        setShowValidationError 
+    } = useDiagnostico<Respostas>(perguntas, respostasIniciais, onSubmit);
 
     const perguntaAtual = perguntas[etapaAtual];
     const valorAtual = respostas[perguntaAtual.id];
 
+    // Verificar se é um campo de email
+    const isEmailField = perguntaAtual.id === 'email' || perguntaAtual.placeholder?.toLowerCase().includes('email');
+    const isEmailValid = !isEmailField || valorAtual === '' || isValidEmail(valorAtual);
+
     let podeAvancar = true;
     if (perguntaAtual.required) {
-        podeAvancar = valorAtual.trim() !== "";
+        podeAvancar = valorAtual.trim() !== "" && isEmailValid;
         if (perguntaAtual.temOutros && valorAtual === "outros" && perguntaAtual.campoOutros) {
             const valorOutros = respostas[perguntaAtual.campoOutros];
             podeAvancar = podeAvancar && valorOutros.trim() !== "";
         }
     }
+
+    const handleTryAdvance = () => {
+        // Mostrar erro de validação apenas quando o usuário tenta avançar
+        if (!podeAvancar) {
+            setShowValidationError(true);
+        }
+    };
 
     return (
         <main className="min-h-screen flex items-center justify-center px-4 py-8 relative">
@@ -298,7 +368,13 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
                     </h2>
 
                     <div className="space-y-4">
-                        <InputField pergunta={perguntaAtual} valor={valorAtual} onChange={handleInputChange} respostas={respostas} />
+                        <InputField 
+                            pergunta={perguntaAtual} 
+                            valor={valorAtual} 
+                            onChange={handleInputChange} 
+                            respostas={respostas} 
+                            showValidationError={showValidationError}
+                        />
                     </div>
                 </div>
 
@@ -311,6 +387,7 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
                     onAnterior={etapaAnterior}
                     onSubmit={handleSubmit}
                     isUltimaDimensao={isUltimaDimensao}
+                    onTryAdvance={handleTryAdvance}
                 />
             </div>
             <div className="-z-10">

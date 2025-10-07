@@ -12,6 +12,7 @@ const mapeamentoMetas: Record<string, { meta: string; trilha: string }> = {
 function calcularEstagio(media: number): string {
     if (media >= 3.5) return "Avançado"; if (media >= 2.5) return "Intermediário"; if (media >= 2.0) return "Básico"; return "Inicial";
 }
+
 function processarResultados(dimensoesSelecionadas: string[], respostasDimensoes: any) {
     const resultadosFinais: Record<string, any> = {};
     for (const nomeDimensao of dimensoesSelecionadas) {

@@ -241,15 +241,15 @@ aprofundado e um plano de ação detalhado, entre em contato.
                 )}
 
                 <div className="space-y-4">
-                    <button onClick={handleDownloadReport} className="w-full px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                    <button onClick={handleDownloadReport} className="cursor-pointer w-full px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
                         📥 Baixar Relatório Completo
                     </button>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <button onClick={handleNewDiagnostic} className="px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105">
+                        <button onClick={handleNewDiagnostic} className="cursor-pointer px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105">
                             🔄 Fazer Novo Diagnóstico
                         </button>
-                        <button onClick={() => router.push('/')} className="px-6 py-3 bg-white/20 hover:bg-white/30 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105">
+                        <button onClick={() => router.push('/')} className="cursor-pointer px-6 py-3 bg-white/20 hover:bg-white/30 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105">
                             🏠 Voltar para a Página Inicial
                         </button>
                     </div>

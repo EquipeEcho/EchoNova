@@ -185,7 +185,7 @@ export default function Diagnostico() {
                 <button
                     onClick={() => setFase("dimensao")}
                     disabled={dimensoesSelecionadas.length === 0}
-                    className="px-8 py-3 rounded-lg bg-gradient-to-r from-pink-500 to-pink-600 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:from-pink-600 hover:to-pink-700 transition-all duration-300 transform hover:scale-105"
+                    className="cursor-pointer px-8 py-3 rounded-lg bg-gradient-to-r from-pink-500 to-pink-600 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:from-pink-600 hover:to-pink-700 transition-all duration-300 transform hover:scale-105"
                 >
                     Começar Diagnóstico
                 </button>
