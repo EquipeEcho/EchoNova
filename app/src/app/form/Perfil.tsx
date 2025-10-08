@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 export interface RespostasPerfil {
     empresa: string;
     email: string;
+    cnpj: string;
     setor: string;
     porte: string;
     setorOutro: string;
@@ -35,6 +36,13 @@ export const perguntasPerfil: Pergunta[] = [
         titulo: "Email da empresa: ",
         tipo: "texto",
         placeholder: "Digite o email da empresa",
+        required: true
+    },
+        {
+        id: "cnpj",
+        titulo: "Qual o CNPJ da empresa",
+        tipo: "texto",
+        placeholder: "Digite o CNPJ da empresa",
         required: true
     },
     {
@@ -75,6 +83,7 @@ export function usePerfil() {
     const [respostas, setRespostas] = useState<RespostasPerfil>({
         empresa: "",
         email: "",
+        cnpj: "",
         setor: "",
         setorOutro: "",
         porte: "",

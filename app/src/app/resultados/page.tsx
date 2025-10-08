@@ -20,6 +20,7 @@ interface DiagnosticoData {
         setorOutro: string;
         nome_empresa?: string;
         email?: string;
+        cnpj: string;
     };
     // Resultados processados (da branch HEAD) - opcional para o caso de fallback
     resultados?: Record<string, {

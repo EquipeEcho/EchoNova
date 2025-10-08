@@ -4,8 +4,8 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import validator from "validator";
 import { Ondas } from "../clientFuncs";
+import { isValidEmail, isValidCNPJ, formatCNPJ, getSuggestedEmail } from "./validator";
 
 // Tipos genéricos
 export interface Pergunta<Respostas> {
@@ -97,11 +97,6 @@ function ProgressBar({ etapaAtual, totalEtapas }: { etapaAtual: number; totalEta
     );
 }
 
-// Função simples de validação de email usando validator
-function isValidEmail(email: string): boolean {
-    return validator.isEmail(email);
-}
-
 // Componente InputField
 function InputField<Respostas extends Record<string, string>>({
     pergunta,
@@ -122,6 +117,20 @@ function InputField<Respostas extends Record<string, string>>({
     const isEmailField = pergunta.id === 'email' || pergunta.placeholder?.toLowerCase().includes('email');
     const isEmailValid = !isEmailField || valor === '' || isValidEmail(valor);
     const shouldShowEmailError = isEmailField && showValidationError && valor && !isEmailValid;
+    
+    // Verificar se é um campo de CNPJ
+    const isCNPJField = pergunta.id === 'cnpj' || pergunta.placeholder?.toLowerCase().includes('cnpj');
+    const isCNPJValid = !isCNPJField || valor === '' || isValidCNPJ(valor);
+    const shouldShowCNPJError = isCNPJField && showValidationError && valor && !isCNPJValid;
+
+    const handleCNPJChange = (value: string) => {
+        if (isCNPJField) {
+            const formattedValue = formatCNPJ(value);
+            onChange(pergunta.id, formattedValue);
+        } else {
+            onChange(pergunta.id, value);
+        }
+    };
 
     switch (pergunta.tipo) {
         case "texto":
@@ -130,16 +139,28 @@ function InputField<Respostas extends Record<string, string>>({
                     <input
                         type={isEmailField ? "email" : "text"}
                         value={valor}
-                        onChange={(e) => onChange(pergunta.id, e.target.value)}
+                        onChange={(e) => {
+                            if (isCNPJField) {
+                                handleCNPJChange(e.target.value);
+                            } else {
+                                onChange(pergunta.id, e.target.value);
+                            }
+                        }}
                         className={`w-full px-4 py-3 rounded-lg bg-white/20 border text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-center ${
-                            shouldShowEmailError ? 'border-red-400' : 'border-white/30'
+                            shouldShowEmailError || shouldShowCNPJError ? 'border-red-400' : 'border-white/30'
                         }`}
                         placeholder={pergunta.placeholder}
+                        maxLength={isCNPJField ? 18 : undefined}
                         autoFocus
                     />
                     {shouldShowEmailError && (
                         <p className="text-red-400 text-sm text-center animate-fade-in-up">
                             Por favor, insira um email válido
+                        </p>
+                    )}
+                    {shouldShowCNPJError && (
+                        <p className="text-red-400 text-sm text-center animate-fade-in-up">
+                            Por favor, insira um CNPJ válido
                         </p>
                     )}
                 </div>
@@ -311,10 +332,14 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
     // Verificar se é um campo de email
     const isEmailField = perguntaAtual.id === 'email' || perguntaAtual.placeholder?.toLowerCase().includes('email');
     const isEmailValid = !isEmailField || valorAtual === '' || isValidEmail(valorAtual);
+    
+    // Verificar se é um campo de CNPJ
+    const isCNPJField = perguntaAtual.id === 'cnpj' || perguntaAtual.placeholder?.toLowerCase().includes('cnpj');
+    const isCNPJValid = !isCNPJField || valorAtual === '' || isValidCNPJ(valorAtual);
 
     let podeAvancar = true;
     if (perguntaAtual.required) {
-        podeAvancar = valorAtual.trim() !== "" && isEmailValid;
+        podeAvancar = valorAtual.trim() !== "" && isEmailValid && isCNPJValid;
         if (perguntaAtual.temOutros && valorAtual === "outros" && perguntaAtual.campoOutros) {
             const valorOutros = respostas[perguntaAtual.campoOutros];
             podeAvancar = podeAvancar && valorOutros.trim() !== "";
