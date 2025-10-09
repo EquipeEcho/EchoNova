@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"; // Para criar respostas HTTP no Next.js
-import bcrypt from "bcryptjs";              // Biblioteca para comparar hash de senha
-import { connectDB } from "@/lib/mongodb";  // Função para conectar ao MongoDB
-import Empresa from "@/models/Empresa";     // Modelo Empresa (coleção no MongoDB)
+import bcrypt from "bcryptjs"; // Biblioteca para comparar hash de senha
+import { connectDB } from "@/lib/mongodb"; // Função para conectar ao MongoDB
+import Empresa from "@/models/Empresa"; // Modelo Empresa (coleção no MongoDB)
 
 export async function POST(req: Request) {
   try {
@@ -16,21 +16,27 @@ export async function POST(req: Request) {
     // Verifica se o usuário enviou email ou CNPJ
     if (email != "" || cnpj != "") {
       // Se CNPJ foi enviado e existe no banco, pega a empresa
-      if (await Empresa.findOne({ cnpj }) != null) {
+      if ((await Empresa.findOne({ cnpj })) != null) {
         empresa = await Empresa.findOne({ cnpj });
       }
       // Se email foi enviado e existe no banco, pega a empresa
-      if (await Empresa.findOne({ email }) != null) {
+      if ((await Empresa.findOne({ email })) != null) {
         empresa = await Empresa.findOne({ email });
       }
 
       // Se não encontrou empresa com email ou CNPJ, retorna erro 401
       if (!empresa) {
-        return NextResponse.json({ error: "Usuário não encontrado" }, { status: 401 });
+        return NextResponse.json(
+          { error: "Usuário não encontrado" },
+          { status: 401 },
+        );
       }
     } else {
       // Se não enviou nenhum dado, retorna erro 401
-      return NextResponse.json({ error: "Insira email ou CNPJ" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Insira email ou CNPJ" },
+        { status: 401 },
+      );
     }
 
     // Compara a senha enviada com a senha hash armazenada no banco

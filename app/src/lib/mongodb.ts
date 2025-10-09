@@ -1,7 +1,7 @@
 import mongoose from "mongoose"; // Importa o Mongoose para conectar ao MongoDB
 
 // Mostra no console a URI que está sendo usada (útil para debug)
-console.log("MONGODB_URI =", process.env.MONGODB_URI); 
+console.log("MONGODB_URI =", process.env.MONGODB_URI);
 
 // Pega a variável de ambiente MONGODB_URI
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -13,7 +13,7 @@ if (!MONGODB_URI) {
 
 // Interface para armazenar a conexão e a promise da conexão
 interface Cached {
-  conn: typeof mongoose | null;           // Conexão atual
+  conn: typeof mongoose | null; // Conexão atual
   promise: Promise<typeof mongoose> | null; // Promise da conexão (evita reconectar várias vezes)
 }
 
@@ -37,7 +37,9 @@ export async function connectDB() {
 
   // Se não existe promise de conexão, cria uma nova
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI!).then((mongoose) => mongoose);
+    cached.promise = mongoose
+      .connect(MONGODB_URI!)
+      .then((mongoose) => mongoose);
   }
 
   // Espera a promise resolver e guarda a conexão no cache

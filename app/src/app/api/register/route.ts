@@ -1,6 +1,6 @@
 import { connectDB } from "@/lib/mongodb"; // Função que conecta ao MongoDB usando Mongoose
-import Empresa from "@/models/Empresa";   // Modelo Empresa (tabela/coleção no MongoDB)
-import bcrypt from "bcryptjs";             // Biblioteca para hashear senhas
+import Empresa from "@/models/Empresa"; // Modelo Empresa (tabela/coleção no MongoDB)
+import bcrypt from "bcryptjs"; // Biblioteca para hashear senhas
 import { NextResponse } from "next/server"; // Para criar respostas HTTP no Next.js
 
 export async function POST(req: Request) {
@@ -25,9 +25,9 @@ export async function POST(req: Request) {
 
     // Cria a nova empresa no banco de dados
     const newEmpresa = await Empresa.create({
-      nome_empresa,     // nome da empresa
-      cnpj,             // cnpj da empresa
-      email,            // email de login
+      nome_empresa, // nome da empresa
+      cnpj, // cnpj da empresa
+      email, // email de login
       senha: hashedPassword, // senha criptografada
     });
 
@@ -40,14 +40,14 @@ export async function POST(req: Request) {
           email: newEmpresa.email,
         },
       },
-      { status: 201 } // Código HTTP 201 = criado com sucesso
+      { status: 201 }, // Código HTTP 201 = criado com sucesso
     );
   } catch (err: any) {
     // Em caso de erro, loga no console e retorna erro 500
     console.error("Erro no cadastro:", err);
     return NextResponse.json(
       { error: err.message || "Erro interno do servidor" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

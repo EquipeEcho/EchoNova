@@ -23,7 +23,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* Evitar scroll horizontal */
-  overflow-x: hidden;
+  overflow-x: hidden;
 }
 
 /* ===== COMPONENTE DA LOGO ===== */
@@ -60,10 +60,10 @@ body {
   /* Curva de easing personalizada para transições mais naturais */
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   /* Utilitário para melhorar interação touch */
-.touch-manipulation {
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
+  .touch-manipulation {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 /* ===== BOTÃO COM GRADIENTE ===== */
@@ -105,7 +105,6 @@ body {
   animation: fadeInUp 0.8s ease-out 0.4s both;
 }
 
-
 /* ===== RESPONSIVIDADE ===== */
 
 /* Logo extra pequena para dispositivos muito pequenos */
@@ -138,7 +137,7 @@ body {
 }
 /* ===== TEXTO POÉTICO ===== */
 .poetic-text {
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: "Georgia", "Times New Roman", serif;
   font-style: italic;
   transform: rotate(-5deg);
   display: inline-block;
@@ -267,4 +266,3 @@ body {
     @apply bg-background text-foreground;
   }
 }
-
