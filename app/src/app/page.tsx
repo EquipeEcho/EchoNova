@@ -1,4 +1,4 @@
-import { Ondas, Header } from "./clientFuncs"
+import { Ondas, Header } from "./clientFuncs";
 import Link from "next/link";
 export default function Home() {
   return (
@@ -12,7 +12,9 @@ export default function Home() {
 
         {/* Subtítulo */}
         <p className="relative z-20 text-sm xs:text-base sm:text-lg md:text-xl lg:text-2xl text-gray-200 max-w-xs xs:max-w-sm sm:max-w-2xl md:max-w-3xl mb-8 sm:mb-10 md:mb-12 leading-relaxed animate-fade-in-up-delay poetic-text">
-          Como uma maré que traz novas ondas, revelamos caminhos inexplorados para o crescimento da sua empresa através de insights inteligentes e soluções inovadoras.
+          Como uma maré que traz novas ondas, revelamos caminhos inexplorados
+          para o crescimento da sua empresa através de insights inteligentes e
+          soluções inovadoras.
         </p>
 
         {/* Botão principal com efeito gradiente */}
@@ -24,7 +26,6 @@ export default function Home() {
         <div className="-z-10">
           <Ondas />
         </div>
-
       </section>
     </main>
   );

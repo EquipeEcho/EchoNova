@@ -7,12 +7,12 @@ export async function GET() {
   try {
     await connectDB();
 
-    const empresas = await Empresa.find({}, 'nome_empresa email cnpj _id');
+    const empresas = await Empresa.find({}, "nome_empresa email cnpj _id");
 
     return NextResponse.json({
       message: "Empresas encontradas",
       empresas,
-      total: empresas.length
+      total: empresas.length,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

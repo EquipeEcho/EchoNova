@@ -4,7 +4,7 @@
  * @description Contém o prompt mestre para o diagnóstico aprofundado da EntreNova.
  * Este prompt instrui a IA sobre seu papel, as regras da conversa, as etapas do diagnóstico,
  * e o mais importante: o formato de saída que nosso sistema espera receber.
- * 
+ *
  * ATUALIZAÇÃO: A estrutura JSON foi aprimorada para incluir um objeto 'proxima_pergunta'
  * que detalha o tipo de resposta esperada, permitindo que a interface renderize
  * componentes de input dinâmicos (texto, botões, etc.).
