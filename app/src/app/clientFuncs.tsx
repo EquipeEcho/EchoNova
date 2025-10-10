@@ -184,3 +184,19 @@ export function DialogCloseButton() {
     </Dialog>
   )
 }
+export function Headernaofix(){
+  return(
+      <div className="py-4 flex-row justify-items-center">
+        <div className="logo-container hover:scale-100 ">          
+          <Image 
+            src="/img/logo.png" 
+            alt="EchoNova - Diagnóstico Inteligente de Treinamentos" 
+            width={120} 
+            height={40}
+            className="h-8 w-auto object-contain h-12 sm:h-14 md:h-14 lg:h-16"
+            priority
+          />
+        </div>
+      </div>
+  )
+}

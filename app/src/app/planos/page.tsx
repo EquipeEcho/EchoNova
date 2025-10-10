@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Header, Ondas } from "../clientFuncs";
+import { Headernaofix, Ondas } from "../clientFuncs";
 import { CheckIcon, StarIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -65,9 +65,9 @@ export default function PlanosPage() {
 
   return (
     <main className="flex flex-col overflow-hidden min-h-screen">
-      <Header />
+      <Headernaofix />
       
-      <section className="flex-1 main-bg flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-16 sm:py-20 md:py-24 relative">
+      <section className="flex-1 main-bg flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-10 relative">
         {/* Título principal */}
         <div className="text-center mb-20">
           <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight max-w-4xl text-white mb-8 sm:mb-10 md:mb-12 animate-fade-in-up">
