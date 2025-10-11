@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import DiagnosticoPage from "./utils";
@@ -147,6 +147,21 @@ export default function Diagnostico() {
     }
 
     if (fase === "selecionarDimensoes") {
+        // Hook para adicionar listener de Enter
+        useEffect(() => {
+            const handleKeyPress = (e: KeyboardEvent) => {
+                if (e.key === 'Enter' && dimensoesSelecionadas.length > 0) {
+                    setFase("dimensao");
+                }
+            };
+            
+            window.addEventListener('keydown', handleKeyPress);
+            
+            return () => {
+                window.removeEventListener('keydown', handleKeyPress);
+            };
+        }, [dimensoesSelecionadas]);
+
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-8 relative">
                 {/* Botão Home no canto superior esquerdo */}

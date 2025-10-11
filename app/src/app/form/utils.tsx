@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -40,6 +40,7 @@ export function useDiagnostico<Respostas extends Record<string, string>>(
     };
 
     const proximaEtapa = () => {
+        setShowValidationError(false); // Limpar erro ao avançar
         if (etapaAtual < perguntas.length - 1) setEtapaAtual(prev => prev + 1);
         else finalizarFormulario();
     };
@@ -146,6 +147,15 @@ function InputField<Respostas extends Record<string, string>>({
                                 onChange(pergunta.id, e.target.value);
                             }
                         }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const proximoBtn = document.querySelector('[data-advance-button]') as HTMLButtonElement;
+                                if (proximoBtn && !proximoBtn.disabled) {
+                                    proximoBtn.click();
+                                }
+                            }
+                        }}
                         className={`w-full px-4 py-3 rounded-lg bg-white/20 border text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-center ${
                             shouldShowEmailError || shouldShowCNPJError ? 'border-red-400' : 'border-white/30'
                         }`}
@@ -188,6 +198,15 @@ function InputField<Respostas extends Record<string, string>>({
                             <textarea
                                 value={respostas[pergunta.campoOutros]}
                                 onChange={(e) => onChange(pergunta.campoOutros!, e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && e.ctrlKey) {
+                                        e.preventDefault();
+                                        const proximoBtn = document.querySelector('[data-advance-button]') as HTMLButtonElement;
+                                        if (proximoBtn && !proximoBtn.disabled) {
+                                            proximoBtn.click();
+                                        }
+                                    }
+                                }}
                                 className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
                                 placeholder="Descreva..."
                                 rows={3}
@@ -203,6 +222,15 @@ function InputField<Respostas extends Record<string, string>>({
                 <textarea
                     value={valor}
                     onChange={(e) => onChange(pergunta.id, e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && e.ctrlKey) {
+                            e.preventDefault();
+                            const proximoBtn = document.querySelector('[data-advance-button]') as HTMLButtonElement;
+                            if (proximoBtn && !proximoBtn.disabled) {
+                                proximoBtn.click();
+                            }
+                        }
+                    }}
                     className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
                     placeholder={pergunta.placeholder}
                     rows={pergunta.rows || 4}
@@ -267,6 +295,7 @@ function NavigationButtons({
 
             {ehFinalDiagnostico ? (
                 <button
+                    data-advance-button
                     onClick={handleAdvanceClick}
                     className={`cursor-pointer px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar
                             ? "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white transform hover:scale-105 shadow-lg hover:shadow-xl"
@@ -277,6 +306,7 @@ function NavigationButtons({
                 </button>
             ) : ehUltimaEtapa ? (
                 <button
+                    data-advance-button
                     onClick={handleAdvanceClick}
                     className={`cursor-pointer px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar
                             ? "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white transform hover:scale-105 shadow-lg hover:shadow-xl"
@@ -287,6 +317,7 @@ function NavigationButtons({
                 </button>
             ) : (
                 <button
+                    data-advance-button
                     type="button"
                     onClick={handleAdvanceClick}
                     className={`cursor-pointer px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar
