@@ -9,7 +9,7 @@ export async function POST(request: Request) {
 
     const dados = await request.json();
 
-    console.log("📩 Recebido do front:", dados);
+    console.log(" Recebido do front:", dados);
     
     const newResposta = await Respostas.create({
 
@@ -38,5 +38,5 @@ export async function POST(request: Request) {
   }
 
 
-  
+
 }
