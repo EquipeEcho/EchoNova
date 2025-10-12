@@ -38,7 +38,7 @@ export const perguntasPerfil: Pergunta[] = [
         placeholder: "Digite o email da empresa",
         required: true
     },
-        {
+    {
         id: "cnpj",
         titulo: "Qual o CNPJ da empresa",
         tipo: "texto",
@@ -109,7 +109,7 @@ export function usePerfil() {
             setEtapaAtual(etapaAtual - 1);
         }
     };
-    
+
 
     const finalizarFormulario = () => {
         // Processar os dados do formulário

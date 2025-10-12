@@ -1,89 +1,176 @@
-import validator from "validator";
+// validator.ts
 
-/**
- * Função para validar email usando a biblioteca validator
- */
-export function isValidEmail(email: string): boolean {
-    return validator.isEmail(email);
+
+// ----------------------
+// FORMATTERS
+// ----------------------
+export const formatCPF = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+};
+
+export const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    return digits.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+};
+
+export const formatCEP = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    return digits.replace(/(\d{5})(\d{3})/, '$1-$2');
+};
+
+export const formatCard = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    return digits.replace(/(\d{4})(\d{4})(\d{4})(\d{4})/, '$1 $2 $3 $4');
+};
+
+export const formatExpiry = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    return digits.replace(/(\d{2})(\d{2})/, '$1/$2');
+};
+
+
+// ======= Funções de validação =======
+
+export function validateRequired(value: string): boolean {
+    return value.trim() !== "";
 }
 
-/**
- * Função para validar CNPJ brasileiro
- */
-export function isValidCNPJ(cnpj: string): boolean {
-    // Remove caracteres especiais
-    const cleanCNPJ = cnpj.replace(/[^\d]/g, '');
-    
-    // Verifica se tem 14 dígitos
-    if (cleanCNPJ.length !== 14) return false;
-    
-    // Verifica se não é sequência de números iguais
-    if (/^(\d)\1{13}$/.test(cleanCNPJ)) return false;
-    
-    // Calcula primeiro dígito verificador
+export function validateEmail(email: string): boolean {
+    if (!email) return false;
+
+    const trimmed = email.trim();
+
+    const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return re.test(trimmed);
+}
+
+export function validateCNPJ(cnpj: string): boolean {
+    const cleaned = cnpj.replace(/[^\d]+/g, "");
+    if (cleaned.length !== 14) return false;
+
+    let tamanho = cleaned.length - 2;
+    let numeros = cleaned.substring(0, tamanho);
+    let digitos = cleaned.substring(tamanho);
     let soma = 0;
-    let multiplicador = 5;
-    for (let i = 0; i < 12; i++) {
-        soma += parseInt(cleanCNPJ[i]) * multiplicador;
-        multiplicador = multiplicador === 2 ? 9 : multiplicador - 1;
+    let pos = tamanho - 7;
+
+    for (let i = tamanho; i >= 1; i--) {
+        soma += +numeros.charAt(tamanho - i) * pos--;
+        if (pos < 2) pos = 9;
     }
-    
-    let resto = soma % 11;
-    let dv1 = resto < 2 ? 0 : 11 - resto;
-    
-    if (dv1 !== parseInt(cleanCNPJ[12])) return false;
-    
-    // Calcula segundo dígito verificador
+
+    let resultado = soma % 11 < 2 ? 0 : 11 - (soma % 11);
+    if (resultado !== +digitos.charAt(0)) return false;
+
+    tamanho++;
+    numeros = cleaned.substring(0, tamanho);
     soma = 0;
-    multiplicador = 6;
-    for (let i = 0; i < 13; i++) {
-        soma += parseInt(cleanCNPJ[i]) * multiplicador;
-        multiplicador = multiplicador === 2 ? 9 : multiplicador - 1;
+    pos = tamanho - 7;
+    for (let i = tamanho; i >= 1; i--) {
+        soma += +numeros.charAt(tamanho - i) * pos--;
+        if (pos < 2) pos = 9;
     }
-    
-    resto = soma % 11;
-    let dv2 = resto < 2 ? 0 : 11 - resto;
-    
-    return dv2 === parseInt(cleanCNPJ[13]);
+    resultado = soma % 11 < 2 ? 0 : 11 - (soma % 11);
+    return resultado === +digitos.charAt(1);
 }
 
-/**
- * Função para formatar CNPJ com máscara
- */
-export function formatCNPJ(cnpj: string): string {
-    const cleanCNPJ = cnpj.replace(/[^\d]/g, '');
-    return cleanCNPJ
-        .replace(/(\d{2})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d)/, '$1/$2')
-        .replace(/(\d{4})(\d)/, '$1-$2')
-        .replace(/(-\d{2})\d+?$/, '$1');
+export function formatCNPJ(value: string): string {
+    const cleaned = value.replace(/\D/g, "");
+    return cleaned
+        .replace(/^(\d{2})(\d)/, "$1.$2")
+        .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+        .replace(/\.(\d{3})(\d)/, ".$1/$2")
+        .replace(/(\d{4})(\d)/, "$1-$2")
+        .slice(0, 18);
+}
+export const validateCPF = (cpf: string) => {
+    const digits = cpf.replace(/\D/g, '');
+    if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) return false;
+
+    let sum = 0;
+    for (let i = 0; i < 9; i++) sum += parseInt(digits[i]) * (10 - i);
+    const firstDigit = (sum % 11) < 2 ? 0 : 11 - (sum % 11);
+    if (parseInt(digits[9]) !== firstDigit) return false;
+
+    sum = 0;
+    for (let i = 0; i < 10; i++) sum += parseInt(digits[i]) * (11 - i);
+    const secondDigit = (sum % 11) < 2 ? 0 : 11 - (sum % 11);
+    if (parseInt(digits[10]) !== secondDigit) return false;
+
+    return true;
+};
+
+export function validateDate(date: string): boolean {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+    const d = new Date(date);
+    return !isNaN(d.getTime());
 }
 
-/**
- * Função para sugerir correções de email comuns
- */
-export function getSuggestedEmail(email: string): string | null {
-    const commonDomains = [
-        { wrong: 'gmail.com', correct: 'gmail.com' },
-        { wrong: 'gmial.com', correct: 'gmail.com' },
-        { wrong: 'gmai.com', correct: 'gmail.com' },
-        { wrong: 'hotmail.com', correct: 'hotmail.com' },
-        { wrong: 'hotmial.com', correct: 'hotmail.com' },
-        { wrong: 'yahoo.com', correct: 'yahoo.com' },
-        { wrong: 'yahooo.com', correct: 'yahoo.com' }
-    ];
+export function validatePhone(phone: string): boolean {
+    return /^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/.test(phone);
+}
+export const validateCEP = (cep: string) => cep.replace(/\D/g, '').length === 8;
+export const validateCard = (card: string) => card.replace(/\D/g, '').length === 16;
+export const validateCVV = (cvv: string) => cvv.length >= 3 && cvv.length <= 4;
 
-    const [localPart, domain] = email.split('@');
-    if (!domain) return null;
+export const validateExpiry = (expiry: string) => {
+    const digits = expiry.replace(/\D/g, '');
+    if (digits.length !== 4) return false;
 
-    const suggestion = commonDomains.find(d => 
-        domain.toLowerCase().includes(d.wrong.split('.')[0])
-    );
+    const month = parseInt(digits.substring(0, 2));
+    const year = parseInt(digits.substring(2, 4));
+    const currentYear = new Date().getFullYear() % 100;
+    const currentMonth = new Date().getMonth() + 1;
 
-    if (suggestion && domain.toLowerCase() !== suggestion.correct) {
-        return `${localPart}@${suggestion.correct}`;
+    if (month < 1 || month > 12) return false;
+    if (year < currentYear || (year === currentYear && month < currentMonth)) return false;
+
+    return true;
+};
+export const debugCPFValidation = (cpf: string) => {
+    const digits = cpf.replace(/\D/g, '');
+    if (digits.length !== 11) return console.log("CPF deve ter 11 dígitos");
+
+    let sum = 0;
+    for (let i = 0; i < 9; i++) sum += parseInt(digits[i]) * (10 - i);
+    const firstDigit = (sum % 11) < 2 ? 0 : 11 - (sum % 11);
+
+    sum = 0;
+    for (let i = 0; i < 10; i++) sum += parseInt(digits[i]) * (11 - i);
+    const secondDigit = (sum % 11) < 2 ? 0 : 11 - (sum % 11);
+
+    const isValid = firstDigit === parseInt(digits[9]) && secondDigit === parseInt(digits[10]);
+    console.log(`CPF ${cpf} ${isValid ? "VÁLIDO" : "INVÁLIDO"} ✓`);
+};
+
+
+// ======= Validador genérico =======
+export function validateField(
+    fieldId: string,
+    value: string
+): { valid: boolean; message?: string } {
+    if (!validateRequired(value)) {
+        return { valid: false, message: "Campo obrigatório" };
     }
 
-    return null;
+    const id = fieldId.toLowerCase();
+
+    if (id.includes("email") && !validateEmail(value)) {
+        return { valid: false, message: "E-mail inválido" };
+    }
+
+    if (id.includes("cnpj") && !validateCNPJ(value)) {
+        return { valid: false, message: "CNPJ inválido" };
+    }
+
+    if (id.includes("data") && !validateDate(value)) {
+        return { valid: false, message: "Data inválida" };
+    }
+
+    if (id.includes("telefone") && !validatePhone(value)) {
+        return { valid: false, message: "Telefone inválido" };
+    }
+
+    return { valid: true };
 }

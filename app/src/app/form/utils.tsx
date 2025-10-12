@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Ondas } from "../clientFuncs";
-import { isValidEmail, isValidCNPJ, formatCNPJ, getSuggestedEmail } from "./validator";
+import { validateField, formatCNPJ } from "./validator";
 
+// ========================
 // Tipos genéricos
+// ========================
 export interface Pergunta<Respostas> {
     id: keyof Respostas;
     titulo: string;
@@ -20,7 +22,9 @@ export interface Pergunta<Respostas> {
     campoOutros?: keyof Respostas;
 }
 
-// Hook genérico para gerenciar diagnóstico
+// ========================
+// Hook principal de controle
+// ========================
 export function useDiagnostico<Respostas extends Record<string, string>>(
     perguntas: Pergunta<Respostas>[],
     respostasIniciais: Respostas,
@@ -32,31 +36,26 @@ export function useDiagnostico<Respostas extends Record<string, string>>(
     const [showValidationError, setShowValidationError] = useState(false);
 
     const handleInputChange = (campo: keyof Respostas, valor: string) => {
-        setRespostas(prev => ({ ...prev, [campo]: valor }));
-        // Limpar erro de validação quando o usuário começar a digitar
-        if (showValidationError) {
-            setShowValidationError(false);
-        }
+        setRespostas((prev) => ({ ...prev, [campo]: valor }));
+        if (showValidationError) setShowValidationError(false);
     };
 
     const proximaEtapa = () => {
-        setShowValidationError(false); // Limpar erro ao avançar
-        if (etapaAtual < perguntas.length - 1) setEtapaAtual(prev => prev + 1);
+        setShowValidationError(false);
+        if (etapaAtual < perguntas.length - 1) setEtapaAtual((prev) => prev + 1);
         else finalizarFormulario();
     };
 
     const etapaAnterior = () => {
         if (etapaAtual > 0) {
-            setEtapaAtual(prev => prev - 1);
-            setShowValidationError(false); // Limpar erros ao voltar
+            setEtapaAtual((prev) => prev - 1);
+            setShowValidationError(false);
         }
     };
 
     const finalizarFormulario = () => {
         console.log("Respostas finais:", respostas);
-        if (onsubmit) {
-            onsubmit(respostas);
-        }
+        if (onsubmit) onsubmit(respostas);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -64,25 +63,28 @@ export function useDiagnostico<Respostas extends Record<string, string>>(
         finalizarFormulario();
     };
 
-    return { 
-        etapaAtual, 
-        respostas, 
-        handleInputChange, 
-        proximaEtapa, 
-        etapaAnterior, 
-        handleSubmit, 
-        showValidationError, 
-        setShowValidationError 
+    return {
+        etapaAtual,
+        respostas,
+        handleInputChange,
+        proximaEtapa,
+        etapaAnterior,
+        handleSubmit,
+        showValidationError,
+        setShowValidationError,
     };
 }
 
-// Componente de barra de progresso
+// ========================
+// Componentes auxiliares
+// ========================
+
 function ProgressBar({ etapaAtual, totalEtapas }: { etapaAtual: number; totalEtapas: number }) {
     const porcentagem = Math.round(((etapaAtual + 1) / totalEtapas) * 100);
 
     return (
         <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between mb-4">
                 <span className="text-white text-sm font-medium">
                     Pergunta {etapaAtual + 1} de {totalEtapas}
                 </span>
@@ -90,7 +92,7 @@ function ProgressBar({ etapaAtual, totalEtapas }: { etapaAtual: number; totalEta
             </div>
             <div className="w-full bg-white/20 rounded-full h-2">
                 <div
-                    className="bg-gradient-to-r from-pink-500 to-pink-600 h-2 rounded-full transition-all duration-500 ease-out"
+                    className="bg-gradient-to-r from-pink-500 to-pink-600 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${porcentagem}%` }}
                 ></div>
             </div>
@@ -98,13 +100,12 @@ function ProgressBar({ etapaAtual, totalEtapas }: { etapaAtual: number; totalEta
     );
 }
 
-// Componente InputField
 function InputField<Respostas extends Record<string, string>>({
     pergunta,
     valor,
     onChange,
     respostas,
-    showValidationError = false
+    showValidationError = false,
 }: {
     pergunta: Pergunta<Respostas>;
     valor: string;
@@ -112,138 +113,76 @@ function InputField<Respostas extends Record<string, string>>({
     respostas: Respostas;
     showValidationError?: boolean;
 }) {
-    const mostraTextAreaOutros = pergunta.temOutros && valor === "outros";
-    
-    // Verificar se é um campo de email
-    const isEmailField = pergunta.id === 'email' || pergunta.placeholder?.toLowerCase().includes('email');
-    const isEmailValid = !isEmailField || valor === '' || isValidEmail(valor);
-    const shouldShowEmailError = isEmailField && showValidationError && valor && !isEmailValid;
-    
-    // Verificar se é um campo de CNPJ
-    const isCNPJField = pergunta.id === 'cnpj' || pergunta.placeholder?.toLowerCase().includes('cnpj');
-    const isCNPJValid = !isCNPJField || valor === '' || isValidCNPJ(valor);
-    const shouldShowCNPJError = isCNPJField && showValidationError && valor && !isCNPJValid;
+    const { valid, message } = validateField(pergunta.id as string, valor);
+    const showError = showValidationError && !valid;
 
-    const handleCNPJChange = (value: string) => {
-        if (isCNPJField) {
-            const formattedValue = formatCNPJ(value);
-            onChange(pergunta.id, formattedValue);
-        } else {
-            onChange(pergunta.id, value);
+    const isCNPJ = pergunta.id.toString().toLowerCase().includes("cnpj");
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const value = isCNPJ ? formatCNPJ(e.target.value) : e.target.value;
+        onChange(pergunta.id, value);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter" && !(pergunta.tipo === "textarea" && !e.ctrlKey)) {
+            e.preventDefault();
+            const proximoBtn = document.querySelector('[data-advance-button]') as HTMLButtonElement;
+            if (proximoBtn && !proximoBtn.disabled) {
+                proximoBtn.click();
+            }
         }
     };
 
-    switch (pergunta.tipo) {
-        case "texto":
-            return (
-                <div className="space-y-2">
-                    <input
-                        type={isEmailField ? "email" : "text"}
-                        value={valor}
-                        onChange={(e) => {
-                            if (isCNPJField) {
-                                handleCNPJChange(e.target.value);
-                            } else {
-                                onChange(pergunta.id, e.target.value);
-                            }
-                        }}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                const proximoBtn = document.querySelector('[data-advance-button]') as HTMLButtonElement;
-                                if (proximoBtn && !proximoBtn.disabled) {
-                                    proximoBtn.click();
-                                }
-                            }
-                        }}
-                        className={`w-full px-4 py-3 rounded-lg bg-white/20 border text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-center ${
-                            shouldShowEmailError || shouldShowCNPJError ? 'border-red-400' : 'border-white/30'
-                        }`}
-                        placeholder={pergunta.placeholder}
-                        maxLength={isCNPJField ? 18 : undefined}
-                        autoFocus
-                    />
-                    {shouldShowEmailError && (
-                        <p className="text-red-400 text-sm text-center animate-fade-in-up">
-                            Por favor, insira um email válido
-                        </p>
-                    )}
-                    {shouldShowCNPJError && (
-                        <p className="text-red-400 text-sm text-center animate-fade-in-up">
-                            Por favor, insira um CNPJ válido
-                        </p>
-                    )}
-                </div>
-            );
-
-        case "select":
-            return (
-                <div className="space-y-4">
-                    <select
-                        value={valor}
-                        onChange={(e) => onChange(pergunta.id, e.target.value)}
-                        className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-center"
-                        autoFocus={!mostraTextAreaOutros}
-                    >
-                        {pergunta.opcoes?.map((opcao) => (
-                            <option key={opcao.valor} value={opcao.valor} className="text-gray-800 bg-white">
-                                {opcao.texto}
-                            </option>
-                        ))}
-                    </select>
-
-                    {mostraTextAreaOutros && pergunta.campoOutros && (
-                        <div className="animate-fade-in-up">
-                            <label className="block text-white text-sm font-medium mb-2">Por favor, especifique:</label>
-                            <textarea
-                                value={respostas[pergunta.campoOutros]}
-                                onChange={(e) => onChange(pergunta.campoOutros!, e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && e.ctrlKey) {
-                                        e.preventDefault();
-                                        const proximoBtn = document.querySelector('[data-advance-button]') as HTMLButtonElement;
-                                        if (proximoBtn && !proximoBtn.disabled) {
-                                            proximoBtn.click();
-                                        }
-                                    }
-                                }}
-                                className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
-                                placeholder="Descreva..."
-                                rows={3}
-                                autoFocus
-                            />
-                        </div>
-                    )}
-                </div>
-            );
-
-        case "textarea":
-            return (
+    if (pergunta.tipo === "textarea") {
+        return (
+            <div className="space-y-2">
                 <textarea
                     value={valor}
-                    onChange={(e) => onChange(pergunta.id, e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' && e.ctrlKey) {
-                            e.preventDefault();
-                            const proximoBtn = document.querySelector('[data-advance-button]') as HTMLButtonElement;
-                            if (proximoBtn && !proximoBtn.disabled) {
-                                proximoBtn.click();
-                            }
-                        }
-                    }}
-                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
-                    placeholder={pergunta.placeholder}
+                    onChange={handleChange}
+                    onKeyDown={handleKeyDown}
                     rows={pergunta.rows || 4}
-                    autoFocus
+                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
+                    placeholder={pergunta.placeholder}
                 />
-            );
-
-        default:
-            return null;
+                {showError && <p className="text-red-400 text-sm text-center">{message}</p>}
+            </div>
+        );
     }
+
+    if (pergunta.tipo === "select") {
+        return (
+            <select
+                value={valor}
+                onChange={(e) => onChange(pergunta.id, e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:ring-2 focus:ring-pink-500 text-center cursor-pointer"
+                onKeyDown={handleKeyDown}
+            >
+                {pergunta.opcoes?.map((opcao) => (
+                    <option key={opcao.valor} value={opcao.valor} className="text-gray-800 bg-white">
+                        {opcao.texto}
+                    </option>
+                ))}
+            </select>
+        );
+    }
+
+    return (
+        <div className="space-y-2">
+            <input
+                type="text"
+                value={valor}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                className={`w-full px-4 py-3 rounded-lg bg-white/20 border ${showError ? "border-red-400" : "border-white/30"
+                    } text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-center`}
+                placeholder={pergunta.placeholder}
+                maxLength={isCNPJ ? 18 : undefined}
+            />
+            {showError && <p className="text-red-400 text-sm text-center">{message}</p>}
+        </div>
+    );
 }
 
-// Componente NavigationButtons
 function NavigationButtons({
     etapaAtual,
     totalEtapas,
@@ -263,29 +202,23 @@ function NavigationButtons({
     isUltimaDimensao?: boolean;
     onTryAdvance?: () => void;
 }) {
-    const ehUltimaEtapa = etapaAtual === totalEtapas - 1;
-    const ehFinalDiagnostico = ehUltimaEtapa && isUltimaDimensao;
+    const ehUltima = etapaAtual === totalEtapas - 1;
+    const ehFinal = ehUltima && isUltimaDimensao;
 
-    const handleAdvanceClick = () => {
-        if (onTryAdvance) {
-            onTryAdvance(); // Mostrar erros de validação se necessário
-        }
+    const handleAdvance = () => {
+        onTryAdvance?.();
         if (podeAvancar) {
-            if (ehFinalDiagnostico || ehUltimaEtapa) {
-                onSubmit(new Event('submit') as any);
-            } else {
-                onProximo();
-            }
+            if (ehFinal || ehUltima) onSubmit(new Event("submit") as any);
+            else onProximo();
         }
     };
 
     return (
         <div className="flex justify-between items-center pt-6">
             <button
-                type="button"
                 onClick={onAnterior}
                 disabled={etapaAtual === 0}
-                className={`cursor-pointer px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${etapaAtual === 0
+                className={`cursor-pointer px-6 py-3 rounded-lg font-semibold ${etapaAtual === 0
                         ? "bg-gray-500/50 text-gray-400 cursor-not-allowed"
                         : "bg-white/20 text-white hover:bg-white/30 transform hover:scale-105"
                     }`}
@@ -293,46 +226,23 @@ function NavigationButtons({
                 Anterior
             </button>
 
-            {ehFinalDiagnostico ? (
-                <button
-                    data-advance-button
-                    onClick={handleAdvanceClick}
-                    className={`cursor-pointer px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar
-                            ? "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white transform hover:scale-105 shadow-lg hover:shadow-xl"
-                            : "bg-gray-500/50 text-gray-400 cursor-not-allowed"
-                        }`}
-                >
-                    Finalizar Diagnóstico
-                </button>
-            ) : ehUltimaEtapa ? (
-                <button
-                    data-advance-button
-                    onClick={handleAdvanceClick}
-                    className={`cursor-pointer px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar
-                            ? "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white transform hover:scale-105 shadow-lg hover:shadow-xl"
-                            : "bg-gray-500/50 text-gray-400 cursor-not-allowed"
-                        }`}
-                >
-                    Próxima Dimensão
-                </button>
-            ) : (
-                <button
-                    data-advance-button
-                    type="button"
-                    onClick={handleAdvanceClick}
-                    className={`cursor-pointer px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar
-                            ? "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white transform hover:scale-105 shadow-lg hover:shadow-xl"
-                            : "bg-gray-500/50 text-gray-400 cursor-not-allowed"
-                        }`}
-                >
-                    Próxima
-                </button>
-            )}
+            <button
+                data-advance-button
+                onClick={handleAdvance}
+                className={`cursor-pointer px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar
+                        ? "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white transform hover:scale-105 shadow-lg"
+                        : "bg-gray-500/50 text-gray-400 cursor-not-allowed"
+                    }`}
+            >
+                {ehFinal ? "Finalizar Diagnóstico" : "Próxima"}
+            </button>
         </div>
     );
 }
 
-// Componente principal genérico
+// ========================
+// Página principal genérica
+// ========================
 export default function DiagnosticoPage<Respostas extends Record<string, string>>({
     perguntas,
     respostasIniciais,
@@ -346,39 +256,25 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
     onSubmit: (respostas: Respostas) => void;
     isUltimaDimensao?: boolean;
 }) {
-    const { 
-        etapaAtual, 
-        respostas, 
-        handleInputChange, 
-        proximaEtapa, 
-        etapaAnterior, 
-        handleSubmit, 
-        showValidationError, 
-        setShowValidationError 
-    } = useDiagnostico<Respostas>(perguntas, respostasIniciais, onSubmit);
+    const {
+        etapaAtual,
+        respostas,
+        handleInputChange,
+        proximaEtapa,
+        etapaAnterior,
+        handleSubmit,
+        showValidationError,
+        setShowValidationError,
+    } = useDiagnostico(perguntas, respostasIniciais, onSubmit);
 
     const perguntaAtual = perguntas[etapaAtual];
     const valorAtual = respostas[perguntaAtual.id];
+    const { valid, message } = validateField(perguntaAtual.id as string, valorAtual);
 
-    // Verificar se é um campo de email
-    const isEmailField = perguntaAtual.id === 'email' || perguntaAtual.placeholder?.toLowerCase().includes('email');
-    const isEmailValid = !isEmailField || valorAtual === '' || isValidEmail(valorAtual);
-    
-    // Verificar se é um campo de CNPJ
-    const isCNPJField = perguntaAtual.id === 'cnpj' || perguntaAtual.placeholder?.toLowerCase().includes('cnpj');
-    const isCNPJValid = !isCNPJField || valorAtual === '' || isValidCNPJ(valorAtual);
-
-    let podeAvancar = true;
-    if (perguntaAtual.required) {
-        podeAvancar = valorAtual.trim() !== "" && isEmailValid && isCNPJValid;
-        if (perguntaAtual.temOutros && valorAtual === "outros" && perguntaAtual.campoOutros) {
-            const valorOutros = respostas[perguntaAtual.campoOutros];
-            podeAvancar = podeAvancar && valorOutros.trim() !== "";
-        }
-    }
+    // Para campos obrigatórios, deve ser válido E não vazio
+    const podeAvancar = perguntaAtual.required ? (valorAtual.trim() !== "" && valid) : valid;
 
     const handleTryAdvance = () => {
-        // Mostrar erro de validação apenas quando o usuário tenta avançar
         if (!podeAvancar) {
             setShowValidationError(true);
         }
@@ -386,55 +282,39 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
 
     return (
         <main className="min-h-screen flex items-center justify-center px-4 py-8 relative">
-            {/* Botão Home no canto superior esquerdo */}
-            <Link 
-                href="/" 
-                className="absolute z-0 top-6 left-6 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all duration-300 transform hover:scale-105 backdrop-blur-sm border border-white/30 flex items-center gap-2"
+            <Link
+                href="/"
+                className="absolute top-6 left-6 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg border border-white/30 flex items-center gap-2"
             >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2 7-7 7 7M5 10v10h4v-4h6v4h4V10" />
                 </svg>
                 <span className="hidden sm:inline">Home</span>
-
             </Link>
 
             <div className="max-w-2xl w-full bg-slate-800 rounded-2xl p-8 shadow-xl relative overflow-hidden">
-                {/* Barra de progresso */}
                 <ProgressBar etapaAtual={etapaAtual} totalEtapas={perguntas.length} />
 
-                {/* Header com logo */}
                 <div className="text-center mb-8">
                     <div className="flex justify-center mb-4">
-                        <Image
-                            src="/img/logo.png"
-                            alt="Logo"
-                            width={120}
-                            height={40}
-                            className="h-10 w-auto object-contain"
-                            priority
-                        />
+                        <Image src="/img/logo.png" alt="Logo" width={120} height={40} priority />
                     </div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-white mb-2">{titulo}</h1>
+                    <h1 className="text-2xl font-bold text-white mb-2">{titulo}</h1>
                 </div>
 
-                {/* Pergunta atual */}
                 <div className="mb-8 min-h-[200px] flex flex-col justify-center">
-                    <h2 className="text-lg sm:text-xl font-semibold text-white mb-6 text-center leading-relaxed">
+                    <h2 className="text-lg sm:text-xl font-semibold text-white mb-6 text-center">
                         {perguntaAtual.titulo}
                     </h2>
-
-                    <div className="space-y-4">
-                        <InputField 
-                            pergunta={perguntaAtual} 
-                            valor={valorAtual} 
-                            onChange={handleInputChange} 
-                            respostas={respostas} 
-                            showValidationError={showValidationError}
-                        />
-                    </div>
+                    <InputField
+                        pergunta={perguntaAtual}
+                        valor={valorAtual}
+                        onChange={handleInputChange}
+                        respostas={respostas}
+                        showValidationError={showValidationError}
+                    />
                 </div>
 
-                {/* Botões de navegação */}
                 <NavigationButtons
                     etapaAtual={etapaAtual}
                     totalEtapas={perguntas.length}
@@ -446,6 +326,7 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
                     onTryAdvance={handleTryAdvance}
                 />
             </div>
+
             <div className="-z-10">
                 <Ondas />
             </div>
