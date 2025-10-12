@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+
 export interface RespostasPerfil {
   empresa: string;
   email: string;
@@ -102,11 +103,11 @@ export function usePerfil() {
   };
 
   const finalizarFormulario = () => {
-    // Processar os dados do formulário
+
     console.log("Dados do formulário:", respostas);
 
-    // Redirecionar para a página de resultados
     router.push("/resultados");
+    
   };
 
   const handleSubmit = (e: React.FormEvent) => {

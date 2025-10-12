@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Diagnostico from "@/models/Diagnostico";
 import Empresa from "@/models/Empresa";
+import Respostas from "@/models/Respostas";
 
 const mapeamentoPontuacao: Record<string, number> = {
   "p1-1": 4,
@@ -139,7 +140,19 @@ export async function POST(req: Request) {
       status: "concluido",
       dataProcessamento: new Date(),
     });
+    
     console.log(`Novo diagnóstico criado com ID: ${novoDiagnostico._id}`);
+
+    
+    const newResposta = await Respostas.create({
+
+        empresaID: empresa._id,
+        perfil: dados.perfil,
+        respostas: dados.respostasDimensoes,
+
+    });
+
+  // console.log(`Salvando respostas no DB: ${newResposta}`)
 
     return NextResponse.json(
       {
@@ -175,6 +188,7 @@ export async function GET(req: Request) {
     const diagnosticos = await Diagnostico.find({ empresa: empresaId })
       .sort({ createdAt: -1 })
       .populate("empresa", "nome_empresa email");
+
     return NextResponse.json({ diagnosticos });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

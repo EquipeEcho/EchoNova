@@ -131,13 +131,30 @@ export default function Diagnostico() {
         }),
       });
 
+      /*const resp = await fetch("/api/respostas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          perfil: { empresa: respostasPerfil.empresa },
+          respostas: {
+            dimensao: dimensoesSelecionadas,
+            resp1: respostasFiltradas.resp1,
+            resp2: respostasFiltradas.resp2,
+            resp3: respostasFiltradas.resp3,
+            resp4: respostasFiltradas.resp4,
+            resp5: respostasFiltradas.resp5,
+            resp6: respostasFiltradas.resp6,
+          },
+        }),
+      });*/
+
       const data = await response.json();
 
       if (response.ok) {
         console.log("Diagnóstico salvo com sucesso:", data.diagnostico);
         router.push(`/resultados?id=${data.diagnostico._id}`);
       } else {
-        console.error("Erro ao salvar diagnóstico:", data.error);
+        //console.error("Erro ao salvar diagnóstico:", data.error);
         salvarLocalStorage(respostasFinais);
       }
     } catch (error) {
