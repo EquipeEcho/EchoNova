@@ -11,11 +11,11 @@ import { Input } from "@/components/ui/input";
 interface Pergunta {
   texto: string;
   tipo_resposta:
-    | "texto"
-    | "numero"
-    | "multipla_escolha"
-    | "selecao"
-    | "sim_nao";
+  | "texto"
+  | "numero"
+  | "multipla_escolha"
+  | "selecao"
+  | "sim_nao";
   opcoes: string[] | null;
 }
 
@@ -91,9 +91,7 @@ export default function DiagnosticoAprofundadoPage() {
     }
   };
 
-  useEffect(() => {
-    processarResposta(null);
-  }, []);
+  useEffect(() => {}, []);
 
   // --- RENDERIZAÇÃO DOS COMPONENTES DE INPUT ---
 
@@ -277,10 +275,10 @@ export default function DiagnosticoAprofundadoPage() {
               {renderInput(pergunta)}
               {(pergunta.tipo_resposta === "texto" ||
                 pergunta.tipo_resposta === "numero") && (
-                <Button type="submit" size="lg" disabled={!resposta.trim()}>
-                  Próximo
-                </Button>
-              )}
+                  <Button type="submit" size="lg" disabled={!resposta.trim()}>
+                    Próximo
+                  </Button>
+                )}
             </div>
           </form>
         </div>

@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, models } from "mongoose";
+import mongoose, { model, models } from "mongoose";
 
 const EmpresaSchema = new mongoose.Schema(
   {

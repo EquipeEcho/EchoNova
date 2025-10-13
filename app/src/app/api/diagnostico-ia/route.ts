@@ -1,7 +1,7 @@
 // app/api/diagnostico-ia/route.ts
 
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI, ChatSession } from "@google/generative-ai";
+import { GoogleGenerativeAI, type ChatSession } from "@google/generative-ai";
 import { promptDiagnosticoAprofundado } from "@/lib/prompts";
 import { connectDB } from "@/lib/mongodb";
 import DiagnosticoAprofundado from "@/models/DiagnosticoAprofundado";
@@ -17,11 +17,11 @@ import DiagnosticoAprofundado from "@/models/DiagnosticoAprofundado";
 interface Pergunta {
   texto: string;
   tipo_resposta:
-    | "texto"
-    | "numero"
-    | "multipla_escolha"
-    | "selecao"
-    | "sim_nao";
+  | "texto"
+  | "numero"
+  | "multipla_escolha"
+  | "selecao"
+  | "sim_nao";
   opcoes: string[] | null;
 }
 
@@ -39,9 +39,13 @@ interface IaResponse {
 // ATENÇÃO: Armazenamento de sessão em memória.
 // Ideal para desenvolvimento, mas para produção, considere Redis ou um banco de dados.
 const sessoesAtivas: Record<string, ChatSession> = {};
+const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
+if (!apiKey) {
+  throw new Error("A variável de ambiente GOOGLE_GEMINI_API_KEY não está definida.");
+}
 
 // Inicializa o cliente da IA Gemini
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
+const genAI = new GoogleGenerativeAI(apiKey);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 export async function POST(req: Request) {
@@ -110,12 +114,17 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ sessionId: idSessaoAtual, ...iaResponse });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Erro no MCP (/api/diagnostico-ia):", error);
+    let errorMessage = "Ocorreu um erro desconhecido no servidor.";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
     return NextResponse.json(
       {
         error: "Ocorreu um erro ao processar a requisição.",
-        details: error.message,
+        details: errorMessage,
       },
       { status: 500 },
     );

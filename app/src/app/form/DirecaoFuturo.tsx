@@ -1,6 +1,3 @@
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-
 export interface RespostasDF {
   pergunta1: "";
   pergunta2: "";

@@ -49,11 +49,15 @@ export async function POST(req: Request) {
         email: empresa.email,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Em caso de erro, retorna status 500
     console.error("Erro no Login:", err);
+    let errorMessage = "Erro ao efetuar login no servidor.";
+    if (err instanceof Error) {
+      errorMessage = err.message;
+    }
     return NextResponse.json(
-      { error: err.message || "Erro interno do servidor" },
+      { error: errorMessage },
       { status: 500 },
     );
   }
