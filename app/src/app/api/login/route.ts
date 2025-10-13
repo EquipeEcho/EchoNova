@@ -1,3 +1,5 @@
+// app/src/app/api/login/route.ts
+
 import { NextResponse } from "next/server"; // Para criar respostas HTTP no Next.js
 import bcrypt from "bcryptjs"; // Biblioteca para comparar hash de senha
 import { connectDB } from "@/lib/mongodb"; // Função para conectar ao MongoDB
@@ -11,30 +13,22 @@ export async function POST(req: Request) {
     // Pega os dados enviados pelo front-end (email, senha e CNPJ)
     const { email, senha, cnpj } = await req.json();
 
-    let empresa = null; // Variável que vai armazenar a empresa encontrada
-
-    // Verifica se o usuário enviou email ou CNPJ
-    if (email != "" || cnpj != "") {
-      // Se CNPJ foi enviado e existe no banco, pega a empresa
-      if ((await Empresa.findOne({ cnpj })) != null) {
-        empresa = await Empresa.findOne({ cnpj });
-      }
-      // Se email foi enviado e existe no banco, pega a empresa
-      if ((await Empresa.findOne({ email })) != null) {
-        empresa = await Empresa.findOne({ email });
-      }
-
-      // Se não encontrou empresa com email ou CNPJ, retorna erro 401
-      if (!empresa) {
-        return NextResponse.json(
-          { error: "Usuário não encontrado" },
-          { status: 401 },
-        );
-      }
-    } else {
-      // Se não enviou nenhum dado, retorna erro 401
+    // 1. OTIMIZAÇÃO: Verifica se pelo menos um dado de identificação foi fornecido
+    if (!email && !cnpj) {
       return NextResponse.json(
-        { error: "Insira email ou CNPJ" },
+        { error: "Insira Email ou CNPJ para fazer login" },
+        { status: 401 },
+      );
+    }
+
+    // 2. OTIMIZAÇÃO: Realiza UMA ÚNICA consulta ao banco de dados.
+    const query = { $or: [{ email }, { cnpj }] };
+    const empresa = await Empresa.findOne(query);
+
+    // Se não encontrou empresa, retorna erro 401
+    if (!empresa) {
+      return NextResponse.json(
+        { error: "Usuário não encontrado" },
         { status: 401 },
       );
     }
@@ -57,6 +51,10 @@ export async function POST(req: Request) {
     });
   } catch (err: any) {
     // Em caso de erro, retorna status 500
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("Erro no Login:", err);
+    return NextResponse.json(
+      { error: err.message || "Erro interno do servidor" },
+      { status: 500 },
+    );
   }
 }

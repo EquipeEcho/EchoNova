@@ -1,12 +1,9 @@
 "use client";
 import Image from "next/image";
-0;
-import { useState } from "react";
 import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
