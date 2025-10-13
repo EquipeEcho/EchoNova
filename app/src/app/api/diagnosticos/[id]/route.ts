@@ -69,10 +69,6 @@ export async function PUT(
 
 // DELETE - Deletar diagnóstico
 export async function DELETE(
-<<<<<<< HEAD
-  request: Request,
-=======
->>>>>>> teste
   { params }: { params: { id: string } },
 ) {
   try {
