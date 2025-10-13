@@ -137,7 +137,7 @@ export default function Diagnostico() {
         console.log("Diagnóstico salvo com sucesso:", data.diagnostico);
         router.push(`/resultados?id=${data.diagnostico._id}`);
       } else {
-        console.error("Erro ao salvar diagnóstico:", data.error);
+        //console.error("Erro ao salvar diagnóstico:", data.error);
         salvarLocalStorage(respostasFinais);
       }
     } catch (error) {

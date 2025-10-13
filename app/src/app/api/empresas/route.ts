@@ -14,7 +14,7 @@ export async function GET() {
       empresas,
       total: empresas.length,
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Erro ao consultar empresas." }, { status: 500 });
   }
 }

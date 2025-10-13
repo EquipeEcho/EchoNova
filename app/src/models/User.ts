@@ -1,5 +1,4 @@
 import mongoose, { Schema, model, models } from "mongoose";
-import Empresa from "./Empresa"; // Importe o modelo Empresa
 
 const UsuarioSchema = new Schema({
   nome: { type: String, required: true },

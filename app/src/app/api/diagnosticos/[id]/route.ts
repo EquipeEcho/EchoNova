@@ -4,7 +4,6 @@ import Diagnostico from "@/models/Diagnostico";
 
 // GET - Buscar diagnóstico específico
 export async function GET(
-  request: Request,
   { params }: { params: { id: string } },
 ) {
   try {
@@ -70,7 +69,10 @@ export async function PUT(
 
 // DELETE - Deletar diagnóstico
 export async function DELETE(
+<<<<<<< HEAD
   request: Request,
+=======
+>>>>>>> teste
   { params }: { params: { id: string } },
 ) {
   try {
