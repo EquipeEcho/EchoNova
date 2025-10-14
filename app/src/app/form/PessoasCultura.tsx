@@ -9,15 +9,15 @@ export interface RespostasPC {
 }
 
 export interface Pergunta {
-  id: keyof RespostasPC;
-  titulo: string;
-  tipo: "select";
-  placeholder?: "";
-  rows?: number;
-  required: boolean;
-  opcoes?: { valor: string; texto: string }[];
-  temOutros?: boolean;
-  campoOutros?: keyof RespostasPC;
+    id: keyof RespostasPC;
+    titulo: string;
+    tipo: "select";
+    placeholder?: "";
+    rows?: number;
+    required: boolean;
+    opcoes?: { valor: string; texto: string }[];
+    temOutros?: boolean;
+    campoOutros?: keyof RespostasPC;
 }
 
 export const perguntasPC: Pergunta[] = [

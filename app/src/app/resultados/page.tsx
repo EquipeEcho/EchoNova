@@ -7,39 +7,37 @@ import { Ondas } from "../clientFuncs";
 
 // Interface mesclada para suportar tanto dados brutos quanto processados
 interface DiagnosticoData {
-  _id?: string;
-  empresa?: {
-    _id: string;
-    nome_empresa: string;
-    email: string;
-  };
-  perfil: {
-    empresa: string;
-    setor: string;
-    porte: string;
-    setorOutro: string;
-    nome_empresa?: string;
-    email?: string;
-  };
-  // Resultados processados (da branch HEAD) - opcional para o caso de fallback
-  resultados?: Record<
-    string,
-    {
-      media: number;
-      estagio: string;
-      trilhasDeMelhoria: { meta: string; trilha: string }[];
-      resumoExecutivo: {
-        forca: { meta: string } | null;
-        fragilidade: { meta: string } | null;
-      };
-    }
-  >;
-  dimensoesSelecionadas: string[];
-  // Respostas brutas (da branch main)
-  respostasDimensoes?: Record<string, Record<string, string>>;
-  dataProcessamento?: string; // Mantido para compatibilidade do relatório
-  dataCriacao?: string;
-  dataFinalizacao?: string;
+    _id?: string;
+    empresa?: {
+        _id: string;
+        nome_empresa: string;
+        email: string;
+    };
+    perfil: {
+        empresa: string;
+        setor: string;
+        porte: string;
+        setorOutro: string;
+        nome_empresa?: string;
+        email?: string;
+        cnpj: string;
+    };
+    // Resultados processados (da branch HEAD) - opcional para o caso de fallback
+    resultados?: Record<string, {
+        media: number;
+        estagio: string;
+        trilhasDeMelhoria: { meta: string; trilha: string }[];
+        resumoExecutivo: {
+            forca: { meta: string } | null;
+            fragilidade: { meta: string } | null;
+        };
+    }>;
+    dimensoesSelecionadas: string[];
+    // Respostas brutas (da branch main)
+    respostasDimensoes?: Record<string, Record<string, string>>;
+    dataProcessamento?: string; // Mantido para compatibilidade do relatório
+    dataCriacao?: string;
+    dataFinalizacao?: string;
 }
 
 export default function Resultados() {

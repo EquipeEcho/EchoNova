@@ -39,10 +39,12 @@ export default function Diagnostico() {
   const [respostasPerfil, setRespostasPerfil] = useState<RespostasPerfil>({
     empresa: "",
     email: "",
+    cnpj: "",
     setor: "",
     porte: "",
     setorOutro: "",
   });
+
 
   const [respostasDimensoes, setRespostasDimensoes] =
     useState<DimensaoRespostas>({
@@ -235,11 +237,10 @@ export default function Diagnostico() {
             <button
               key={dimensao.id}
               onClick={() => toggleDimensao(dimensao.id)}
-              className={`px-6 py-4 rounded-lg font-semibold border transition-all duration-300 text-center ${
-                dimensoesSelecionadas.includes(dimensao.id)
-                  ? "bg-pink-600 border-pink-500 text-white transform scale-105 shadow-lg"
-                  : "bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/50"
-              }`}
+              className={`px-6 py-4 rounded-lg font-semibold border transition-all duration-300 text-center ${dimensoesSelecionadas.includes(dimensao.id)
+                ? "bg-pink-600 border-pink-500 text-white transform scale-105 shadow-lg"
+                : "bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/50"
+                }`}
             >
               <div className="text-lg font-bold mb-1">{dimensao.codigo}</div>
               <div className="text-sm opacity-90">{dimensao.nome}</div>

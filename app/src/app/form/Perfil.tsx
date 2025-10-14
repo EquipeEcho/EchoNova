@@ -3,12 +3,13 @@ import { useRouter } from "next/navigation";
 
 
 export interface RespostasPerfil {
-  empresa: string;
-  email: string;
-  setor: string;
-  porte: string;
-  setorOutro: string;
-  [key: string]: string;
+    empresa: string;
+    email: string;
+    cnpj: string;
+    setor: string;
+    porte: string;
+    setorOutro: string;
+    [key: string]: string;
 }
 
 export interface Pergunta {
@@ -24,62 +25,70 @@ export interface Pergunta {
 }
 
 export const perguntasPerfil: Pergunta[] = [
-  {
-    id: "empresa",
-    titulo: "Qual o nome da sua empresa?",
-    tipo: "texto",
-    placeholder: "Digite o nome da sua empresa",
-    required: true,
-  },
-  {
-    id: "email",
-    titulo: "Email da empresa: ",
-    tipo: "texto",
-    placeholder: "Digite o email da empresa",
-    required: true,
-  },
-  {
-    id: "setor",
-    titulo: "Qual o setor da sua empresa?",
-    tipo: "select",
-    opcoes: [
-      { valor: "", texto: "Selecione o setor" },
-      { valor: "tecnologia", texto: "Tecnologia" },
-      { valor: "saude", texto: "Saúde" },
-      { valor: "educacao", texto: "Educação" },
-      { valor: "financeiro", texto: "Financeiro" },
-      { valor: "varejo", texto: "Varejo" },
-      { valor: "industrial", texto: "Industrial" },
-      { valor: "outros", texto: "Outros" },
-    ],
-    required: true,
-    temOutros: true,
-    campoOutros: "setorOutro",
-  },
-  {
-    id: "porte",
-    titulo: "Qual o porte da empresa?",
-    tipo: "select",
-    opcoes: [
-      { valor: "", texto: "Selecione o tamanho" },
-      { valor: "startup", texto: "StartUp" },
-      { valor: "pme", texto: "PME(Pequena/Média Empresa)" },
-      { valor: "grande", texto: "Grande Empresa" },
-    ],
-    required: true,
-  },
+    {
+        id: "empresa",
+        titulo: "Qual o nome da sua empresa?",
+        tipo: "texto",
+        placeholder: "Digite o nome da sua empresa",
+        required: true
+    },
+    {
+        id: "email",
+        titulo: "Email da empresa: ",
+        tipo: "texto",
+        placeholder: "Digite o email da empresa",
+        required: true
+    },
+    {
+        id: "cnpj",
+        titulo: "Qual o CNPJ da empresa",
+        tipo: "texto",
+        placeholder: "Digite o CNPJ da empresa",
+        required: true
+    },
+    {
+        id: "setor",
+        titulo: "Qual o setor da sua empresa?",
+        tipo: "select",
+        opcoes: [
+            { valor: "", texto: "Selecione o setor" },
+            { valor: "tecnologia", texto: "Tecnologia" },
+            { valor: "saude", texto: "Saúde" },
+            { valor: "educacao", texto: "Educação" },
+            { valor: "financeiro", texto: "Financeiro" },
+            { valor: "varejo", texto: "Varejo" },
+            { valor: "industrial", texto: "Industrial" },
+            { valor: "outros", texto: "Outros" }
+        ],
+        required: true,
+        temOutros: true,
+        campoOutros: "setorOutro",
+    },
+    {
+        id: "porte",
+        titulo: "Qual o porte da empresa?",
+        tipo: "select",
+        opcoes: [
+            { valor: "", texto: "Selecione o tamanho" },
+            { valor: "startup", texto: "StartUp" },
+            { valor: "pme", texto: "PME(Pequena/Média Empresa)" },
+            { valor: "grande", texto: "Grande Empresa" },
+        ],
+        required: true
+    },
 ];
 
 export function usePerfil() {
-  const router = useRouter();
-  const [etapaAtual, setEtapaAtual] = useState(0);
-  const [respostas, setRespostas] = useState<RespostasPerfil>({
-    empresa: "",
-    email: "",
-    setor: "",
-    setorOutro: "",
-    porte: "",
-  });
+    const router = useRouter();
+    const [etapaAtual, setEtapaAtual] = useState(0);
+    const [respostas, setRespostas] = useState<RespostasPerfil>({
+        empresa: "",
+        email: "",
+        cnpj: "",
+        setor: "",
+        setorOutro: "",
+        porte: "",
+    });
 
   const handleInputChange = (campo: keyof RespostasPerfil, valor: string) => {
     setRespostas((prev) => ({
@@ -101,6 +110,7 @@ export function usePerfil() {
       setEtapaAtual(etapaAtual - 1);
     }
   };
+
 
     const finalizarFormulario = () => {
         // Processar os dados do formulário
