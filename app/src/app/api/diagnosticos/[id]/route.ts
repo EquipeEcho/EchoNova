@@ -10,7 +10,7 @@ export async function GET(
   try {
     await connectDB();
 
-    const diagnosticoId = params.id; // 1. Extrai o ID para uma variável
+    const diagnosticoId = await params.id; // 1. Extrai o ID para uma variável
 
     // 2. Adiciona uma verificação para garantir que o ID é válido para o Mongoose
     if (!diagnosticoId || !diagnosticoId.match(/^[0-9a-fA-F]{24}$/)) {
