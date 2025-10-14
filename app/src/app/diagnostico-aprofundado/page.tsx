@@ -91,7 +91,7 @@ export default function DiagnosticoAprofundadoPage() {
     }
   };
 
-  useEffect(() => {}, []);
+  useEffect(() => { processarResposta(null) }, []);
 
   // --- RENDERIZAÇÃO DOS COMPONENTES DE INPUT ---
 
@@ -195,7 +195,7 @@ export default function DiagnosticoAprofundadoPage() {
     if (diagnostico.status === "carregando") {
       return (
         <div className="text-center text-lg">
-          Carregando... A IA está preparando a próxima etapa.
+          Carregando ...
         </div>
       );
     }
@@ -205,9 +205,8 @@ export default function DiagnosticoAprofundadoPage() {
           <h1 className="text-3xl font-bold mb-4 border-b border-slate-600 pb-2">
             Diagnóstico Concluído
           </h1>
-          {/* CORREÇÃO APLICADA AQUI TAMBÉM */}
           <div className="prose prose-invert prose-lg max-w-none">
-            <ReactMarkdown>{diagnostico.relatorio_final}</ReactMarkdown>
+            <ReactMarkdown>{diagnostico.relatorio_final}</ReactMarkdown> // Resposta em Markdown gerada por IA
           </div>
         </div>
       );
@@ -218,40 +217,22 @@ export default function DiagnosticoAprofundadoPage() {
           <h2 className="text-2xl font-semibold">
             Por favor, confirme os dados
           </h2>
-
-          {/* =========================================================================================
-           * AQUI ESTÁ A CORREÇÃO DO ERRO
-           * =========================================================================================
-           * ANTES (Incorreto):
-           * <ReactMarkdown className="prose...">
-           *
-           * AGORA (Correto):
-           * Criamos um <div> para ser o "contêiner" do conteúdo Markdown.
-           * É neste <div> que aplicamos as classes de estilo ('prose', 'prose-invert', etc.).
-           * O componente <ReactMarkdown> agora não recebe nenhuma `className`, resolvendo o erro.
-           */}
           <div className="text-left p-4 bg-slate-700 rounded-md border border-slate-600">
             <div className="prose prose-invert max-w-none">
               <ReactMarkdown>{diagnostico.resumo_etapa}</ReactMarkdown>
             </div>
           </div>
-          {/* =========================================================================================
-           * FIM DA CORREÇÃO
-           * ========================================================================================= */}
-
           <div className="flex justify-center gap-4 pt-4">
             <Button
               onClick={() => processarResposta("Sim")}
               size="lg"
-              className="bg-green-600 hover:bg-green-700"
-            >
+              className="bg-green-600 hover:bg-green-700">
               Confirmar e Continuar
             </Button>
             <Button
               onClick={() => processarResposta("Não")}
               size="lg"
-              variant="destructive"
-            >
+              variant="destructive">
               Corrigir Informações
             </Button>
           </div>
