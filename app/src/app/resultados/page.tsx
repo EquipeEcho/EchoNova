@@ -240,23 +240,52 @@ aprofundado e um plano de ação detalhado, entre em contato.
                         <p className="text-white/80">Os resultados detalhados não puderam ser carregados. Verifique o relatório para ver suas respostas.</p>
                     </div>
                 )}
-
-                <div className="space-y-4">
-                    <button onClick={handleDownloadReport} className="cursor-pointer w-full px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
-                        📥 Baixar Relatório Completo
-                    </button>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <button onClick={handleNewDiagnostic} className="cursor-pointer px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105">
-                            🔄 Fazer Novo Diagnóstico
-                        </button>
-                        <button onClick={() => router.push('/')} className="cursor-pointer px-6 py-3 bg-white/20 hover:bg-white/30 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105">
-                            🏠 Voltar para a Página Inicial
-                        </button>
+                
+                {/* Bloco destacado para planos e relatório */}
+                <div className="relative rounded-xl p-6 mb-6 text-center shadow-lg border border-white/10 backdrop-blur-md overflow-hidden">
+                    {/* Camada de gradiente com transparência */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-700 via-pink-600 to-pink-500 opacity-30 pointer-events-none"></div>
+                    {/* Conteúdo acima do fundo */}
+                    <div className="relative z-10">
+                        <h2 className="text-xl font-bold text-white mb-2 flex items-center justify-center gap-2">
+                            🚀 Transforme Estes Insights em Ação!
+                        </h2>
+                        <p className="text-white/90 mb-6">
+                            Agora que você conhece os desafios da sua empresa, que tal receber trilhas personalizadas e conteúdo sob medida para acelerar o crescimento da sua equipe?
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                            <button
+                                onClick={() => router.push('/planos')}
+                                className="flex-1 px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
+                            >
+                                 ⭐ Ver Planos e Começar Jornada
+                            </button>
+                            <button
+                                onClick={handleDownloadReport}
+                                className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
+                            >
+                                📥 Baixar Relatório Completo
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
+                {/* Bloco inferior para diagnóstico e home */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button
+                        onClick={handleNewDiagnostic}
+                        className="px-6 py-3 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
+                    >
+                        🔄 Fazer Novo Diagnóstico
+                    </button>
+                    <button
+                        onClick={() => router.push('/')}
+                        className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
+                    >
+                        🏠 Voltar para a Página Inicial
+                    </button>
+                </div>
+            </div>
             <div className="-z-10"><Ondas /></div>
         </main>
     );
