@@ -1,6 +1,0 @@
-- [x] Create promptMiniDiagnostico in prompts.ts
-- [x] Update processarResultados in route.ts to use AI
-- [x] Add imports for AI provider and prompt
-- [x] Make processarResultados async and await the call
-- [x] Test AI integration to verify correct scoring and JSON parsing
-- [x] Handle AI failures with fallback to fixed logic
