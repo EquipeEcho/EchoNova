@@ -110,15 +110,26 @@ export async function POST(req: Request) {
     let empresa = await Empresa.findOne({ email: dados.perfil.email });
 
     if (!empresa) {
-      console.log(
-        `Empresa com email ${dados.perfil.email} não encontrada. Criando nova...`,
-      );
+      // Verifica se já existe uma empresa com o mesmo CNPJ (exatamente como foi digitado)
+      const cnpjInformado = dados.perfil.cnpj;
+      const empresaComMesmoCnpj = await Empresa.findOne({ cnpj: cnpjInformado });
+
+      if (empresaComMesmoCnpj) {
+        return NextResponse.json(
+          { error: "Já existe uma empresa cadastrada com este CNPJ." },
+          { status: 400 }
+        );
+      }
+
+      console.log(`Empresa com email ${dados.perfil.email} não encontrada. Criando nova...`);
+
       empresa = await Empresa.create({
-        nome_empresa: dados.perfil.empresa, // O nome da empresa vem do campo 'empresa' do formulário
+        nome_empresa: dados.perfil.empresa,
         email: dados.perfil.email,
-        cnpj: `TEMP_${Date.now()}`,
+        cnpj: cnpjInformado || `TEMP_${Date.now()}`,
         senha: "senha_placeholder",
       });
+
       console.log(`Nova empresa criada com ID: ${empresa._id}`);
     } else {
       console.log(`Empresa encontrada com ID: ${empresa._id}`);
