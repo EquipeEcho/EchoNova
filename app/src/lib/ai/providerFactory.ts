@@ -16,6 +16,11 @@ export function getChatProvider(): ChatProvider {
     case "GEMINI":
     default:
       console.log("Usando o provedor padrão: Gemini");
-      return new GeminiProvider();
+      try {
+        return new GeminiProvider();
+      } catch (error) {
+        console.warn("Gemini provider failed, falling back to Ollama:", error);
+        return new OllamaProvider();
+      }
   }
 }

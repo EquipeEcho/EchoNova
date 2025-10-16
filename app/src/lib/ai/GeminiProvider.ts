@@ -26,6 +26,7 @@ export class GeminiProvider implements ChatProvider {
 
         const result = await chat.sendMessage(message);
         const responseText = result.response.text();
+        console.log('Resposta bruta do Gemini:', responseText);
 
         return JSON.parse(responseText) as IaResponse;
     }

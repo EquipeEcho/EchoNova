@@ -42,6 +42,7 @@ export class OllamaProvider implements ChatProvider {
 
     const responseData = await response.json();
     const responseText = responseData.message.content;
+    console.log('Resposta bruta do Ollama:', responseText);
 
     if (!responseText) {
         throw new Error("Ollama retornou uma resposta vazia.");
