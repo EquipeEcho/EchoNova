@@ -5,35 +5,36 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Ondas } from "../clientFuncs";
-import { validateField, formatCNPJ } from "./validator";
+import { validateField, formatCNPJ, equalCNPJ } from "./validator";
 
 // ========================
 // Tipos genéricos
 // ========================
 export interface Pergunta<Respostas> {
-  id: keyof Respostas;
-  titulo: string;
-  tipo: "select" | "texto" | "textarea";
-  placeholder?: string;
-  rows?: number;
-  required: boolean;
-  opcoes?: { valor: string; texto: string }[];
-  temOutros?: boolean;
-  campoOutros?: keyof Respostas;
+    id: keyof Respostas;
+    titulo: string;
+    tipo: "select" | "texto" | "textarea";
+    placeholder?: string;
+    rows?: number;
+    required: boolean;
+    opcoes?: { valor: string; texto: string }[];
+    temOutros?: boolean;
+    campoOutros?: keyof Respostas;
 }
 
 // ========================
 // Hook principal de controle
 // ========================
 export function useDiagnostico<Respostas extends Record<string, string>>(
-  perguntas: Pergunta<Respostas>[],
-  respostasIniciais: Respostas,
-  onsubmit?: (respostas: Respostas) => void,
+    perguntas: Pergunta<Respostas>[],
+    respostasIniciais: Respostas,
+    onsubmit?: (respostas: Respostas) => void,
 ) {
-  const router = useRouter();
-  const [etapaAtual, setEtapaAtual] = useState(0);
-  const [respostas, setRespostas] = useState<Respostas>(respostasIniciais);
-  const [showValidationError, setShowValidationError] = useState(false);
+    const router = useRouter();
+    const [etapaAtual, setEtapaAtual] = useState(0);
+    const [respostas, setRespostas] = useState<Respostas>(respostasIniciais);
+    const [showValidationError, setShowValidationError] = useState(false);
+    const [erroCnpj, setErroCnpj] = useState("");
 
     const handleInputChange = (campo: keyof Respostas, valor: string) => {
         setRespostas((prev) => ({ ...prev, [campo]: valor }));
@@ -58,10 +59,10 @@ export function useDiagnostico<Respostas extends Record<string, string>>(
         if (onsubmit) onsubmit(respostas);
     };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    finalizarFormulario();
-  };
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        finalizarFormulario();
+    };
 
     return {
         etapaAtual,
@@ -72,6 +73,8 @@ export function useDiagnostico<Respostas extends Record<string, string>>(
         handleSubmit,
         showValidationError,
         setShowValidationError,
+        erroCnpj,
+        setErroCnpj,
     };
 }
 
@@ -106,33 +109,55 @@ function InputField<Respostas extends Record<string, string>>({
     onChange,
     respostas,
     showValidationError = false,
+    erroCnpj,
+    setErroCnpj,
 }: {
-  pergunta: Pergunta<Respostas>;
-  valor: string;
-  onChange: (campo: keyof Respostas, valor: string) => void;
-  respostas: Respostas;
-  showValidationError?: boolean;
+    pergunta: Pergunta<Respostas>;
+    valor: string;
+    onChange: (campo: keyof Respostas, valor: string) => void;
+    respostas: Respostas;
+    showValidationError?: boolean;
+    erroCnpj: string;
+    setErroCnpj: React.Dispatch<React.SetStateAction<string>>;
 }) {
     const { valid, message } = validateField(pergunta.id as string, valor);
-    const showError = showValidationError && !valid;
-
     const isCNPJ = pergunta.id.toString().toLowerCase().includes("cnpj");
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    // ✅ só mostra erro visual DEPOIS do botão ser pressionado
+    const hasError = showValidationError && (isCNPJ ? !valid || erroCnpj !== "" : !valid);
+
+    const handleChange = async (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
         const value = isCNPJ ? formatCNPJ(e.target.value) : e.target.value;
         onChange(pergunta.id, value);
+
+        if (isCNPJ && value.length === 18) {
+            try {
+                const jaExiste = await equalCNPJ(value);
+                if (jaExiste) setErroCnpj("CNPJ já cadastrado");
+                else setErroCnpj("");
+            } catch (error) {
+                console.error("Erro ao verificar CNPJ:", error);
+            }
+        } else if (isCNPJ) {
+            setErroCnpj("");
+        }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === "Enter" && !(pergunta.tipo === "textarea" && !e.ctrlKey)) {
             e.preventDefault();
-            const proximoBtn = document.querySelector('[data-advance-button]') as HTMLButtonElement;
+            const proximoBtn = document.querySelector(
+                "[data-advance-button]"
+            ) as HTMLButtonElement;
             if (proximoBtn && !proximoBtn.disabled) {
                 proximoBtn.click();
             }
         }
     };
 
+    // --- RENDERIZAÇÃO ---
     if (pergunta.tipo === "textarea") {
         return (
             <div className="space-y-2">
@@ -141,10 +166,16 @@ function InputField<Respostas extends Record<string, string>>({
                     onChange={handleChange}
                     onKeyDown={handleKeyDown}
                     rows={pergunta.rows || 4}
-                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
+                    className={`w-full px-4 py-3 rounded-lg bg-white/20 border ${
+                        hasError ? "border-red-400" : "border-white/30"
+                    } text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none`}
                     placeholder={pergunta.placeholder}
                 />
-                {showError && <p className="text-red-400 text-sm text-center">{message}</p>}
+                {hasError && (
+                    <p className="text-red-400 text-sm text-center">
+                        {erroCnpj || message}
+                    </p>
+                )}
             </div>
         );
     }
@@ -158,7 +189,11 @@ function InputField<Respostas extends Record<string, string>>({
                 onKeyDown={handleKeyDown}
             >
                 {pergunta.opcoes?.map((opcao) => (
-                    <option key={opcao.valor} value={opcao.valor} className="text-gray-800 bg-white">
+                    <option
+                        key={opcao.valor}
+                        value={opcao.valor}
+                        className="text-gray-800 bg-white"
+                    >
                         {opcao.texto}
                     </option>
                 ))}
@@ -173,34 +208,41 @@ function InputField<Respostas extends Record<string, string>>({
                 value={valor}
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
-                className={`w-full px-4 py-3 rounded-lg bg-white/20 border ${showError ? "border-red-400" : "border-white/30"
-                    } text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-center`}
+                className={`w-full px-4 py-3 rounded-lg bg-white/20 border ${
+                    hasError ? "border-red-400" : "border-white/30"
+                } text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-center`}
                 placeholder={pergunta.placeholder}
                 maxLength={isCNPJ ? 18 : undefined}
             />
-            {showError && <p className="text-red-400 text-sm text-center">{message}</p>}
+            {hasError && (
+                <p className="text-red-400 text-sm text-center">
+                    {erroCnpj || message}
+                </p>
+            )}
         </div>
     );
 }
 
+
+
 function NavigationButtons({
-  etapaAtual,
-  totalEtapas,
-  podeAvancar,
-  onProximo,
-  onAnterior,
-  onSubmit,
-  isUltimaDimensao = true,
-  onTryAdvance,
+    etapaAtual,
+    totalEtapas,
+    podeAvancar,
+    onProximo,
+    onAnterior,
+    onSubmit,
+    isUltimaDimensao = true,
+    onTryAdvance,
 }: {
-  etapaAtual: number;
-  totalEtapas: number;
-  podeAvancar: boolean;
-  onProximo: () => void;
-  onAnterior: () => void;
-  onSubmit: (e: React.FormEvent) => void;
-  isUltimaDimensao?: boolean;
-  onTryAdvance?: () => void;
+    etapaAtual: number;
+    totalEtapas: number;
+    podeAvancar: boolean;
+    onProximo: () => void;
+    onAnterior: () => void;
+    onSubmit: (e: React.FormEvent) => void;
+    isUltimaDimensao?: boolean;
+    onTryAdvance?: () => void;
 }) {
     const ehUltima = etapaAtual === totalEtapas - 1;
     const ehFinal = ehUltima && isUltimaDimensao;
@@ -219,8 +261,8 @@ function NavigationButtons({
                 onClick={onAnterior}
                 disabled={etapaAtual === 0}
                 className={`cursor-pointer px-6 py-3 rounded-lg font-semibold ${etapaAtual === 0
-                        ? "bg-gray-500/50 text-gray-400 cursor-not-allowed"
-                        : "bg-white/20 text-white hover:bg-white/30 transform hover:scale-105"
+                    ? "bg-gray-500/50 text-gray-400 cursor-not-allowed"
+                    : "bg-white/20 text-white hover:bg-white/30 transform hover:scale-105"
                     }`}
             >
                 Anterior
@@ -230,8 +272,8 @@ function NavigationButtons({
                 data-advance-button
                 onClick={handleAdvance}
                 className={`cursor-pointer px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar
-                        ? "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white transform hover:scale-105 shadow-lg"
-                        : "bg-gray-500/50 text-gray-400 cursor-not-allowed"
+                    ? "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white transform hover:scale-105 shadow-lg"
+                    : "bg-gray-500/50 text-gray-400 cursor-not-allowed"
                     }`}
             >
                 {ehFinal ? "Finalizar Diagnóstico" : "Próxima"}
@@ -250,12 +292,14 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
     onSubmit,
     isUltimaDimensao = true,
 }: {
-  perguntas: Pergunta<Respostas>[];
-  respostasIniciais: Respostas;
-  titulo: string;
-  onSubmit: (respostas: Respostas) => void;
-  isUltimaDimensao?: boolean;
+    perguntas: Pergunta<Respostas>[];
+    respostasIniciais: Respostas;
+    titulo: string;
+    onSubmit: (respostas: Respostas) => void;
+    isUltimaDimensao?: boolean;
 }) {
+    const [erroCnpj, setErroCnpj] = useState("");
+
     const {
         etapaAtual,
         respostas,
@@ -272,7 +316,9 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
     const { valid, message } = validateField(perguntaAtual.id as string, valorAtual);
 
     // Para campos obrigatórios, deve ser válido E não vazio
-    const podeAvancar = perguntaAtual.required ? (valorAtual.trim() !== "" && valid) : valid;
+    const podeAvancar = perguntaAtual.required
+        ? valorAtual.trim() !== "" && valid && erroCnpj === ""
+        : valid && erroCnpj === "";
 
     const handleTryAdvance = () => {
         if (!podeAvancar) {
@@ -312,6 +358,8 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
                         onChange={handleInputChange}
                         respostas={respostas}
                         showValidationError={showValidationError}
+                        erroCnpj={erroCnpj}
+                        setErroCnpj={setErroCnpj}
                     />
                 </div>
 
@@ -332,4 +380,6 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
             </div>
         </main>
     );
+
 }
+

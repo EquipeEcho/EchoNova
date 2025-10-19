@@ -84,6 +84,27 @@ export function formatCNPJ(value: string): string {
         .replace(/(\d{4})(\d)/, "$1-$2")
         .slice(0, 18);
 }
+export async function equalCNPJ(cnpj: string): Promise<boolean> {
+  if (!cnpj) return false;
+
+  try {
+    const response = await fetch("/api/empresas/check-cnpj", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cnpj }),
+    });
+
+    const data = await response.json();
+    console.log("🔍 Resultado check-cnpj:", data);
+    return data.exists === true;
+  } catch (error) {
+    console.error("Erro ao validar CNPJ duplicado:", error);
+    return false;
+  }
+}
+
+
+
 export const validateCPF = (cpf: string) => {
     const digits = cpf.replace(/\D/g, '');
     if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) return false;
@@ -147,30 +168,35 @@ export const debugCPFValidation = (cpf: string) => {
 
 // ======= Validador genérico =======
 export function validateField(
-    fieldId: string,
-    value: string
+  fieldId: string,
+  value: string
 ): { valid: boolean; message?: string } {
-    if (!validateRequired(value)) {
-        return { valid: false, message: "Campo obrigatório" };
-    }
+  if (!validateRequired(value)) {
+    return { valid: false, message: "Campo obrigatório" };
+  }
 
-    const id = fieldId.toLowerCase();
+  const id = fieldId.toLowerCase();
 
-    if (id.includes("email") && !validateEmail(value)) {
-        return { valid: false, message: "E-mail inválido" };
-    }
+  if (id.includes("email") && !validateEmail(value)) {
+    return { valid: false, message: "E-mail inválido" };
+  }
 
-    if (id.includes("cnpj") && !validateCNPJ(value)) {
-        return { valid: false, message: "CNPJ inválido" };
-    }
+  if (id.includes("cnpj") && !validateCNPJ(value)) {
+    return { valid: false, message: "CNPJ inválido" };
+  }
 
-    if (id.includes("data") && !validateDate(value)) {
-        return { valid: false, message: "Data inválida" };
-    }
+  if (id.includes("cnpj") && !equalCNPJ(value)) {
+    return { valid: false, message: "CNPJ já cadastrado" };
+  }
 
-    if (id.includes("telefone") && !validatePhone(value)) {
-        return { valid: false, message: "Telefone inválido" };
-    }
+  if (id.includes("data") && !validateDate(value)) {
+    return { valid: false, message: "Data inválida" };
+  }
 
-    return { valid: true };
+  if (id.includes("telefone") && !validatePhone(value)) {
+    return { valid: false, message: "Telefone inválido" };
+  }
+
+  return { valid: true };
 }
+
