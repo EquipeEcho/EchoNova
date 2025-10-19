@@ -3,7 +3,9 @@ import { useState } from "react";
 import { Headernaofix, Ondas } from "../clientFuncs";
 import { CheckIcon, StarIcon } from "lucide-react";
 import Link from "next/link";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function PlanosPage() {
   const [planoSelecionado, setPlanoSelecionado] = useState<string | null>("Avançado");
@@ -63,17 +65,44 @@ export default function PlanosPage() {
     }
   ];
 
+  const iniciarTransacao = async (plano: string) => {
+    console.log("🟢 Botão clicado para plano:", plano);
+    try {
+      const empresaId = localStorage.getItem("empresaId"); // pega o ID salvo após o diagnóstico
+      if (!empresaId) {
+        toast?.error?.("Empresa não identificada. Refaça o diagnóstico.");
+        return;
+      }
+
+      const response = await fetch("/api/transacoes/iniciar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ empresaId, plano }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error || "Erro ao iniciar transação");
+
+      // Redireciona para o pagamento com o ID da transação
+      router.push(`/pagamento?id=${data.transacaoId}`);
+    } catch (error) {
+      console.error("Erro ao iniciar transação:", error);
+      toast?.error?.("Erro ao iniciar transação. Tente novamente.");
+    }
+  };
+
   return (
     <main className="flex flex-col overflow-hidden min-h-screen">
       <Headernaofix />
-      
+
       <section className="flex-1 main-bg flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-10 relative">
         {/* Título principal */}
         <div className="text-center mb-20">
           <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight max-w-4xl text-white mb-8 sm:mb-10 md:mb-12 animate-fade-in-up">
             Planos e Assinaturas
           </h1>
-          
+
           {/* Diagnóstico */}
           <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 backdrop-blur-lg rounded-2xl p-6 max-w-3xl mx-auto border border-green-400/30 animate-fade-in-up-delay shadow-lg">
             <div className="flex items-center justify-center gap-3 mb-4">
@@ -84,7 +113,7 @@ export default function PlanosPage() {
               </svg>
             </div>
             <p className="text-white/90 leading-relaxed">
-              Agora que você conhece os desafios e oportunidades da sua empresa, escolha o plano ideal 
+              Agora que você conhece os desafios e oportunidades da sua empresa, escolha o plano ideal
               para receber trilhas personalizadas e acelerar o desenvolvimento da sua equipe.
             </p>
           </div>
@@ -97,26 +126,24 @@ export default function PlanosPage() {
               key={index}
               onMouseEnter={() => setPlanoSelecionado(plano.nome)}
               onMouseLeave={() => setPlanoSelecionado(null)}
-              className={`relative bg-slate-900/95 backdrop-blur-sm rounded-3xl p-8 border-2 border-slate-700/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl group flex flex-col h-full cursor-pointer ${
-                plano.nome === 'Essencial' ? 'hover:border-indigo-400/80 hover:shadow-indigo-400/50' :
+              className={`relative bg-slate-900/95 backdrop-blur-sm rounded-3xl p-8 border-2 border-slate-700/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl group flex flex-col h-full cursor-pointer ${plano.nome === 'Essencial' ? 'hover:border-indigo-400/80 hover:shadow-indigo-400/50' :
                 plano.nome === 'Avançado' ? 'hover:border-fuchsia-400/80 hover:shadow-fuchsia-400/50' :
-                'hover:border-emerald-400/80 hover:shadow-emerald-400/50'
-              }`}
+                  'hover:border-emerald-400/80 hover:shadow-emerald-400/50'
+                }`}
               style={{
                 animationDelay: `${index * 200}ms`,
                 animation: 'fadeInUp 0.8s ease-out both'
               }}
             >
               {/* Brilho hover */}
-              <div className="absolute inset-0 bg-slate-800/30 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
+              <div className="absolute inset-0 bg-slate-800/30 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+              
               {/* Badge */}
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className={`bg-gradient-to-r text-white px-6 py-2 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg ${
-                  plano.nome === 'Essencial' ? 'from-indigo-500 via-purple-500 to-indigo-600' :
+                <div className={`bg-gradient-to-r text-white px-6 py-2 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg ${plano.nome === 'Essencial' ? 'from-indigo-500 via-purple-500 to-indigo-600' :
                   plano.nome === 'Avançado' ? 'from-fuchsia-500 via-pink-500 to-purple-600' :
-                  'from-emerald-500 via-teal-500 to-emerald-600'
-                }`}>
+                    'from-emerald-500 via-teal-500 to-emerald-600'
+                  }`}>
                   <StarIcon className="w-4 h-4" />
                   {plano.popular ? 'Mais Popular' : plano.nome}
                   <StarIcon className="w-4 h-4" />
@@ -169,11 +196,10 @@ export default function PlanosPage() {
 
               {/* Botão */}
               <div className="text-center relative z-10 mt-auto">
-                <Link
-                  href={`/pagamento?plano=${encodeURIComponent(plano.nome)}`}
-                  className={`block w-full bg-gradient-to-r ${plano.cor} text-white font-bold py-4 px-6 rounded-2xl border-0 relative overflow-hidden group/btn hover:shadow-2xl transform transition-all duration-500 ${
-                    plano.popular ? 'hover:scale-105' : 'hover:scale-102'
-                  }`}
+                <button
+                  onClick={() => iniciarTransacao(plano.nome)}
+                  className={`block w-full bg-gradient-to-r ${plano.cor} text-white font-bold py-4 px-6 rounded-2xl border-0 relative overflow-hidden group/btn hover:shadow-2xl transform transition-all duration-500 ${plano.popular ? 'hover:scale-105' : 'hover:scale-102'
+                    }`}
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000"></div>
                   <span className="relative z-10 flex items-center justify-center gap-2">
@@ -193,7 +219,7 @@ export default function PlanosPage() {
                       </>
                     )}
                   </span>
-                </Link>
+                </button>
               </div>
             </div>
           ))}

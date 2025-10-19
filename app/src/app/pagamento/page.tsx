@@ -22,11 +22,17 @@ import {
   validateExpiry,
   debugCPFValidation
 } from "../form/validator";
+import { useEffect } from "react";
 
 export default function PagamentoPage() {
   const searchParams = useSearchParams();
-  const planoSelecionado = searchParams.get('plano') || 'Essencial';
-  const preco = searchParams.get('preco') || '590';
+
+  // Captura o ID da transação da URL
+  const transacaoId = searchParams.get("id");
+
+  // Mantém o comportamento anterior
+  const planoSelecionado = searchParams.get("plano") || "Essencial";
+  const preco = searchParams.get("preco") || "590";
 
   const [etapaPagamento, setEtapaPagamento] = useState<'dados' | 'pagamento' | 'confirmacao'>('dados');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -58,43 +64,54 @@ export default function PagamentoPage() {
     cepCobranca: ''
   });
 
+  // Exemplo de uso do ID da transação (para debug e validação futura)
+  useEffect(() => {
+    if (transacaoId) {
+      console.log("🔗 Transação carregada:", transacaoId);
+      // No futuro: buscar detalhes da transação via fetch(`/api/transacoes/${transacaoId}`)
+    } else {
+      console.warn(" Nenhum ID de transação encontrado na URL.");
+    }
+  }, [transacaoId]);
+
   const handleInputChange = (field: string, value: string) => {
     let formattedValue = value;
 
     // Aplicar formatação específica para cada campo
     switch (field) {
-      case 'cpf':
+      case "cpf":
         formattedValue = formatCPF(value);
         break;
-      case 'cnpj':
+      case "cnpj":
         formattedValue = formatCNPJ(value);
         break;
-      case 'telefone':
+      case "telefone":
         formattedValue = formatPhone(value);
         break;
-      case 'cep':
-      case 'cepCobranca':
+      case "cep":
+      case "cepCobranca":
         formattedValue = formatCEP(value);
         break;
-      case 'numeroCartao':
+      case "numeroCartao":
         formattedValue = formatCard(value);
         break;
-      case 'validadeCartao':
+      case "validadeCartao":
         formattedValue = formatExpiry(value);
         break;
-      case 'cvv':
-        formattedValue = value.replace(/\D/g, '').substring(0, 4);
+      case "cvv":
+        formattedValue = value.replace(/\D/g, "").substring(0, 4);
         break;
     }
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: formattedValue
+      [field]: formattedValue,
     }));
 
     // Validar campo em tempo real
     validateField(field, formattedValue);
   };
+
 
   const validateField = (field: string, value: string) => {
     let error = '';
@@ -234,6 +251,35 @@ export default function PagamentoPage() {
       setEtapaPagamento('dados');
     } else if (etapaPagamento === 'confirmacao') {
       setEtapaPagamento('pagamento');
+    }
+  };
+
+  // === Simulação de finalização da transação ===
+  const finalizarTransacao = async () => {
+    const transacaoId = searchParams.get("id");
+
+    if (!transacaoId) {
+      console.error("Transação não encontrada");
+      setEtapaPagamento("confirmacao"); // fallback caso o id falhe
+      return;
+    }
+
+    try {
+      const resposta = await fetch("/api/transacoes/finalizar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transacaoId }),
+      });
+
+      const data = await resposta.json();
+
+      if (!resposta.ok) throw new Error(data.error || "Erro ao finalizar transação");
+
+      console.log("Transação finalizada com sucesso:", data);
+      setEtapaPagamento("confirmacao");
+    } catch (error) {
+      console.error("Erro ao finalizar transação:", error);
+      alert("Erro ao processar pagamento. Tente novamente.");
     }
   };
 
@@ -590,15 +636,38 @@ export default function PagamentoPage() {
                 </div>
               </div>
 
-              <div className="flex justify-between">
+              <div className="flex justify-between mt-8">
                 <Button
                   onClick={voltarEtapa}
                   className="px-8 py-3 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-lg transition-all duration-300"
                 >
                   ← Voltar
                 </Button>
+
                 <Button
-                  onClick={avancarEtapa}
+                  onClick={async () => {
+                    if (validateEtapaPagamento()) {
+                      try {
+                        const transacaoId = searchParams.get("id");
+
+                        const response = await fetch("/api/transacoes/finalizar", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ transacaoId }),
+                        });
+
+                        const data = await response.json();
+
+                        if (!response.ok) throw new Error(data.error || "Erro ao finalizar");
+
+                        console.log("💰 Transação concluída:", data.transacao);
+                        setEtapaPagamento("confirmacao");
+                      } catch (error) {
+                        console.error("Erro ao finalizar transação:", error);
+                        alert("Erro ao processar pagamento. Tente novamente.");
+                      }
+                    }
+                  }}
                   className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105"
                 >
                   Finalizar Compra →

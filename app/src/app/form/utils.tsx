@@ -8,6 +8,45 @@ import { Ondas } from "../clientFuncs";
 import { validateField, formatCNPJ, equalCNPJ } from "./validator";
 
 // ========================
+// Funções de transação (integração com o backend)
+// ========================
+export async function iniciarTransacao(empresaId: string, plano: string) {
+  try {
+    const response = await fetch("/api/transacoes/iniciar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ empresaId, plano }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Erro ao iniciar transação");
+
+    return data.transacao;
+  } catch (error) {
+    console.error("Erro ao iniciar transação:", error);
+    throw error;
+  }
+}
+
+export async function finalizarTransacao(transacaoId: string) {
+  try {
+    const response = await fetch("/api/transacoes/finalizar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transacaoId }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Erro ao finalizar transação");
+
+    return data;
+  } catch (error) {
+    console.error("Erro ao finalizar transação:", error);
+    throw error;
+  }
+}
+
+// ========================
 // Tipos genéricos
 // ========================
 export interface Pergunta<Respostas> {
