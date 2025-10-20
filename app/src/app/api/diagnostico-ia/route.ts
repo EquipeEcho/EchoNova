@@ -1,132 +1,75 @@
 // app/api/diagnostico-ia/route.ts
-
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI, type ChatSession } from "@google/generative-ai";
 import { promptDiagnosticoAprofundado } from "@/lib/prompts";
 import { connectDB } from "@/lib/mongodb";
 import DiagnosticoAprofundado from "@/models/DiagnosticoAprofundado";
 
-// --- NOVAS INTERFACES PARA O CONTRATO DE DADOS ---
+// --- Nossas importações ABSTRATAS e centralizadas ---
+import { getChatProvider } from "@/lib/ai/providerFactory";
+import type { HistoryMessage, IaResponse } from "@/lib/ai/ChatProvider";
 
-/**
- * @description Define a estrutura do objeto de pergunta que a IA nos envia.
- * @property {string} texto - O texto da pergunta a ser exibido ao usuário.
- * @property {'texto' | 'numero' | 'multipla_escolha' | 'selecao' | 'sim_nao'} tipo_resposta - O tipo de input que a interface deve renderizar.
- * @property {string[] | null} opcoes - Um array de opções, usado para 'multipla_escolha' e 'selecao'.
- */
-interface Pergunta {
-  texto: string;
-  tipo_resposta:
-  | "texto"
-  | "numero"
-  | "multipla_escolha"
-  | "selecao"
-  | "sim_nao";
-  opcoes: string[] | null;
-}
-
-/**
- * @description Define a estrutura completa da resposta JSON que esperamos da IA.
- */
-interface IaResponse {
-  status: "iniciado" | "em_andamento" | "confirmacao" | "finalizado";
-  proxima_pergunta: Pergunta | null;
-  resumo_etapa: string | null;
-  dados_coletados: object;
-  relatorio_final: string | null;
-}
-
-// ATENÇÃO: Armazenamento de sessão em memória.
-// Ideal para desenvolvimento, mas para produção, considere Redis ou um banco de dados.
-const sessoesAtivas: Record<string, ChatSession> = {};
-const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
-if (!apiKey) {
-  throw new Error("A variável de ambiente GOOGLE_GEMINI_API_KEY não está definida.");
-}
-
-// Inicializa o cliente da IA Gemini
-const genAI = new GoogleGenerativeAI(apiKey);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+// --- Gerenciamento de sessão AGnóstico ---
+// Armazena apenas o histórico genérico, não mais um objeto específico do Gemini.
+const sessoesAtivas: Record<string, HistoryMessage[]> = {};
 
 export async function POST(req: Request) {
-  /**
-   * @description Esta função atua como o MCP (Orquestrador), gerenciando o fluxo da conversa.
-   * @param {Request} req - A requisição HTTP vinda da interface do usuário.
-   * @returns {NextResponse} Uma resposta JSON para a interface, contendo o estado atual da conversa.
-   */
   try {
     const { sessionId, resposta_usuario, empresaId } = await req.json();
+    const provider = getChatProvider(); // Pega o provedor configurado (Gemini, Ollama, etc.)
 
-    let sessao: ChatSession;
     let idSessaoAtual = sessionId;
 
     if (!idSessaoAtual) {
+      // --- INICIANDO NOVA SESSÃO ---
       console.log("MCP: Iniciando nova sessão de diagnóstico...");
       idSessaoAtual = `sessao_${Date.now()}`;
+      sessoesAtivas[idSessaoAtual] = []; // Histórico vazio
 
-      sessao = model.startChat({
-        history: [
-          { role: "user", parts: [{ text: promptDiagnosticoAprofundado }] },
-        ],
-        generationConfig: { responseMimeType: "application/json" },
-      });
+      const iaResponse = await provider.sendMessage("Começar", [], promptDiagnosticoAprofundado);
 
-      sessoesAtivas[idSessaoAtual] = sessao;
-
-      const result = await sessao.sendMessage("Começar");
-      const iaResponse: IaResponse = JSON.parse(result.response.text());
-
+      // Salva a primeira interação no histórico da sessão
+      sessoesAtivas[idSessaoAtual].push(
+        { role: "user", parts: [{ text: "Começar" }] },
+        { role: "model", parts: [{ text: JSON.stringify(iaResponse) }] }
+      );
+      
       return NextResponse.json({ sessionId: idSessaoAtual, ...iaResponse });
     }
 
-    sessao = sessoesAtivas[idSessaoAtual];
-    if (!sessao) {
-      return NextResponse.json(
-        { error: "Sessão inválida ou expirada." },
-        { status: 400 },
-      );
+    // --- CONTINUANDO SESSÃO EXISTENTE ---
+    const historico = sessoesAtivas[idSessaoAtual];
+    if (!historico) {
+      return NextResponse.json({ error: "Sessão inválida ou expirada." }, { status: 400 });
     }
 
-    console.log(
-      `MCP: Continuando sessão ${idSessaoAtual} com resposta do usuário.`,
+    console.log(`MCP: Continuando sessão ${idSessaoAtual} com resposta do usuário.`);
+    const iaResponse = await provider.sendMessage(resposta_usuario, historico, promptDiagnosticoAprofundado);
+    
+    // Atualiza o histórico com a última interação
+    historico.push(
+      { role: 'user', parts: [{ text: resposta_usuario }] },
+      { role: 'model', parts: [{ text: JSON.stringify(iaResponse) }] }
     );
-    const result = await sessao.sendMessage(resposta_usuario);
-    const iaResponse: IaResponse = JSON.parse(result.response.text());
 
     if (iaResponse.status === "finalizado") {
-      console.log(
-        `MCP: Finalizando e salvando diagnóstico da sessão: ${idSessaoAtual}`,
-      );
-
+      console.log(`MCP: Finalizando e salvando diagnóstico da sessão: ${idSessaoAtual}`);
       await connectDB();
-
+      
       const novoDiagnostico = new DiagnosticoAprofundado({
         empresa: empresaId,
         sessionId: idSessaoAtual,
-        conversationHistory: await sessao.getHistory(),
+        conversationHistory: historico,
         structuredData: iaResponse.dados_coletados,
         finalReport: iaResponse.relatorio_final,
       });
       await novoDiagnostico.save();
-
       delete sessoesAtivas[idSessaoAtual];
-      console.log("MCP: Diagnóstico salvo com sucesso no banco de dados.");
     }
 
     return NextResponse.json({ sessionId: idSessaoAtual, ...iaResponse });
   } catch (error: unknown) {
     console.error("Erro no MCP (/api/diagnostico-ia):", error);
-    let errorMessage = "Ocorreu um erro desconhecido no servidor.";
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-
-    return NextResponse.json(
-      {
-        error: "Ocorreu um erro ao processar a requisição.",
-        details: errorMessage,
-      },
-      { status: 500 },
-    );
+    const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
+    return NextResponse.json({ error: "Falha ao processar a requisição.", details: errorMessage }, { status: 500 });
   }
 }
