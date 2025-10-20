@@ -27,7 +27,7 @@ interface DiagnosticoData {
     {
       media: number;
       estagio: string;
-      trilhasDeMelhoria: { meta: string; trilha: string }[];
+      trilhasDeMelhoria: { meta: string; trilha: string; explicacao?: string }[];
       resumoExecutivo: {
         forca: { meta: string } | null;
         fragilidade: { meta: string } | null;
@@ -148,6 +148,9 @@ RESULTADOS POR DIMENSÃO
         if (resultado.trilhasDeMelhoria.length > 0) {
           resultado.trilhasDeMelhoria.forEach((trilha) => {
             content += `  - Meta: ${trilha.meta} -> Trilha Sugerida: ${trilha.trilha}\n`;
+            if (trilha.explicacao) {
+              content += `    Explicação: ${trilha.explicacao}\n`;
+            }
           });
         } else {
           content +=
@@ -270,10 +273,15 @@ aprofundado e um plano de ação detalhado, entre em contato.
                       Trilhas de Melhoria:
                     </h4>
                     {resultado.trilhasDeMelhoria.length > 0 ? (
-                      <ul className="list-disc list-inside space-y-1 text-sm text-white/80">
+                      <ul className="list-disc list-inside space-y-2 text-sm text-white/80">
                         {resultado.trilhasDeMelhoria.map((trilha) => (
                           <li key={trilha.meta}>
                             <strong>{trilha.meta}:</strong> {trilha.trilha}
+                            {trilha.explicacao && (
+                              <p className="mt-1 text-xs text-white/60 italic">
+                                {trilha.explicacao}
+                              </p>
+                            )}
                           </li>
                         ))}
                       </ul>
