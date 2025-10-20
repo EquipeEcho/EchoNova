@@ -150,7 +150,7 @@ export async function POST(req: Request) {
 
     console.log('Resultados processados:', resultadosProcessados);
 
-    // CRIAÇÃO DO DIAGNÓSTICO COM O OBJETO 'perfil' SIMPLIFICADO
+    // CRIAÇÃO DO DIAGNÓSTico COM O OBJETO 'perfil' SIMPLIFICADO
     const novoDiagnostico = await Diagnostico.create({
       empresa: empresa._id,
       perfil: dados.perfil, // Agora 'dados.perfil' corresponde exatamente ao que o Schema espera
@@ -181,7 +181,6 @@ export async function POST(req: Request) {
   }
 }
 
-// ROTA GET (Permanece igual)
 export async function GET(req: Request) {
   try {
     await connectDB();

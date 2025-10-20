@@ -1,9 +1,7 @@
-// app/src/app/api/login/route.ts
-
-import { NextResponse } from "next/server"; // Para criar respostas HTTP no Next.js
-import bcrypt from "bcryptjs"; // Biblioteca para comparar hash de senha
-import { connectDB } from "@/lib/mongodb"; // Função para conectar ao MongoDB
-import Empresa from "@/models/Empresa"; // Modelo Empresa (coleção no MongoDB)
+import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import { connectDB } from "@/lib/mongodb";
+import Empresa from "@/models/Empresa";
 
 export async function POST(req: Request) {
   try {

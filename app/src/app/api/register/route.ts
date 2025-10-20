@@ -1,7 +1,7 @@
-import { connectDB } from "@/lib/mongodb"; // Função que conecta ao MongoDB usando Mongoose
-import Empresa from "@/models/Empresa"; // Modelo Empresa (tabela/coleção no MongoDB)
-import bcrypt from "bcryptjs"; // Biblioteca para hashear senhas
-import { NextResponse } from "next/server"; // Para criar respostas HTTP no Next.js
+import { connectDB } from "@/lib/mongodb";
+import Empresa from "@/models/Empresa";
+import bcrypt from "bcryptjs";
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {

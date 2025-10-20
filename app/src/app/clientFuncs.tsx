@@ -61,6 +61,7 @@ export function Ondas() {
     </svg>
   );
 }
+
 export function Header() {
   return (
     <div className="fixed top-4 right-4 z-50 flex gap-3">
@@ -279,6 +280,7 @@ export function DialogCloseButton() {
     </Dialog>
   );
 }
+
 export function Headernaofix(){
   return(
       <div className="py-4 flex-row justify-items-center">

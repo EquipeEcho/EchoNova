@@ -1,4 +1,3 @@
-// app/diagnostico-aprofundado/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -206,7 +205,7 @@ export default function DiagnosticoAprofundadoPage() {
             Diagnóstico Concluído
           </h1>
           <div className="prose prose-invert prose-lg max-w-none">
-            <ReactMarkdown>{diagnostico.relatorio_final}</ReactMarkdown> // Resposta em Markdown gerada por IA
+            <ReactMarkdown>{diagnostico.relatorio_final}</ReactMarkdown>
           </div>
         </div>
       );

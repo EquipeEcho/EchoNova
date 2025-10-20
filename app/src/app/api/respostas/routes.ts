@@ -18,25 +18,17 @@ export async function POST(request: Request) {
 
     });
 
-
-
     return NextResponse.json({
       sucesso: true,
       mensagem: "Respostas salvas com sucesso!",
       data: newResposta,
     });
-  }
-  
-  
-  
-  catch (erro) {
+
+  } catch (erro) {
     console.error("Erro ao salvar:", erro);
     return NextResponse.json(
       { sucesso: false, mensagem: "Erro ao salvar respostas." },
       { status: 500 }
     );
   }
-
-
-
 }
