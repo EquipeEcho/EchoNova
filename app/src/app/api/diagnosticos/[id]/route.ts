@@ -5,12 +5,12 @@ import Diagnostico from "@/models/Diagnostico";
 // GET - Buscar diagnóstico específico
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await connectDB();
 
-    const diagnosticoId = await params.id; // 1. Extrai o ID para uma variável
+    const { id: diagnosticoId } = await params; // 1. Extrai o ID para uma variável
 
     // 2. Adiciona uma verificação para garantir que o ID é válido para o Mongoose
     if (!diagnosticoId || !diagnosticoId.match(/^[0-9a-fA-F]{24}$/)) {
@@ -32,7 +32,7 @@ export async function GET(
 
     return NextResponse.json({ diagnostico });
   } catch (err: any) {
-    console.error(`Erro ao buscar diagnóstico ${params.id}:`, err);
+    console.error(`Erro ao buscar diagnóstico:`, err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
@@ -40,14 +40,15 @@ export async function GET(
 // PUT - Atualizar diagnóstico
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await connectDB();
     const dados = await request.json();
 
+    const { id: diagnosticoId } = await params;
     const diagnosticoAtualizado = await Diagnostico.findByIdAndUpdate(
-      params.id,
+      diagnosticoId,
       { ...dados, dataConclusao: new Date() },
       { new: true },
     );
@@ -71,12 +72,13 @@ export async function PUT(
 // DELETE - Deletar diagnóstico
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await connectDB();
 
-    const diagnosticoDeletado = await Diagnostico.findByIdAndDelete(params.id);
+    const { id: diagnosticoId } = await params;
+    const diagnosticoDeletado = await Diagnostico.findByIdAndDelete(diagnosticoId);
 
     if (!diagnosticoDeletado) {
       return NextResponse.json(

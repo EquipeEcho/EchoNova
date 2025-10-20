@@ -6,9 +6,10 @@ console.log("MONGODB_URI =", process.env.MONGODB_URI);
 // Pega a variável de ambiente MONGODB_URI
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// Se a variável não estiver definida, lança um erro
+// Se a variável não estiver definida, usa uma URI padrão para desenvolvimento
 if (!MONGODB_URI) {
-  throw new Error("Defina a variável de ambiente MONGODB_URI no .env.local");
+  console.warn("MONGODB_URI não definida, usando URI padrão para desenvolvimento");
+  // URI padrão para desenvolvimento local
 }
 
 // Interface para armazenar a conexão e a promise da conexão
@@ -37,8 +38,9 @@ export async function connectDB() {
 
   // Se não existe promise de conexão, cria uma nova
   if (!cached.promise) {
+    const uri = MONGODB_URI || "mongodb://localhost:27017/echonova";
     cached.promise = mongoose
-      .connect(MONGODB_URI!)
+      .connect(uri)
       .then((mongoose) => mongoose);
   }
 

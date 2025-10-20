@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Diagnostico from "@/models/Diagnostico";
 import Empresa from "@/models/Empresa";
+import { getChatProvider } from "@/lib/ai/providerFactory";
+import { promptMiniDiagnostico } from "@/lib/prompts";
 
 const mapeamentoPontuacao: Record<string, number> = {
   "p1-1": 4,
@@ -44,52 +46,69 @@ function calcularEstagio(media: number): string {
   return "Inicial";
 }
 
-function processarResultados(
+async function processarResultados(
   dimensoesSelecionadas: string[],
   respostasDimensoes: any,
 ) {
-  const resultadosFinais: Record<string, any> = {};
-  for (const nomeDimensao of dimensoesSelecionadas) {
-    const respostasDaDimensao = respostasDimensoes[nomeDimensao];
-    if (!respostasDaDimensao) continue;
-    const pontuacoesPerguntas = Object.entries(respostasDaDimensao).map(
-      ([id, valor]) => ({
-        id: id as string,
-        pontuacao: mapeamentoPontuacao[valor as string] || 0,
-      }),
-    );
-    const somaPontos = pontuacoesPerguntas.reduce(
-      (acc, p) => acc + p.pontuacao,
-      0,
-    );
-    const media =
-      pontuacoesPerguntas.length > 0
-        ? somaPontos / pontuacoesPerguntas.length
-        : 0;
-    const estagio = calcularEstagio(media);
-    const trilhasDeMelhoria = pontuacoesPerguntas
-      .filter((p) => p.pontuacao <= 2)
-      .map((p) => mapeamentoMetas[p.id])
-      .filter(Boolean);
-    const sortedScores = [...pontuacoesPerguntas].sort(
-      (a, b) => a.pontuacao - b.pontuacao,
-    );
-    const fragilidade =
-      sortedScores.length > 0
-        ? mapeamentoMetas[sortedScores[0].id] || null
-        : null;
-    const forca =
-      sortedScores.length > 0
-        ? mapeamentoMetas[sortedScores[sortedScores.length - 1].id] || null
-        : null;
-    resultadosFinais[nomeDimensao] = {
-      media: parseFloat(media.toFixed(2)),
-      estagio,
-      trilhasDeMelhoria,
-      resumoExecutivo: { forca, fragilidade },
-    };
+  const provider = getChatProvider();
+  const message = `Dimensões selecionadas: ${JSON.stringify(dimensoesSelecionadas)}\nRespostas das dimensões: ${JSON.stringify(respostasDimensoes)}`;
+  try {
+    const response = await provider.sendMessage(message, [], promptMiniDiagnostico);
+    console.log('Resposta da IA:', response);
+    // The AI should return { resultados: { ... } }
+    if (response && typeof response === 'object' && 'resultados' in response) {
+      return response.resultados;
+    } else {
+      console.error('Resposta da IA não contém resultados:', response);
+      throw new Error('Resposta da IA inválida');
+    }
+  } catch (error) {
+    console.error('Erro ao processar resultados com IA:', error);
+    // Fallback to fixed logic if AI fails
+    console.log('Usando lógica de fallback');
+    const resultadosFinais: Record<string, any> = {};
+    for (const nomeDimensao of dimensoesSelecionadas) {
+      const respostasDaDimensao = respostasDimensoes[nomeDimensao];
+      if (!respostasDaDimensao) continue;
+      const pontuacoesPerguntas = Object.entries(respostasDaDimensao).map(
+        ([id, valor]) => ({
+          id: id as string,
+          pontuacao: mapeamentoPontuacao[valor as string] || 0,
+        }),
+      );
+      const somaPontos = pontuacoesPerguntas.reduce(
+        (acc, p) => acc + p.pontuacao,
+        0,
+      );
+      const media =
+        pontuacoesPerguntas.length > 0
+          ? somaPontos / pontuacoesPerguntas.length
+          : 0;
+      const estagio = calcularEstagio(media);
+      const trilhasDeMelhoria = pontuacoesPerguntas
+        .filter((p) => p.pontuacao <= 2)
+        .map((p) => mapeamentoMetas[p.id])
+        .filter(Boolean);
+      const sortedScores = [...pontuacoesPerguntas].sort(
+        (a, b) => a.pontuacao - b.pontuacao,
+      );
+      const fragilidade =
+        sortedScores.length > 0
+          ? mapeamentoMetas[sortedScores[0].id] || null
+          : null;
+      const forca =
+        sortedScores.length > 0
+          ? mapeamentoMetas[sortedScores[sortedScores.length - 1].id] || null
+          : null;
+      resultadosFinais[nomeDimensao] = {
+        media: parseFloat(media.toFixed(2)),
+        estagio,
+        trilhasDeMelhoria,
+        resumoExecutivo: { forca, fragilidade },
+      };
+    }
+    return resultadosFinais;
   }
-  return resultadosFinais;
 }
 
 export async function POST(req: Request) {
@@ -124,10 +143,12 @@ export async function POST(req: Request) {
       console.log(`Empresa encontrada com ID: ${empresa._id}`);
     }
 
-    const resultadosProcessados = processarResultados(
+    const resultadosProcessados = await processarResultados(
       dados.dimensoesSelecionadas,
       dados.respostasDimensoes,
     );
+
+    console.log('Resultados processados:', resultadosProcessados);
 
     // CRIAÇÃO DO DIAGNÓSTICO COM O OBJETO 'perfil' SIMPLIFICADO
     const novoDiagnostico = await Diagnostico.create({
