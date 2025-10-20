@@ -28,7 +28,7 @@ export default function PagamentoPage() {
   const searchParams = useSearchParams();
 
   // Captura o ID da transação da URL
-  const transacaoId = searchParams.get("id");
+  const transacaoId = searchParams.get("transacaoId");
 
   // Mantém o comportamento anterior
   const planoSelecionado = searchParams.get("plano") || "Essencial";
@@ -256,7 +256,7 @@ export default function PagamentoPage() {
 
   // === Simulação de finalização da transação ===
   const finalizarTransacao = async () => {
-    const transacaoId = searchParams.get("id");
+    const transacaoId = searchParams.get("transacaoId");
 
     if (!transacaoId) {
       console.error("Transação não encontrada");
@@ -648,7 +648,7 @@ export default function PagamentoPage() {
                   onClick={async () => {
                     if (validateEtapaPagamento()) {
                       try {
-                        const transacaoId = searchParams.get("id");
+                        const transacaoId = searchParams.get("transacaoId");
 
                         const response = await fetch("/api/transacoes/finalizar", {
                           method: "POST",
@@ -660,7 +660,7 @@ export default function PagamentoPage() {
 
                         if (!response.ok) throw new Error(data.error || "Erro ao finalizar");
 
-                        console.log("💰 Transação concluída:", data.transacao);
+                        console.log("Transação concluída:", data.transacao);
                         setEtapaPagamento("confirmacao");
                       } catch (error) {
                         console.error("Erro ao finalizar transação:", error);

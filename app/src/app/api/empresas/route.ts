@@ -2,31 +2,39 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Empresa from "@/models/Empresa";
 
-// ✅ GET (listar todas as empresas)
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const cnpj = searchParams.get("cnpj");
-
+// POST - Criar nova empresa
+export async function POST(req: Request) {
   try {
     await connectDB();
+    const { perfil } = await req.json();
 
-    // 🔍 Se tiver ?cnpj=... → valida se já existe
-    if (cnpj) {
-      const empresa = await Empresa.findOne({ cnpj });
-      return NextResponse.json({ existe: !!empresa });
+    if (!perfil || !perfil.cnpj) {
+      return NextResponse.json(
+        { error: "Dados incompletos para criar empresa." },
+        { status: 400 }
+      );
     }
 
-    // 🧾 Se não tiver parâmetro, retorna lista completa
-    const empresas = await Empresa.find({}, "nome_empresa email cnpj _id");
-    return NextResponse.json({
-      message: "Empresas encontradas",
-      empresas,
-      total: empresas.length,
+    // Verifica se já existe uma empresa com o mesmo CNPJ
+    const empresaExistente = await Empresa.findOne({ cnpj: perfil.cnpj });
+    if (empresaExistente) {
+      return NextResponse.json({ empresa: empresaExistente });
+    }
+
+    // Cria nova empresa
+    const novaEmpresa = await Empresa.create({
+      nome_empresa: perfil.empresa,
+      email: perfil.email,
+      cnpj: perfil.cnpj,
+      setor: perfil.setor,
+      porte: perfil.porte,
     });
 
-  } catch (err: unknown) {
+    return NextResponse.json({ empresa: novaEmpresa });
+  } catch (error) {
+    console.error("Erro ao criar empresa:", error);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Erro ao consultar empresas." },
+      { error: "Erro interno ao criar empresa." },
       { status: 500 }
     );
   }

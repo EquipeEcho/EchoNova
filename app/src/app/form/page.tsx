@@ -82,11 +82,37 @@ export default function Diagnostico() {
       },
     });
 
+
   // Função para lidar com o envio do perfil
-  const handlePerfilSubmit = (respostas: RespostasPerfil) => {
-    setRespostasPerfil(respostas);
-    setFase("selecionarDimensoes");
+  const handlePerfilSubmit = async (respostas: RespostasPerfil) => {
+    try {
+      // Faz a requisição para criar ou buscar a empresa
+      const response = await fetch("/api/empresas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ perfil: respostas }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.empresa?._id) {
+        // Salva o ID da empresa localmente
+        localStorage.setItem("empresaId", data.empresa._id);
+        console.log("empresaId salvo:", data.empresa._id);
+
+        // Avança para a próxima etapa
+        setRespostasPerfil(respostas);
+        setFase("selecionarDimensoes");
+      } else {
+        console.error("Erro ao cadastrar empresa:", data.error);
+        alert("Erro ao cadastrar empresa. Tente novamente.");
+      }
+    } catch (error) {
+      console.error("Erro de conexão ao cadastrar empresa:", error);
+      alert("Não foi possível se conectar ao servidor.");
+    }
   };
+
 
   // Função para lidar com o envio das dimensões
   const handleDimensaoSubmit = (respostas: DimensaoRespostas[Dimensao]) => {

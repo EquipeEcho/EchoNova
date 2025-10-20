@@ -5,13 +5,12 @@ import Diagnostico from "@/models/Diagnostico";
 // GET - Buscar diagnóstico específico
 export async function GET(
   request: Request,
-  context: { params: Promise<{ id: string }> } // 👈 aqui muda
+  context: { params: Promise<{ id: string }> } //  aqui muda
 ) {
   try {
     await connectDB();
 
-    const { id } = await context.params; // 👈 aguarda o params
-
+    const { id } = await context.params; //  aguarda o params
     // Verifica se o ID é válido
     if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
       return NextResponse.json(
@@ -42,7 +41,7 @@ export async function GET(
 // PUT - Atualizar diagnóstico
 export async function PUT(
   request: Request,
-  context: { params: Promise<{ id: string }> } // 👈 mesma ideia
+  context: { params: Promise<{ id: string }> } // mesma ideia
 ) {
   try {
     await connectDB();
@@ -74,7 +73,7 @@ export async function PUT(
 // DELETE - Deletar diagnóstico
 export async function DELETE(
   request: Request,
-  context: { params: Promise<{ id: string }> } // 👈 também aqui
+  context: { params: Promise<{ id: string }> } // também aqui
 ) {
   try {
     await connectDB();

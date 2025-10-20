@@ -65,32 +65,41 @@ export default function PlanosPage() {
     }
   ];
 
-  const iniciarTransacao = async (plano: string) => {
-    console.log("🟢 Botão clicado para plano:", plano);
-    try {
-      const empresaId = localStorage.getItem("empresaId"); // pega o ID salvo após o diagnóstico
-      if (!empresaId) {
-        toast?.error?.("Empresa não identificada. Refaça o diagnóstico.");
-        return;
-      }
+  async function iniciarTransacao(plano: string) {
+  const empresaId = localStorage.getItem("empresaId");
 
-      const response = await fetch("/api/transacoes/iniciar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ empresaId, plano }),
-      });
+  if (!empresaId) {
+    alert("Empresa não identificada. Refaça o diagnóstico.");
+    return;
+  }
 
-      const data = await response.json();
+  try {
+    // normaliza o plano antes de enviar
+    const planoNormalizado = plano
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, ""); // remove acentos
 
-      if (!response.ok) throw new Error(data.error || "Erro ao iniciar transação");
+    const response = await fetch("/api/transacoes/iniciar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ empresaId, plano: planoNormalizado }),
+    });
 
-      // Redireciona para o pagamento com o ID da transação
-      router.push(`/pagamento?id=${data.transacaoId}`);
-    } catch (error) {
-      console.error("Erro ao iniciar transação:", error);
-      toast?.error?.("Erro ao iniciar transação. Tente novamente.");
-    }
-  };
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Erro ao iniciar transação");
+
+    console.log("Transação iniciada:", data);
+
+    router.push(
+      `/pagamento?plano=${encodeURIComponent(plano)}&preco=${data.valor}&transacaoId=${data.transacaoId}`
+    );
+  } catch (error) {
+    console.error("Erro ao iniciar transação:", error);
+    alert("Erro ao iniciar transação. Tente novamente.");
+  }
+}
+
 
   return (
     <main className="flex flex-col overflow-hidden min-h-screen">
@@ -137,7 +146,7 @@ export default function PlanosPage() {
             >
               {/* Brilho hover */}
               <div className="absolute inset-0 bg-slate-800/30 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-              
+
               {/* Badge */}
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <div className={`bg-gradient-to-r text-white px-6 py-2 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg ${plano.nome === 'Essencial' ? 'from-indigo-500 via-purple-500 to-indigo-600' :
@@ -198,8 +207,7 @@ export default function PlanosPage() {
               <div className="text-center relative z-10 mt-auto">
                 <button
                   onClick={() => iniciarTransacao(plano.nome)}
-                  className={`block w-full bg-gradient-to-r ${plano.cor} text-white font-bold py-4 px-6 rounded-2xl border-0 relative overflow-hidden group/btn hover:shadow-2xl transform transition-all duration-500 ${plano.popular ? 'hover:scale-105' : 'hover:scale-102'
-                    }`}
+                  className={`block w-full bg-gradient-to-r ${plano.cor} text-white font-bold py-4 px-6 rounded-2xl border-0 relative overflow-hidden group/btn hover:shadow-2xl transform transition-all duration-500 ${plano.popular ? 'hover:scale-105' : 'hover:scale-102'}`}
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000"></div>
                   <span className="relative z-10 flex items-center justify-center gap-2">
@@ -220,6 +228,7 @@ export default function PlanosPage() {
                     )}
                   </span>
                 </button>
+
               </div>
             </div>
           ))}

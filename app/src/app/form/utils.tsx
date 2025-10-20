@@ -11,39 +11,39 @@ import { validateField, formatCNPJ, equalCNPJ } from "./validator";
 // Funções de transação (integração com o backend)
 // ========================
 export async function iniciarTransacao(empresaId: string, plano: string) {
-  try {
-    const response = await fetch("/api/transacoes/iniciar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ empresaId, plano }),
-    });
+    try {
+        const response = await fetch("/api/transacoes/iniciar", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ empresaId, plano }),
+        });
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Erro ao iniciar transação");
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Erro ao iniciar transação");
 
-    return data.transacao;
-  } catch (error) {
-    console.error("Erro ao iniciar transação:", error);
-    throw error;
-  }
+        return data.transacao;
+    } catch (error) {
+        console.error("Erro ao iniciar transação:", error);
+        throw error;
+    }
 }
 
 export async function finalizarTransacao(transacaoId: string) {
-  try {
-    const response = await fetch("/api/transacoes/finalizar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ transacaoId }),
-    });
+    try {
+        const response = await fetch("/api/transacoes/finalizar", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ transacaoId }),
+        });
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Erro ao finalizar transação");
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Erro ao finalizar transação");
 
-    return data;
-  } catch (error) {
-    console.error("Erro ao finalizar transação:", error);
-    throw error;
-  }
+        return data;
+    } catch (error) {
+        console.error("Erro ao finalizar transação:", error);
+        throw error;
+    }
 }
 
 // ========================
@@ -141,7 +141,6 @@ function ProgressBar({ etapaAtual, totalEtapas }: { etapaAtual: number; totalEta
         </div>
     );
 }
-
 function InputField<Respostas extends Record<string, string>>({
     pergunta,
     valor,
@@ -162,7 +161,7 @@ function InputField<Respostas extends Record<string, string>>({
     const { valid, message } = validateField(pergunta.id as string, valor);
     const isCNPJ = pergunta.id.toString().toLowerCase().includes("cnpj");
 
-    // ✅ só mostra erro visual DEPOIS do botão ser pressionado
+    // só mostra erro visual DEPOIS do botão ser pressionado
     const hasError = showValidationError && (isCNPJ ? !valid || erroCnpj !== "" : !valid);
 
     const handleChange = async (
@@ -184,7 +183,10 @@ function InputField<Respostas extends Record<string, string>>({
         }
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
+    const handleKeyDown = (
+        e: React.KeyboardEvent,
+        pergunta: { tipo: string }
+    ) => {
         if (e.key === "Enter" && !(pergunta.tipo === "textarea" && !e.ctrlKey)) {
             e.preventDefault();
             const proximoBtn = document.querySelector(
@@ -196,6 +198,7 @@ function InputField<Respostas extends Record<string, string>>({
         }
     };
 
+
     // --- RENDERIZAÇÃO ---
     if (pergunta.tipo === "textarea") {
         return (
@@ -203,11 +206,10 @@ function InputField<Respostas extends Record<string, string>>({
                 <textarea
                     value={valor}
                     onChange={handleChange}
-                    onKeyDown={handleKeyDown}
+                    onKeyDown={(e) => handleKeyDown(e, pergunta)}
                     rows={pergunta.rows || 4}
-                    className={`w-full px-4 py-3 rounded-lg bg-white/20 border ${
-                        hasError ? "border-red-400" : "border-white/30"
-                    } text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none`}
+                    className={`w-full px-4 py-3 rounded-lg bg-white/20 border ${hasError ? "border-red-400" : "border-white/30"
+                        } text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none`}
                     placeholder={pergunta.placeholder}
                 />
                 {hasError && (
@@ -225,7 +227,7 @@ function InputField<Respostas extends Record<string, string>>({
                 value={valor}
                 onChange={(e) => onChange(pergunta.id, e.target.value)}
                 className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:ring-2 focus:ring-pink-500 text-center cursor-pointer"
-                onKeyDown={handleKeyDown}
+                onKeyDown={(e) => handleKeyDown(e, pergunta)}
             >
                 {pergunta.opcoes?.map((opcao) => (
                     <option
@@ -246,10 +248,9 @@ function InputField<Respostas extends Record<string, string>>({
                 type="text"
                 value={valor}
                 onChange={handleChange}
-                onKeyDown={handleKeyDown}
-                className={`w-full px-4 py-3 rounded-lg bg-white/20 border ${
-                    hasError ? "border-red-400" : "border-white/30"
-                } text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-center`}
+                onKeyDown={(e) => handleKeyDown(e, pergunta)}
+                className={`w-full px-4 py-3 rounded-lg bg-white/20 border ${hasError ? "border-red-400" : "border-white/30"
+                    } text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-center`}
                 placeholder={pergunta.placeholder}
                 maxLength={isCNPJ ? 18 : undefined}
             />
@@ -354,11 +355,14 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
     const valorAtual = respostas[perguntaAtual.id];
     const { valid, message } = validateField(perguntaAtual.id as string, valorAtual);
 
-    // Para campos obrigatórios, deve ser válido E não vazio
-    const podeAvancar = perguntaAtual.required
-        ? valorAtual.trim() !== "" && valid && erroCnpj === ""
-        : valid && erroCnpj === "";
+    // Checa se o campo atual é CNPJ (para incluir regra de erroCnpj)
+    const isCNPJField = perguntaAtual.id.toString().toLowerCase().includes("cnpj");
 
+    // Para campos obrigatórios, deve ser válido, não vazio e sem erroCnpj
+    const podeAvancar =
+        perguntaAtual.required
+            ? valorAtual.trim() !== "" && valid && (!isCNPJField || erroCnpj === "")
+            : valid && (!isCNPJField || erroCnpj === "");
     const handleTryAdvance = () => {
         if (!podeAvancar) {
             setShowValidationError(true);

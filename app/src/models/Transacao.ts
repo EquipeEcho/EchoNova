@@ -30,6 +30,10 @@ const TransacaoSchema = new mongoose.Schema(
             type: Date,
             default: Date.now,
         },
+        dataConclusao: {
+            type: Date,
+            required: false
+        },
     },
     { timestamps: true }
 );
