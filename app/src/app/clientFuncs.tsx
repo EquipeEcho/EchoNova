@@ -290,7 +290,7 @@ export function Headernaofix(){
             alt="EchoNova - Diagnóstico Inteligente de Treinamentos" 
             width={120} 
             height={40}
-            className="h-8 w-auto object-contain h-12 sm:h-14 md:h-14 lg:h-16"
+            className="w-auto object-contain h-12 sm:h-14 md:h-14 lg:h-16"
             priority
           />
         </div>
