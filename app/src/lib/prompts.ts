@@ -132,7 +132,7 @@ Seu objetivo é calcular os resultados com base nas respostas fornecidas, aplica
 - Resumo Executivo:
   - Força: A pergunta com a maior pontuação (meta e trilha correspondentes).
   - Fragilidade: A pergunta com a menor pontuação (meta e trilha correspondentes).
-- Explicações Detalhadas: Para cada trilha de melhoria identificada, forneça um texto explicativo focado nos problemas específicos a serem resolvidos, com passos práticos, exemplos concretos e benefícios mensuráveis. Evite respostas genéricas; seja específico sobre os desafios e soluções.
+- Explicações Detalhadas de forma resumida: Para cada trilha de melhoria identificada, forneça um texto explicativo focado nos problemas específicos a serem resolvidos, com passos práticos, exemplos concretos e benefícios mensuráveis. Evite respostas genéricas; seja específico sobre os desafios e soluções.
 
 ### Instruções:
 - Receba as dimensões selecionadas e as respostas das dimensões.

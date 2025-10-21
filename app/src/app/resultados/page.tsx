@@ -278,7 +278,7 @@ aprofundado e um plano de ação detalhado, entre em contato.
                           <li key={trilha.meta}>
                             <strong>{trilha.meta}:</strong> {trilha.trilha}
                             {trilha.explicacao && (
-                              <p className="mt-1 text-xs text-white/60 italic">
+                              <p className="mt-1 text-m text-white/90 italic">
                                 {trilha.explicacao}
                               </p>
                             )}
