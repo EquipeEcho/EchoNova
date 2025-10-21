@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import validator from "validator";
 import { Ondas } from "../clientFuncs";
 import { validateField, formatCNPJ, equalCNPJ } from "./validator";
 
@@ -47,7 +48,7 @@ export async function finalizarTransacao(transacaoId: string) {
 }
 
 // ========================
-// Tipos genéricos (Mantidos, são compatíveis)
+// Tipos genéricos
 // ========================
 export interface Pergunta<Respostas> {
     id: keyof Respostas;
@@ -62,7 +63,7 @@ export interface Pergunta<Respostas> {
 }
 
 // ========================
-// Hook principal de controle (Mantido, é compatível)
+// Hook principal de controle
 // ========================
 export function useDiagnostico<Respostas extends Record<string, string>>(
     perguntas: Pergunta<Respostas>[],
@@ -144,6 +145,7 @@ function ProgressBar({ etapaAtual, totalEtapas }: { etapaAtual: number; totalEta
         </div>
     );
 }
+
 function InputField<Respostas extends Record<string, string>>({
     pergunta,
     valor,
@@ -162,20 +164,10 @@ function InputField<Respostas extends Record<string, string>>({
     setErroCnpj: React.Dispatch<React.SetStateAction<string>>;
 }) {
     const { valid, message } = validateField(pergunta.id as string, valor);
-    const isEmailValid = !(pergunta.id === 'email' && valor && !validator.isEmail(valor));
-    const showError = showValidationError && (!valid || !isEmailValid);
-    const errorMessage = !isEmailValid ? "Por favor, insira um email válido." : message;
-
-    // Lógica do campo "Outros" (de V2)
-    const mostraTextAreaOutros = pergunta.temOutros && valor === "outros";
-
-    // Lógica do CNPJ (de V1)
     const isCNPJ = pergunta.id.toString().toLowerCase().includes("cnpj");
-
-    // só mostra erro visual DEPOIS do botão ser pressionado
     const hasError = showValidationError && (isCNPJ ? !valid || erroCnpj !== "" : !valid);
 
-    const handleChange = async (
+    const handleTextChange = async (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
     ) => {
         const value = isCNPJ ? formatCNPJ(e.target.value) : e.target.value;
@@ -184,20 +176,17 @@ function InputField<Respostas extends Record<string, string>>({
         if (isCNPJ && value.length === 18) {
             try {
                 const jaExiste = await equalCNPJ(value);
-                if (jaExiste) setErroCnpj("CNPJ já cadastrado");
-                else setErroCnpj("");
+                setErroCnpj(jaExiste ? "CNPJ já cadastrado" : "");
             } catch (error) {
                 console.error("Erro ao verificar CNPJ:", error);
+                setErroCnpj("Erro ao verificar CNPJ");
             }
         } else if (isCNPJ) {
             setErroCnpj("");
         }
     };
 
-    const handleKeyDown = (
-        e: React.KeyboardEvent,
-        pergunta: { tipo: string }
-    ) => {
+    const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === "Enter" && !(pergunta.tipo === "textarea" && !e.ctrlKey)) {
             e.preventDefault();
             const proximoBtn = document.querySelector(
@@ -208,15 +197,14 @@ function InputField<Respostas extends Record<string, string>>({
             }
         }
     };
-
-
-    // --- RENDERIZAÇÃO ---
-    if (pergunta.tipo === "textarea") {
+    
+    if (pergunta.tipo === "select") {
+        const mostraTextAreaOutros = pergunta.temOutros && valor === "outros";
         return (
             <div className="space-y-4">
                 <select
                     value={valor}
-                    onChange={handleChange}
+                    onChange={(e) => onChange(pergunta.id, e.target.value)}
                     onKeyDown={handleKeyDown}
                     className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:ring-2 focus:ring-pink-500 text-center cursor-pointer"
                 >
@@ -226,7 +214,6 @@ function InputField<Respostas extends Record<string, string>>({
                         </option>
                     ))}
                 </select>
-                {/* Funcionalidade "Outros" de V2 */}
                 {mostraTextAreaOutros && pergunta.campoOutros && (
                     <div className="animate-fade-in-up">
                         <label className="block text-white text-sm font-medium mb-2">Por favor, especifique:</label>
@@ -249,32 +236,23 @@ function InputField<Respostas extends Record<string, string>>({
         return (
             <textarea
                 value={valor}
-                onChange={(e) => onChange(pergunta.id, e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:ring-2 focus:ring-pink-500 text-center cursor-pointer"
-                onKeyDown={(e) => handleKeyDown(e, pergunta)}
-            >
-                {pergunta.opcoes?.map((opcao) => (
-                    <option
-                        key={opcao.valor}
-                        value={opcao.valor}
-                        className="text-gray-800 bg-white"
-                    >
-                        {opcao.texto}
-                    </option>
-                ))}
-            </select>
+                onChange={handleTextChange}
+                onKeyDown={handleKeyDown}
+                className={`w-full px-4 py-3 rounded-lg bg-white/20 border ${hasError ? "border-red-400" : "border-white/30"} text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
+                placeholder={pergunta.placeholder}
+                rows={pergunta.rows || 4}
+            />
         );
     }
-
+    
     return (
         <div className="space-y-2">
             <input
                 type={pergunta.id === 'email' ? 'email' : 'text'}
                 value={valor}
-                onChange={handleChange}
-                onKeyDown={(e) => handleKeyDown(e, pergunta)}
-                className={`w-full px-4 py-3 rounded-lg bg-white/20 border ${hasError ? "border-red-400" : "border-white/30"
-                    } text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-center`}
+                onChange={handleTextChange}
+                onKeyDown={handleKeyDown}
+                className={`w-full px-4 py-3 rounded-lg bg-white/20 border ${hasError ? "border-red-400" : "border-white/30"} text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-center`}
                 placeholder={pergunta.placeholder}
                 maxLength={isCNPJ ? 18 : undefined}
             />
@@ -286,7 +264,7 @@ function InputField<Respostas extends Record<string, string>>({
         </div>
     );
 }
-// MERGE: Usando a versão de NavigationButtons de V2, que tem melhor lógica de texto.
+
 function NavigationButtons({
     etapaAtual,
     totalEtapas,
@@ -296,6 +274,7 @@ function NavigationButtons({
     onSubmit,
     isUltimaDimensao = true,
     onTryAdvance,
+    showValidationError,
 }: {
     etapaAtual: number;
     totalEtapas: number;
@@ -305,14 +284,7 @@ function NavigationButtons({
     onSubmit: (e: React.FormEvent) => void;
     isUltimaDimensao?: boolean;
     onTryAdvance?: () => void;
-    etapaAtual: number;
-    totalEtapas: number;
-    podeAvancar: boolean;
-    onProximo: () => void;
-    onAnterior: () => void;
-    onSubmit: (e: React.FormEvent) => void;
-    isUltimaDimensao?: boolean;
-    onTryAdvance?: () => void;
+    showValidationError: boolean;
 }) {
     const ehUltimaEtapa = etapaAtual === totalEtapas - 1;
     const ehFinalDiagnostico = ehUltimaEtapa && isUltimaDimensao;
@@ -320,7 +292,7 @@ function NavigationButtons({
     const handleAdvanceClick = () => {
         onTryAdvance?.();
         if (podeAvancar) {
-            if (ehFinalDiagnostico || ehUltimaEtapa) {
+            if (ehUltimaEtapa) {
                 onSubmit(new Event("submit") as any);
             } else {
                 onProximo();
@@ -344,9 +316,9 @@ function NavigationButtons({
                 data-advance-button
                 type="button"
                 onClick={handleAdvanceClick}
+                disabled={!podeAvancar && showValidationError}
                 className={`cursor-pointer px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar ? "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white transform hover:scale-105 shadow-lg" : "bg-gray-500/50 text-gray-400 cursor-not-allowed"}`}
             >
-            
                 {buttonText}
             </button>
         </div>
@@ -369,8 +341,6 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
     onSubmit: (respostas: Respostas) => void;
     isUltimaDimensao?: boolean;
 }) {
-    const [erroCnpj, setErroCnpj] = useState("");
-
     const {
         etapaAtual,
         respostas,
@@ -380,33 +350,28 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
         handleSubmit,
         showValidationError,
         setShowValidationError,
+        erroCnpj,
+        setErroCnpj,
     } = useDiagnostico(perguntas, respostasIniciais, onSubmit);
 
     const perguntaAtual = perguntas[etapaAtual];
-    const valorAtual = respostas[perguntaAtual.id];
+    const valorAtual = respostas[perguntaAtual.id] || "";
     
-    // MERGE: Lógica de validação `podeAvancar` combina V1 e V2.
-    const { valid, message } = validateField(perguntaAtual.id as string, valorAtual);
+    const { valid } = validateField(perguntaAtual.id as string, valorAtual);
     const isEmailValid = !(perguntaAtual.id === 'email' && valorAtual && !validator.isEmail(valorAtual));
     const isCNPJField = perguntaAtual.id.toString().toLowerCase().includes("cnpj");
-
-    let podeAvancar = true;
+    
+    let podeAvancar = valid && isEmailValid && (!isCNPJField || erroCnpj === "");
+    
     if (perguntaAtual.required) {
-        podeAvancar = valorAtual.trim() !== "" && valid && isEmailValid;
-        // Validação do campo "Outros" (de V2)
-        if (perguntaAtual.temOutros && valorAtual === "outros" && perguntaAtual.campoOutros) {
-            const valorOutros = respostas[perguntaAtual.campoOutros];
-            podeAvancar = podeAvancar && valorOutros.trim() !== "";
-        }
-    } else {
-        podeAvancar = valid && isEmailValid;
+        podeAvancar = podeAvancar && valorAtual.trim() !== "";
+    }
+    
+    if (perguntaAtual.temOutros && valorAtual === "outros" && perguntaAtual.campoOutros) {
+        const valorOutros = respostas[perguntaAtual.campoOutros] || "";
+        podeAvancar = podeAvancar && valorOutros.trim() !== "";
     }
 
-    // Para campos obrigatórios, deve ser válido, não vazio e sem erroCnpj
-    const podeAvancar =
-        perguntaAtual.required
-            ? valorAtual.trim() !== "" && valid && (!isCNPJField || erroCnpj === "")
-            : valid && (!isCNPJField || erroCnpj === "");
     const handleTryAdvance = () => {
         if (!podeAvancar) {
             setShowValidationError(true);
@@ -459,6 +424,7 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
                     onSubmit={handleSubmit}
                     isUltimaDimensao={isUltimaDimensao}
                     onTryAdvance={handleTryAdvance}
+                    showValidationError={showValidationError}
                 />
             </div>
 

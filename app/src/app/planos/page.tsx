@@ -5,7 +5,6 @@ import { CheckIcon, StarIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 
 export default function PlanosPage() {
   const [planoSelecionado, setPlanoSelecionado] = useState<string | null>("Avançado");

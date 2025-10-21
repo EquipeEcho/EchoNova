@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Empresa from "@/models/Empresa";
+import bcrypt from "bcryptjs"; // CORREÇÃO: Importar bcryptjs para criptografar a senha
 
 // POST - Criar nova empresa
 export async function POST(req: Request) {
@@ -21,6 +22,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ empresa: empresaExistente });
     }
 
+    // CORREÇÃO: Criar uma senha placeholder e criptografá-la
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(`temp_${Date.now()}`, salt); // Cria uma senha temporária única e segura
+
     // Cria nova empresa
     const novaEmpresa = await Empresa.create({
       nome_empresa: perfil.empresa,
@@ -28,6 +33,7 @@ export async function POST(req: Request) {
       cnpj: perfil.cnpj,
       setor: perfil.setor,
       porte: perfil.porte,
+      senha: hashedPassword, // CORREÇÃO: Adicionado o campo 'senha' obrigatório
     });
 
     return NextResponse.json({ empresa: novaEmpresa });

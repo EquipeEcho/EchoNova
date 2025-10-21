@@ -201,8 +201,8 @@ aprofundado e um plano de ação detalhado, entre em contato.
             <div className="h-4 bg-slate-700 rounded w-1/2 mx-auto mt-3"></div>
           </div>
           <div className="flex flex-wrap gap-6 mb-8 justify-center">
-            <div className="bg-white/5 w-sm p-6 rounded-lg border border-white/10 flex flex-col h-48 w-64"></div>
-            <div className="bg-white/5 w-sm p-6 rounded-lg border border-white/10 flex flex-col h-48 w-64"></div>
+            <div className="bg-white/5 p-6 rounded-lg border border-white/10 flex flex-col h-48 w-64"></div>
+            <div className="bg-white/5 p-6 rounded-lg border border-white/10 flex flex-col h-48 w-64"></div>
           </div>
         </div>
         <div className="-z-10">

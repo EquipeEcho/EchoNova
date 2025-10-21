@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
 
 export function Ondas() {
   return (
@@ -106,43 +107,68 @@ export function Header() {
   );
 }
 
-export function Cadastro() {
-  return (
-    <div className="flex p-4 shadow-lx/50 border-2 rounded-xl border-t-indigo-500 border-l-indigo-500 border-b-purple-500 border-r-purple-500 md:mt-24">
-      <form action="GET">
-        <label htmlFor="Email">Coloque seu Email: </label>
-        <br />
-        <input
-          className="border-2 rounded-xl border-t-indigo-500 border-l-indigo-500 border-b-purple-500 border-r-purple-500"
-          type="email"
-          name="Email"
-          id="Email"
-        />
-        <br />
-        <label htmlFor="Email">Coloque sua Senha: </label>
-        <br />
-        <input
-          className="border-2 rounded-xl border-t-indigo-500 border-l-indigo-500 border-b-purple-500 border-r-purple-500"
-          type="password"
-          name="Pass"
-          id="Pass"
-        />
-        <br />
-        <label htmlFor="Email">Repita a Senha: </label>
-        <br />
-        <input
-          className="border-2 rounded-xl border-t-indigo-500 border-l-indigo-500 border-b-purple-500 border-r-purple-500"
-          type="password"
-          name="Pass"
-          id="Pass"
-        />
-        <br />
-      </form>
-    </div>
-  );
-}
+// CORREÇÃO 5: Componente `Cadastro` removido por ser código legado e não utilizado.
 
 export function DialogCloseButton() {
+  // ADICIONADO: States para controle de todos os formulários
+  // Login
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginSenha, setLoginSenha] = useState("");
+
+  // Cadastro
+  const [nomeEmpresa, setNomeEmpresa] = useState("");
+  const [registerCnpj, setRegisterCnpj] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+
+  // ADICIONADO: Funções de handle para login e registro
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: loginEmail, senha: loginSenha }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Login bem-sucedido: " + data.user.email);
+        // Aqui você pode fechar o modal ou redirecionar o usuário
+      } else {
+        alert("Erro no login: " + data.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao tentar fazer login.");
+    }
+  }
+
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome_empresa: nomeEmpresa,
+          cnpj: registerCnpj,
+          email: registerEmail,
+          senha: registerPassword,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Cadastro realizado com sucesso!");
+        // Sugestão: Mudar para a aba de login ou logar o usuário automaticamente
+      } else {
+        alert("Erro no cadastro: " + data.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao tentar cadastrar.");
+    }
+  }
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -187,7 +213,8 @@ export function DialogCloseButton() {
 
           {/* Aba de Login */}
           <TabsContent value="login">
-            <form className="grid gap-4 py-4">
+            {/* CORREÇÃO 4: Adicionado onSubmit ao formulário */}
+            <form className="grid gap-4 py-4" onSubmit={handleLogin}>
               <div className="grid gap-2">
                 <Label htmlFor="login-email" className="text-neutral-400">
                   Email
@@ -197,6 +224,9 @@ export function DialogCloseButton() {
                   type="email"
                   placeholder="seu@email.com"
                   className="bg-neutral-800 border-neutral-700 text-white"
+                  // CORREÇÃO 2: Conectado o estado ao input
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
                 />
               </div>
               <div className="grid gap-2">
@@ -208,6 +238,9 @@ export function DialogCloseButton() {
                   type="password"
                   placeholder="••••••••"
                   className="bg-neutral-800 border-neutral-700 text-white"
+                  // CORREÇÃO 2: Conectado o estado ao input
+                  value={loginSenha}
+                  onChange={(e) => setLoginSenha(e.target.value)}
                 />
               </div>
               <Button
@@ -221,16 +254,34 @@ export function DialogCloseButton() {
 
           {/* Aba de Cadastro */}
           <TabsContent value="register">
-            <form className="grid gap-4 py-4">
+            {/* CORREÇÃO 4: Adicionado onSubmit ao formulário */}
+            <form className="grid gap-4 py-4" onSubmit={handleRegister}>
               <div className="grid gap-2">
                 <Label htmlFor="register-name" className="text-neutral-400">
-                  Nome
+                  Nome da Empresa
                 </Label>
                 <Input
                   id="register-name"
                   type="text"
-                  placeholder="Seu nome"
+                  placeholder="Sua empresa"
                   className="bg-neutral-800 border-neutral-700 text-white"
+                  // CORREÇÃO 1 e 2: Estado adicionado e conectado
+                  value={nomeEmpresa}
+                  onChange={(e) => setNomeEmpresa(e.target.value)}
+                />
+              </div>
+               <div className="grid gap-2">
+                <Label htmlFor="register-cnpj" className="text-neutral-400">
+                  CNPJ
+                </Label>
+                <Input
+                  id="register-cnpj"
+                  type="text"
+                  placeholder="00.000.000/0001-00"
+                  className="bg-neutral-800 border-neutral-700 text-white"
+                  // CORREÇÃO 1 e 2: Estado adicionado e conectado
+                  value={registerCnpj}
+                  onChange={(e) => setRegisterCnpj(e.target.value)}
                 />
               </div>
               <div className="grid gap-2">
@@ -242,6 +293,9 @@ export function DialogCloseButton() {
                   type="email"
                   placeholder="seu@email.com"
                   className="bg-neutral-800 border-neutral-700 text-white"
+                   // CORREÇÃO 1 e 2: Estado adicionado e conectado
+                  value={registerEmail}
+                  onChange={(e) => setRegisterEmail(e.target.value)}
                 />
               </div>
               <div className="grid gap-2">
@@ -253,6 +307,9 @@ export function DialogCloseButton() {
                   type="password"
                   placeholder="••••••••"
                   className="bg-neutral-800 border-neutral-700 text-white"
+                  // CORREÇÃO 1 e 2: Estado adicionado e conectado
+                  value={registerPassword}
+                  onChange={(e) => setRegisterPassword(e.target.value)}
                 />
               </div>
               <Button
