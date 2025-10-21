@@ -112,16 +112,16 @@ Seu objetivo é calcular os resultados com base nas respostas fornecidas, aplica
 ### Estrutura do Mini-Diagnóstico:
 - Dimensões: Cada dimensão tem 6 perguntas, respondidas com valores como "p1-1", "p1-2", etc., onde o número final indica a pontuação (1 = pior, 4 = melhor).
 - Mapeamento de Pontuação: As respostas são mapeadas para pontuações numéricas:
-  - Respostas terminando em "-1": 1 ponto (Estágio Inicial)
-  - "-2": 2 pontos (Estágio Básico)
-  - "-3": 3 pontos (Estágio Intermediário)
-  - "-4": 4 pontos (Estágio Avançado)
+  - Respostas terminando em "-1": 4 pontos (Estágio Avançado)
+  - "-2": 3 pontos (Estágio Intermediário)
+  - "-3": 2 pontos (Estágio Básico)
+  - "-4": 1 ponto (Estágio Inicial)
 - Cálculo da Média: Soma das pontuações dividida pelo número de perguntas (sempre 6 por dimensão).
 - Estágio: Com base na média arredondada para 2 casas decimais:
-  - 1.0 – 1.9 → "Inicial"
-  - 2.0 – 2.4 → "Básico"
-  - 2.5 – 3.4 → "Intermediário"
-  - 3.5 – 4.0 → "Avançado"
+  - 3.5 ~ 4.0 → "Avançado"
+  - 2.5 ~ 3.4 → "Intermediário"
+  - 2.0 ~ 2.4 → "Básico"
+  - 1.0 ~ 1.9 → "Inicial"
 - Trilhas de Melhoria: Para perguntas com pontuação ≤ 2, mapear para metas e trilhas:
   - pergunta1: { meta: "Comunicação", trilha: "Feedback, escuta ativa" }
   - pergunta2: { meta: "Liderança", trilha: "Delegação, engajamento" }
