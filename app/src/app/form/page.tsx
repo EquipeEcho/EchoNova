@@ -31,28 +31,84 @@ export default function Diagnostico() {
     // Dimensão atual que está sendo preenchida
     const [indiceDimensaoAtual, setIndiceDimensaoAtual] = useState(0);
 
-    // Estado das respostas
-    const [respostasPerfil, setRespostasPerfil] = useState<RespostasPerfil>({
-        empresa: "",
-        email: "",
-        cnpj: "",
-        setor: "",
-        porte: "",
-        setorOutro: "",
+  // Estado das respostas
+  const [respostasPerfil, setRespostasPerfil] = useState<RespostasPerfil>({
+    empresa: "",
+    email: "",
+    cnpj: "",
+    setor: "",
+    porte: "",
+    setorOutro: "",
+  });
+
+
+  const [respostasDimensoes, setRespostasDimensoes] =
+    useState<DimensaoRespostas>({
+      "Pessoas e Cultura": {
+        pergunta1: "",
+        pergunta2: "",
+        pergunta3: "",
+        pergunta4: "",
+        pergunta5: "",
+        pergunta6: "",
+      },
+      "Estrutura e Operações": {
+        pergunta1: "",
+        pergunta2: "",
+        pergunta3: "",
+        pergunta4: "",
+        pergunta5: "",
+        pergunta6: "",
+      },
+      "Direção e Futuro": {
+        pergunta1: "",
+        pergunta2: "",
+        pergunta3: "",
+        pergunta4: "",
+        pergunta5: "",
+        pergunta6: "",
+      },
+      "Mercado e Clientes": {
+        pergunta1: "",
+        pergunta2: "",
+        pergunta3: "",
+        pergunta4: "",
+        pergunta5: "",
+        pergunta6: "",
+      },
     });
 
-    const [respostasDimensoes, setRespostasDimensoes] = useState<DimensaoRespostas>({
-        "Pessoas e Cultura": { pergunta1: "", pergunta2: "", pergunta3: "", pergunta4: "", pergunta5: "", pergunta6: "" },
-        "Estrutura e Operações": { pergunta1: "", pergunta2: "", pergunta3: "", pergunta4: "", pergunta5: "", pergunta6: "" },
-        "Direção e Futuro": { pergunta1: "", pergunta2: "", pergunta3: "", pergunta4: "", pergunta5: "", pergunta6: "" },
-        "Mercado e Clientes": { pergunta1: "", pergunta2: "", pergunta3: "", pergunta4: "", pergunta5: "", pergunta6: "" },
-    });
 
-    // Função para lidar com o envio do perfil
-    const handlePerfilSubmit = (respostas: RespostasPerfil) => {
+  // Função para lidar com o envio do perfil
+  const handlePerfilSubmit = async (respostas: RespostasPerfil) => {
+    try {
+      // Faz a requisição para criar ou buscar a empresa
+      const response = await fetch("/api/empresas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ perfil: respostas }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.empresa?._id) {
+        // Salva o ID da empresa localmente
+        localStorage.setItem("empresaId", data.empresa._id);
+        console.log("empresaId salvo:", data.empresa._id);
+
+        // Avança para a próxima etapa
         setRespostasPerfil(respostas);
         setFase("selecionarDimensoes");
-    };
+      } else {
+        console.error("Erro ao cadastrar empresa:", data.error);
+        alert("Erro ao cadastrar empresa. Tente novamente.");
+      }
+    } catch (error) {
+      console.error("Erro de conexão ao cadastrar empresa:", error);
+      alert("Não foi possível se conectar ao servidor.");
+    }
+  };
+
 
     // Função para lidar com o envio das dimensões
     const handleDimensaoSubmit = (respostas: DimensaoRespostas[Dimensao]) => {
@@ -144,52 +200,81 @@ export default function Diagnostico() {
         );
     }
 
-    if (fase === "selecionarDimensoes") {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-8 relative">
-                <Link
-                    href="/"
-                    className="absolute top-6 left-6 z-10 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all duration-300 transform hover:scale-105 backdrop-blur-sm border border-white/30 flex items-center gap-2"
-                >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                    </svg>
-                    <span className="hidden sm:inline">Home</span>
-                </Link>
-                <h1 className="text-2xl font-bold mb-6">Escolha até 3 dimensões</h1>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 max-w-2xl">
-                    {([
-                        { id: "Pessoas e Cultura", nome: "Pessoas & Cultura", codigo: "PC" },
-                        { id: "Estrutura e Operações", nome: "Estrutura e Operações", codigo: "EO" },
-                        { id: "Direção e Futuro", nome: "Direção e Futuro", codigo: "DF" },
-                        { id: "Mercado e Clientes", nome: "Mercado e Clientes", codigo: "MC" }
-                    ] as { id: Dimensao; nome: string; codigo: string }[]).map(dimensao => (
-                        <button
-                            key={dimensao.id}
-                            onClick={() => toggleDimensao(dimensao.id)}
-                            className={`px-6 py-4 rounded-lg font-semibold border transition-all duration-300 text-center ${dimensoesSelecionadas.includes(dimensao.id)
-                                ? "bg-pink-600 border-pink-500 text-white transform scale-105 shadow-lg"
-                                : "bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/50"
-                                }`}
-                        >
-                            <div className="text-lg font-bold mb-1">{dimensao.codigo}</div>
-                            <div className="text-sm opacity-90">{dimensao.nome}</div>
-                        </button>
-                    ))}
-                </div>
-                <p className="text-white/80 mb-4 text-center">
-                    Dimensões selecionadas: {dimensoesSelecionadas.length}/3
-                </p>
-                <button
-                    onClick={() => setFase("dimensao")}
-                    disabled={dimensoesSelecionadas.length === 0}
-                    className="cursor-pointer px-8 py-3 rounded-lg bg-gradient-to-r from-pink-500 to-pink-600 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:from-pink-600 hover:to-pink-700 transition-all duration-300 transform hover:scale-105"
-                >
-                    Começar Diagnóstico
-                </button>
-            </div>
-        );
-    }
+  if (fase === "selecionarDimensoes") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-8 relative">
+        {/* Botão Home no canto superior esquerdo */}
+        <Link
+          href="/"
+          className="absolute top-6 left-6 z-10 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all duration-300 transform hover:scale-105 backdrop-blur-sm border border-white/30 flex items-center gap-2"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+            />
+          </svg>
+          <span className="hidden sm:inline">Home</span>
+        </Link>
+        <h1 className="text-2xl font-bold mb-6">Escolha até 3 dimensões</h1>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 max-w-2xl">
+          {(
+            [
+              {
+                id: "Pessoas e Cultura",
+                nome: "Pessoas & Cultura",
+                codigo: "PC",
+              },
+              {
+                id: "Estrutura e Operações",
+                nome: "Estrutura e Operações",
+                codigo: "EO",
+              },
+              {
+                id: "Direção e Futuro",
+                nome: "Direção e Futuro",
+                codigo: "DF",
+              },
+              {
+                id: "Mercado e Clientes",
+                nome: "Mercado e Clientes",
+                codigo: "MC",
+              },
+            ] as { id: Dimensao; nome: string; codigo: string }[]
+          ).map((dimensao) => (
+            <button
+              key={dimensao.id}
+              onClick={() => toggleDimensao(dimensao.id)}
+              className={`px-6 py-4 rounded-lg font-semibold border transition-all duration-300 text-center ${dimensoesSelecionadas.includes(dimensao.id)
+                ? "bg-pink-600 border-pink-500 text-white transform scale-105 shadow-lg"
+                : "bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/50"
+                }`}
+            >
+              <div className="text-lg font-bold mb-1">{dimensao.codigo}</div>
+              <div className="text-sm opacity-90">{dimensao.nome}</div>
+            </button>
+          ))}
+        </div>
+        <p className="text-white/80 mb-4 text-center">
+          Dimensões selecionadas: {dimensoesSelecionadas.length}/3
+        </p>
+        <button
+          onClick={() => setFase("dimensao")}
+          disabled={dimensoesSelecionadas.length === 0}
+          className="cursor-pointer px-8 py-3 rounded-lg bg-gradient-to-r from-pink-500 to-pink-600 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:from-pink-600 hover:to-pink-700 transition-all duration-300 transform hover:scale-105"
+        >
+          Começar Diagnóstico
+        </button>
+      </div>
+    );
+  }
 
     if (fase === "dimensao") {
         const dimAtual = dimensoesSelecionadas[indiceDimensaoAtual];

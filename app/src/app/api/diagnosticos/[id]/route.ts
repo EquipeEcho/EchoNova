@@ -5,26 +5,29 @@ import Diagnostico from "@/models/Diagnostico";
 // GET - Buscar diagnóstico específico
 export async function GET(
   request: Request,
-  context: { params: { id: string } },
+  context: { params: Promise<{ id: string }> } //  aqui muda
 ) {
   try {
     await connectDB();
-    const { id: diagnosticoId } = context.params;
 
-    if (!diagnosticoId || !diagnosticoId.match(/^[0-9a-fA-F]{24}$/)) {
+    const { id: diagnosticoId } = await context.params; //  aguarda o params
+    // Verifica se o ID é válido
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
       return NextResponse.json(
         { error: "ID de diagnóstico inválido" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    const diagnostico = await Diagnostico.findById(diagnosticoId)
-      .populate("empresa", "nome_empresa email cnpj");
+    const diagnostico = await Diagnostico.findById(id).populate(
+      "empresa",
+      "nome_empresa email cnpj"
+    );
 
     if (!diagnostico) {
       return NextResponse.json(
         { error: "Diagnóstico não encontrado" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -38,23 +41,23 @@ export async function GET(
 // PUT - Atualizar diagnóstico
 export async function PUT(
   request: Request,
-  context: { params: { id: string } },
+  context: { params: Promise<{ id: string }> } // mesma ideia
 ) {
   try {
     await connectDB();
+    const { id } = await context.params;
     const dados = await request.json();
 
-    const { id: diagnosticoId } = context.params;
     const diagnosticoAtualizado = await Diagnostico.findByIdAndUpdate(
-      diagnosticoId,
+      id,
       { ...dados, dataConclusao: new Date() },
-      { new: true },
+      { new: true }
     );
 
     if (!diagnosticoAtualizado) {
       return NextResponse.json(
         { error: "Diagnóstico não encontrado" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -70,18 +73,18 @@ export async function PUT(
 // DELETE - Deletar diagnóstico
 export async function DELETE(
   request: Request,
-  context: { params: { id: string } },
+  context: { params: Promise<{ id: string }> } // também aqui
 ) {
   try {
     await connectDB();
+    const { id } = await context.params;
 
-    const { id: diagnosticoId } = context.params;
-    const diagnosticoDeletado = await Diagnostico.findByIdAndDelete(diagnosticoId);
+    const diagnosticoDeletado = await Diagnostico.findByIdAndDelete(id);
 
     if (!diagnosticoDeletado) {
       return NextResponse.json(
         { error: "Diagnóstico não encontrado" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 

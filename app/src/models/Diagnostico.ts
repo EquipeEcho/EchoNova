@@ -11,6 +11,7 @@ const DiagnosticoSchema = new Schema(
     perfil: {
       empresa: { type: String, required: true }, // Este é o nome da empresa
       email: { type: String, required: true },
+      cnpj: { type: String, required: true },
       setor: { type: String, required: true },
       porte: { type: String, required: true },
       setorOutro: { type: String, default: "" },

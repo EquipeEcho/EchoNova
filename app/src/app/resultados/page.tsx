@@ -5,36 +5,37 @@ import Image from "next/image";
 import Link from "next/link";
 import { Ondas } from "../clientFuncs";
 
-// Interface mesclada: Mantida a versão com CNPJ para consistência.
+// Interface mesclada que suporta todos os campos de ambos os arquivos.
 interface DiagnosticoData {
-    _id?: string;
-    empresa?: {
-        _id: string;
-        nome_empresa: string;
-        email: string;
+  _id?: string;
+  empresa?: {
+    _id: string;
+    nome_empresa: string;
+    email: string;
+  };
+  perfil: {
+    empresa: string;
+    setor: string;
+    porte: string;
+    setorOutro: string;
+    nome_empresa?: string;
+    email?: string;
+    cnpj: string; // Campo CNPJ mantido.
+  };
+  resultados?: Record<string, {
+    media: number;
+    estagio: string;
+    trilhasDeMelhoria: { meta: string; trilha: string }[];
+    resumoExecutivo: {
+      forca: { meta: string } | null;
+      fragilidade: { meta: string } | null;
     };
-    perfil: {
-        empresa: string;
-        setor: string;
-        porte: string;
-        setorOutro: string;
-        nome_empresa?: string;
-        email?: string;
-        cnpj: string; // Campo CNPJ mantido.
-    };
-    resultados?: Record<string, {
-        media: number;
-        estagio: string;
-        trilhasDeMelhoria: { meta: string; trilha: string }[];
-        resumoExecutivo: {
-            forca: { meta: string } | null;
-            fragilidade: { meta: string } | null;
-        };
-    }>;
-    dimensoesSelecionadas: string[];
-    respostasDimensoes?: Record<string, Record<string, string>>;
-    dataProcessamento?: string;
-    dataFinalizacao?: string;
+  }>;
+  dimensoesSelecionadas: string[];
+  respostasDimensoes?: Record<string, Record<string, string>>;
+  dataProcessamento?: string;
+  dataCriacao?: string;
+  dataFinalizacao?: string;
 }
 
 export default function Resultados() {
@@ -42,9 +43,11 @@ export default function Resultados() {
   const searchParams = useSearchParams();
   const diagnosticoId = searchParams.get("id");
 
-  const [diagnosticoData, setDiagnosticoData] = useState<DiagnosticoData | null>(null);
+  const [diagnosticoData, setDiagnosticoData] =
+    useState<DiagnosticoData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Lógica de carregamento de dados (idêntica e preservada).
   useEffect(() => {
     const carregarDiagnostico = async () => {
       if (diagnosticoId) {
@@ -97,6 +100,7 @@ export default function Resultados() {
     setIsLoading(false);
   };
 
+  // Função de geração de relatório do LADO 2 (com CNPJ).
   const generateReportContent = (data: DiagnosticoData): string => {
     const dataFormatada = new Date(
       data.dataProcessamento || data.dataFinalizacao || Date.now(),
@@ -156,7 +160,6 @@ aprofundado e um plano de ação detalhado, entre em contato.
   const handleDownloadReport = () => {
     if (!diagnosticoData) return;
     const reportContent = generateReportContent(diagnosticoData);
-
     const blob = new Blob([reportContent], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -174,12 +177,38 @@ aprofundado e um plano de ação detalhado, entre em contato.
     router.push("/form");
   };
 
-  // Resolução de conflito: Mantida a tela de loading simples da branch HEAD.
+  // Tela de Loading do LADO 1 (melhor UX).
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
-        Carregando resultados...
-      </div>
+      <main className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden">
+        <Link
+          href="/"
+          className="absolute top-6 left-6 z-10 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all duration-300 transform hover:scale-105 backdrop-blur-sm border border-white/30 flex items-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+            />
+          </svg>
+          <span className="hidden sm:inline">Home</span>
+        </Link>
+        <div className="max-w-4xl w-full bg-slate-800/80 backdrop-blur-sm rounded-2xl p-6 sm:p-8 shadow-2xl border border-white/10 animate-pulse">
+          <div className="text-center mb-8">
+            <div className="h-8 bg-slate-700 rounded w-3/4 mx-auto"></div>
+            <div className="h-4 bg-slate-700 rounded w-1/2 mx-auto mt-3"></div>
+          </div>
+          <div className="flex flex-wrap gap-6 mb-8 justify-center">
+            <div className="bg-white/5 w-sm p-6 rounded-lg border border-white/10 flex flex-col h-48 w-64"></div>
+            <div className="bg-white/5 w-sm p-6 rounded-lg border border-white/10 flex flex-col h-48 w-64"></div>
+          </div>
+        </div>
+        <div className="-z-10">
+          <Ondas />
+        </div>
+      </main>
     );
   }
 
@@ -191,7 +220,7 @@ aprofundado e um plano de ação detalhado, entre em contato.
     );
   }
 
-  // Resolução de conflito: Mantido o layout principal e mais rico da branch feat-layoutS2.
+  // Layout principal com a seção de ações do LADO 2 (mais rica).
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden">
       <Link href="/" className="absolute top-6 left-6 z-10 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all duration-300 transform hover:scale-105 backdrop-blur-sm border border-white/30 flex items-center gap-2">

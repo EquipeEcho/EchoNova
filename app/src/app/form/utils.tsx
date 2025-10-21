@@ -5,9 +5,46 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Ondas } from "../clientFuncs";
-// IMPORT MERGE: Importando tanto a validação local (para CNPJ) quanto a de email.
-import { validateField, formatCNPJ } from "./validator"; 
-import validator from "validator";
+import { validateField, formatCNPJ, equalCNPJ } from "./validator";
+
+// ========================
+// Funções de transação (integração com o backend)
+// ========================
+export async function iniciarTransacao(empresaId: string, plano: string) {
+    try {
+        const response = await fetch("/api/transacoes/iniciar", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ empresaId, plano }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Erro ao iniciar transação");
+
+        return data.transacao;
+    } catch (error) {
+        console.error("Erro ao iniciar transação:", error);
+        throw error;
+    }
+}
+
+export async function finalizarTransacao(transacaoId: string) {
+    try {
+        const response = await fetch("/api/transacoes/finalizar", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ transacaoId }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Erro ao finalizar transação");
+
+        return data;
+    } catch (error) {
+        console.error("Erro ao finalizar transação:", error);
+        throw error;
+    }
+}
 
 // ========================
 // Tipos genéricos (Mantidos, são compatíveis)
@@ -30,12 +67,13 @@ export interface Pergunta<Respostas> {
 export function useDiagnostico<Respostas extends Record<string, string>>(
     perguntas: Pergunta<Respostas>[],
     respostasIniciais: Respostas,
-    onsubmit?: (respostas: Respostas) => void
+    onsubmit?: (respostas: Respostas) => void,
 ) {
     const router = useRouter();
     const [etapaAtual, setEtapaAtual] = useState(0);
     const [respostas, setRespostas] = useState<Respostas>(respostasIniciais);
     const [showValidationError, setShowValidationError] = useState(false);
+    const [erroCnpj, setErroCnpj] = useState("");
 
     const handleInputChange = (campo: keyof Respostas, valor: string) => {
         setRespostas((prev) => ({ ...prev, [campo]: valor }));
@@ -77,6 +115,8 @@ export function useDiagnostico<Respostas extends Record<string, string>>(
         handleSubmit,
         showValidationError,
         setShowValidationError,
+        erroCnpj,
+        setErroCnpj,
     };
 }
 
@@ -104,22 +144,23 @@ function ProgressBar({ etapaAtual, totalEtapas }: { etapaAtual: number; totalEta
         </div>
     );
 }
-
-// MERGE: InputField combina funcionalidades de V1 e V2
 function InputField<Respostas extends Record<string, string>>({
     pergunta,
     valor,
     onChange,
     respostas,
     showValidationError = false,
+    erroCnpj,
+    setErroCnpj,
 }: {
     pergunta: Pergunta<Respostas>;
     valor: string;
     onChange: (campo: keyof Respostas, valor: string) => void;
     respostas: Respostas;
     showValidationError?: boolean;
+    erroCnpj: string;
+    setErroCnpj: React.Dispatch<React.SetStateAction<string>>;
 }) {
-    // Lógica de validação genérica (de V1) e de email (de V2)
     const { valid, message } = validateField(pergunta.id as string, valor);
     const isEmailValid = !(pergunta.id === 'email' && valor && !validator.isEmail(valor));
     const showError = showValidationError && (!valid || !isEmailValid);
@@ -131,24 +172,46 @@ function InputField<Respostas extends Record<string, string>>({
     // Lógica do CNPJ (de V1)
     const isCNPJ = pergunta.id.toString().toLowerCase().includes("cnpj");
 
-    // MERGE: Combina o formatador de CNPJ (V1) com a lógica geral.
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    // só mostra erro visual DEPOIS do botão ser pressionado
+    const hasError = showValidationError && (isCNPJ ? !valid || erroCnpj !== "" : !valid);
+
+    const handleChange = async (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
         const value = isCNPJ ? formatCNPJ(e.target.value) : e.target.value;
         onChange(pergunta.id, value);
+
+        if (isCNPJ && value.length === 18) {
+            try {
+                const jaExiste = await equalCNPJ(value);
+                if (jaExiste) setErroCnpj("CNPJ já cadastrado");
+                else setErroCnpj("");
+            } catch (error) {
+                console.error("Erro ao verificar CNPJ:", error);
+            }
+        } else if (isCNPJ) {
+            setErroCnpj("");
+        }
     };
 
-    // Lógica do "Enter" para avançar (de V1)
-    const handleKeyDown = (e: React.KeyboardEvent) => {
+    const handleKeyDown = (
+        e: React.KeyboardEvent,
+        pergunta: { tipo: string }
+    ) => {
         if (e.key === "Enter" && !(pergunta.tipo === "textarea" && !e.ctrlKey)) {
             e.preventDefault();
-            const proximoBtn = document.querySelector('[data-advance-button]') as HTMLButtonElement;
+            const proximoBtn = document.querySelector(
+                "[data-advance-button]"
+            ) as HTMLButtonElement;
             if (proximoBtn && !proximoBtn.disabled) {
                 proximoBtn.click();
             }
         }
     };
 
-    if (pergunta.tipo === "select") {
+
+    // --- RENDERIZAÇÃO ---
+    if (pergunta.tipo === "textarea") {
         return (
             <div className="space-y-4">
                 <select
@@ -186,32 +249,43 @@ function InputField<Respostas extends Record<string, string>>({
         return (
             <textarea
                 value={valor}
-                onChange={handleChange}
-                onKeyDown={handleKeyDown}
-                rows={pergunta.rows || 4}
-                className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
-                placeholder={pergunta.placeholder}
-            />
+                onChange={(e) => onChange(pergunta.id, e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:ring-2 focus:ring-pink-500 text-center cursor-pointer"
+                onKeyDown={(e) => handleKeyDown(e, pergunta)}
+            >
+                {pergunta.opcoes?.map((opcao) => (
+                    <option
+                        key={opcao.valor}
+                        value={opcao.valor}
+                        className="text-gray-800 bg-white"
+                    >
+                        {opcao.texto}
+                    </option>
+                ))}
+            </select>
         );
     }
 
-    // Input de texto (padrão)
     return (
         <div className="space-y-2">
             <input
                 type={pergunta.id === 'email' ? 'email' : 'text'}
                 value={valor}
                 onChange={handleChange}
-                onKeyDown={handleKeyDown}
-                className={`w-full px-4 py-3 rounded-lg bg-white/20 border ${showError ? "border-red-400" : "border-white/30"} text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 text-center`}
+                onKeyDown={(e) => handleKeyDown(e, pergunta)}
+                className={`w-full px-4 py-3 rounded-lg bg-white/20 border ${hasError ? "border-red-400" : "border-white/30"
+                    } text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-center`}
                 placeholder={pergunta.placeholder}
                 maxLength={isCNPJ ? 18 : undefined}
             />
-            {showError && <p className="text-red-400 text-sm text-center">{errorMessage}</p>}
+            {hasError && (
+                <p className="text-red-400 text-sm text-center">
+                    {erroCnpj || message}
+                </p>
+            )}
         </div>
     );
 }
-
 // MERGE: Usando a versão de NavigationButtons de V2, que tem melhor lógica de texto.
 function NavigationButtons({
     etapaAtual,
@@ -223,6 +297,14 @@ function NavigationButtons({
     isUltimaDimensao = true,
     onTryAdvance,
 }: {
+    etapaAtual: number;
+    totalEtapas: number;
+    podeAvancar: boolean;
+    onProximo: () => void;
+    onAnterior: () => void;
+    onSubmit: (e: React.FormEvent) => void;
+    isUltimaDimensao?: boolean;
+    onTryAdvance?: () => void;
     etapaAtual: number;
     totalEtapas: number;
     podeAvancar: boolean;
@@ -264,6 +346,7 @@ function NavigationButtons({
                 onClick={handleAdvanceClick}
                 className={`cursor-pointer px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar ? "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white transform hover:scale-105 shadow-lg" : "bg-gray-500/50 text-gray-400 cursor-not-allowed"}`}
             >
+            
                 {buttonText}
             </button>
         </div>
@@ -286,6 +369,8 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
     onSubmit: (respostas: Respostas) => void;
     isUltimaDimensao?: boolean;
 }) {
+    const [erroCnpj, setErroCnpj] = useState("");
+
     const {
         etapaAtual,
         respostas,
@@ -301,8 +386,9 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
     const valorAtual = respostas[perguntaAtual.id];
     
     // MERGE: Lógica de validação `podeAvancar` combina V1 e V2.
-    const { valid } = validateField(perguntaAtual.id as string, valorAtual);
+    const { valid, message } = validateField(perguntaAtual.id as string, valorAtual);
     const isEmailValid = !(perguntaAtual.id === 'email' && valorAtual && !validator.isEmail(valorAtual));
+    const isCNPJField = perguntaAtual.id.toString().toLowerCase().includes("cnpj");
 
     let podeAvancar = true;
     if (perguntaAtual.required) {
@@ -316,6 +402,11 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
         podeAvancar = valid && isEmailValid;
     }
 
+    // Para campos obrigatórios, deve ser válido, não vazio e sem erroCnpj
+    const podeAvancar =
+        perguntaAtual.required
+            ? valorAtual.trim() !== "" && valid && (!isCNPJField || erroCnpj === "")
+            : valid && (!isCNPJField || erroCnpj === "");
     const handleTryAdvance = () => {
         if (!podeAvancar) {
             setShowValidationError(true);
@@ -354,6 +445,8 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
                         onChange={handleInputChange}
                         respostas={respostas}
                         showValidationError={showValidationError}
+                        erroCnpj={erroCnpj}
+                        setErroCnpj={setErroCnpj}
                     />
                 </div>
 
