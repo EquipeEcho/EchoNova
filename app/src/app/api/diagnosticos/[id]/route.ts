@@ -5,12 +5,13 @@ import Diagnostico from "@/models/Diagnostico";
 // GET - Buscar diagnóstico específico
 export async function GET(
   request: Request,
-  context: { params: Promise<{ id: string }> } //  aqui muda
+  context: { params: { id: string } } // A tipagem pode ser simplificada, já que params não é mais uma promessa na versão estável do App Router.
 ) {
   try {
     await connectDB();
 
-    const { id: diagnosticoId } = await context.params; //  aguarda o params
+    const { id } = context.params; // Versão correta e funcional.
+
     // Verifica se o ID é válido
     if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
       return NextResponse.json(
@@ -41,11 +42,11 @@ export async function GET(
 // PUT - Atualizar diagnóstico
 export async function PUT(
   request: Request,
-  context: { params: Promise<{ id: string }> } // mesma ideia
+  context: { params: { id: string } }
 ) {
   try {
     await connectDB();
-    const { id } = await context.params;
+    const { id } = context.params;
     const dados = await request.json();
 
     const diagnosticoAtualizado = await Diagnostico.findByIdAndUpdate(
@@ -73,11 +74,11 @@ export async function PUT(
 // DELETE - Deletar diagnóstico
 export async function DELETE(
   request: Request,
-  context: { params: Promise<{ id: string }> } // também aqui
+  context: { params: { id: string } }
 ) {
   try {
     await connectDB();
-    const { id } = await context.params;
+    const { id } = context.params;
 
     const diagnosticoDeletado = await Diagnostico.findByIdAndDelete(id);
 
