@@ -1,4 +1,4 @@
-w// ----------------------
+// ----------------------
 // FORMATTERS
 // ----------------------
 export const formatCPF = (value: string) => {
