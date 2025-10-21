@@ -1,7 +1,4 @@
-// validator.ts
-
-
-// ----------------------
+w// ----------------------
 // FORMATTERS
 // ----------------------
 export const formatCPF = (value: string) => {

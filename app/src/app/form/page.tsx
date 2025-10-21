@@ -1,3 +1,5 @@
+// app/src/app/form/page.tsx
+
 "use client";
 import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -8,6 +10,11 @@ import { perguntasPC, RespostasPC } from "./PessoasCultura";
 import { perguntasEO, RespostasEO } from "./EstruturaOperacoes";
 import { perguntasMC, RespostasMC } from "./MercadoClientes";
 import { perguntasDF, RespostasDF } from "./DirecaoFuturo";
+
+// --- PASSO 1: IMPORTE O LOADER E O SONNER (PARA NOTIFICAÇÕES) ---
+import { Loader } from "@/components/ui/loader";
+import { toast } from "sonner";
+
 
 type DimensaoRespostas = {
     "Pessoas e Cultura": RespostasPC;
@@ -21,6 +28,9 @@ type Dimensao = keyof DimensaoRespostas;
 export default function Diagnostico() {
     const searchParams = useSearchParams();
     const router = useRouter();
+
+    // --- PASSO 2: ADICIONE O ESTADO DE LOADING ---
+    const [isLoading, setIsLoading] = useState<boolean>(false);
 
     // Fase do diagnóstico
     const [fase, setFase] = useState<"perfil" | "selecionarDimensoes" | "dimensao">("perfil");
@@ -82,7 +92,6 @@ export default function Diagnostico() {
   // Função para lidar com o envio do perfil
   const handlePerfilSubmit = async (respostas: RespostasPerfil) => {
     try {
-      // Faz a requisição para criar ou buscar a empresa
       const response = await fetch("/api/empresas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -92,25 +101,20 @@ export default function Diagnostico() {
       const data = await response.json();
 
       if (response.ok && data.empresa?._id) {
-        // Salva o ID da empresa localmente
         localStorage.setItem("empresaId", data.empresa._id);
         console.log("empresaId salvo:", data.empresa._id);
-
-        // Avança para a próxima etapa
         setRespostasPerfil(respostas);
         setFase("selecionarDimensoes");
       } else {
-        console.error("Erro ao cadastrar empresa:", data.error);
-        alert("Erro ao cadastrar empresa. Tente novamente.");
+        toast.error(data.error || "Erro ao cadastrar empresa. Tente novamente.");
       }
     } catch (error) {
       console.error("Erro de conexão ao cadastrar empresa:", error);
-      alert("Não foi possível se conectar ao servidor.");
+      toast.error("Não foi possível se conectar ao servidor.");
     }
   };
 
 
-    // Função para lidar com o envio das dimensões
     const handleDimensaoSubmit = (respostas: DimensaoRespostas[Dimensao]) => {
         const dimAtual = dimensoesSelecionadas[indiceDimensaoAtual];
         const novasRespostasDimensoes = {
@@ -121,7 +125,6 @@ export default function Diagnostico() {
         proximaDimensao(novasRespostasDimensoes);
     };
 
-    // Função para avançar para a próxima dimensão
     const proximaDimensao = async (respostasAtualizadas?: DimensaoRespostas) => {
         if (indiceDimensaoAtual < dimensoesSelecionadas.length - 1) {
             setIndiceDimensaoAtual(indiceDimensaoAtual + 1);
@@ -132,10 +135,11 @@ export default function Diagnostico() {
         }
     };
 
-    // Função para salvar diagnóstico no banco de dados
+    // --- PASSO 3: MODIFIQUE A FUNÇÃO salvarDiagnostico ---
     const salvarDiagnostico = async (respostasFinais: DimensaoRespostas) => {
+        setIsLoading(true); // ATIVA O LOADING AQUI
+
         try {
-            // Criar objeto com apenas as dimensões selecionadas
             const respostasFiltradas: any = {};
             dimensoesSelecionadas.forEach(dim => {
                 respostasFiltradas[dim] = respostasFinais[dim];
@@ -154,19 +158,19 @@ export default function Diagnostico() {
             const data = await response.json();
 
             if (response.ok) {
-                console.log("Diagnóstico salvo com sucesso:", data.diagnostico);
+                toast.success("Diagnóstico gerado com sucesso!");
                 router.push(`/resultados?id=${data.diagnostico._id}`);
             } else {
-                console.error('Erro ao salvar diagnóstico:', data.error);
-                salvarLocalStorage(respostasFinais);
+                throw new Error(data.error || "Erro ao salvar diagnóstico.");
             }
-        } catch (error) {
-            console.error('Erro de conexão:', error);
-            salvarLocalStorage(respostasFinais);
+        } catch (error: any) {
+            console.error('Erro de conexão ou API:', error);
+            toast.error(error.message);
+            salvarLocalStorage(respostasFinais); // Mantém o fallback
+            setIsLoading(false); // DESATIVA O LOADING EM CASO DE ERRO
         }
     };
 
-    // Função de fallback para localStorage
     const salvarLocalStorage = (respostasFinais: DimensaoRespostas) => {
         const diagnosticoCompleto = {
             perfil: respostasPerfil,
@@ -174,12 +178,10 @@ export default function Diagnostico() {
             dimensoesSelecionadas,
             dataFinalizacao: new Date().toISOString()
         };
-
         localStorage.setItem('diagnosticoCompleto', JSON.stringify(diagnosticoCompleto));
-        router.push('/resultados');
+        router.push('/resultados'); // Redireciona mesmo com fallback
     };
 
-    // Função para selecionar dimensões (máx 3)
     const toggleDimensao = (d: Dimensao) => {
         if (dimensoesSelecionadas.includes(d)) {
             setDimensoesSelecionadas(dimensoesSelecionadas.filter(x => x !== d));
@@ -188,7 +190,16 @@ export default function Diagnostico() {
         }
     };
 
-    // Renderização
+    // --- PASSO 4: ADICIONE A RENDERIZAÇÃO CONDICIONAL PARA O LOADING ---
+    if (isLoading) {
+        return (
+            <main className="min-h-screen flex flex-col items-center justify-center bg-slate-900 p-8">
+                <Loader text="Gerando relatório..." />
+            </main>
+        );
+    }
+
+    // O resto da sua lógica de renderização permanece a mesma
     if (fase === "perfil") {
         return (
             <DiagnosticoPage
@@ -203,7 +214,6 @@ export default function Diagnostico() {
   if (fase === "selecionarDimensoes") {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-8 relative">
-        {/* Botão Home no canto superior esquerdo */}
         <Link
           href="/"
           className="absolute top-6 left-6 z-10 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all duration-300 transform hover:scale-105 backdrop-blur-sm border border-white/30 flex items-center gap-2"

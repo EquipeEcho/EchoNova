@@ -4,6 +4,14 @@ import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Loader } from "@/components/ui/loader";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // --- INTERFACES DE DADOS PARA O FRONTEND ---
 
@@ -110,11 +118,17 @@ export default function DiagnosticoAprofundadoPage() {
       case "numero":
         return (
           <Input
-            type="number"
+            type="text" // 1. Mudamos para "text" para ter controle total do estilo
+            inputMode="numeric" // 2. Mostra o teclado numérico em celulares
+            pattern="[0-9]*" // 3. Padrão para validação (opcional, mas bom ter)
             value={resposta}
-            onChange={(e) => setResposta(e.target.value)}
+            onChange={(e) => {
+              // 4. Filtra e permite apenas a entrada de números
+              const numericValue = e.target.value.replace(/[^0-9]/g, "");
+              setResposta(numericValue);
+            }}
             placeholder="Digite um número..."
-            className="bg-slate-700 border-slate-500 text-center text-lg"
+            className="bg-slate-700 border-slate-500 text-center text-lg" // O estilo visual permanece o mesmo
             autoFocus
           />
         );
@@ -137,24 +151,23 @@ export default function DiagnosticoAprofundadoPage() {
       case "selecao":
         return (
           <div className="flex flex-col items-center gap-4">
-            <select
-              value={resposta}
-              onChange={(e) => setResposta(e.target.value)}
-              className="w-full max-w-xs px-4 py-3 rounded-lg bg-slate-700 border border-slate-500 text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-center"
-            >
-              <option value="" disabled>
-                Selecione uma opção
-              </option>
-              {pergunta.opcoes?.map((opt) => (
-                <option
-                  key={opt}
-                  value={opt}
-                  className="bg-slate-800 text-white"
-                >
-                  {opt}
-                </option>
-              ))}
-            </select>
+            <Select value={resposta} onValueChange={(value) => setResposta(value)}>
+              <SelectTrigger className="w-full max-w-xs h-auto py-3 text-lg bg-slate-700 border-slate-500 focus:ring-pink-500">
+                <SelectValue placeholder="Selecione uma opção" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-800 border-slate-600 text-white">
+                {pergunta.opcoes?.map((opt) => (
+                  <SelectItem
+                    key={opt}
+                    value={opt}
+                    // AQUI ESTÁ A MÁGICA: Cor de foco/hover rosa
+                    className="focus:bg-[#ff0055]/20 focus:text-white cursor-pointer"
+                  >
+                    {opt}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button type="submit" size="lg" disabled={!resposta}>
               Próximo
             </Button>
@@ -166,14 +179,15 @@ export default function DiagnosticoAprofundadoPage() {
             <Button
               onClick={() => processarResposta("Sim")}
               size="lg"
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-[#ff0055] hover:bg-[#b2003b] text-white"
             >
               Sim
             </Button>
             <Button
               onClick={() => processarResposta("Não")}
               size="lg"
-              variant="destructive"
+              // variant="outline" // Variante de contorno para diferenciação
+              className="bg-[#ff0055] hover:bg-[#b2003b] text-white"
             >
               Não
             </Button>
@@ -192,11 +206,7 @@ export default function DiagnosticoAprofundadoPage() {
 
   const renderContent = () => {
     if (diagnostico.status === "carregando") {
-      return (
-        <div className="text-center text-lg">
-          Carregando ...
-        </div>
-      );
+      return <Loader text="Carregando..." />;
     }
     if (diagnostico.status === "finalizado" && diagnostico.relatorio_final) {
       return (
@@ -255,7 +265,7 @@ export default function DiagnosticoAprofundadoPage() {
               {renderInput(pergunta)}
               {(pergunta.tipo_resposta === "texto" ||
                 pergunta.tipo_resposta === "numero") && (
-                  <Button type="submit" size="lg" disabled={!resposta.trim()}>
+                  <Button type="submit" size="lg" disabled={!resposta.trim()} className="bg-[#ff0055] hover:bg-[#b2003b] text-white">
                     Próximo
                   </Button>
                 )}
