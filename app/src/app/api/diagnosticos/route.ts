@@ -85,9 +85,35 @@ async function processarResultados(
           ? somaPontos / pontuacoesPerguntas.length
           : 0;
       const estagio = calcularEstagio(media);
-      const trilhasDeMelhoria = pontuacoesPerguntas
+            const trilhasDeMelhoria = pontuacoesPerguntas
         .filter((p) => p.pontuacao <= 2)
-        .map((p) => mapeamentoMetas[p.id])
+        .map((p) => {
+          const meta = mapeamentoMetas[p.id];
+          let explicacao = "";
+          switch (p.id) {
+            case "pergunta1":
+              explicacao = "Problemas de comunicação levam a mal-entendidos, conflitos e baixa eficiência. Para resolver: 1) Estabeleça canais de comunicação claros e regulares; 2) Treine a equipe em técnicas de escuta ativa e feedback construtivo; 3) Use ferramentas digitais para centralizar informações. Exemplo: Empresas que implementaram reuniões diárias reduziram erros em 25%. Benefícios: Melhora a colaboração e reduz retrabalho.";
+              break;
+            case "pergunta2":
+              explicacao = "Falta de liderança resulta em equipes desmotivadas e sem direção. Para resolver: 1) Desenvolva planos de delegação eficazes; 2) Capacite líderes em engajamento emocional; 3) Estabeleça metas compartilhadas e monitore progresso. Exemplo: Líderes treinados aumentaram o engajamento em 40%. Benefícios: Aumenta motivação e produtividade da equipe.";
+              break;
+            case "pergunta3":
+              explicacao = "Baixa criatividade impede inovação e adaptação. Para resolver: 1) Incentive sessões de brainstorming regulares; 2) Implemente programas de inovação incremental; 3) Forneça recursos para experimentação. Exemplo: Empresas com programas de inovação lançaram 2x mais produtos. Benefícios: Gera novas ideias e vantagem competitiva.";
+              break;
+            case "pergunta4":
+              explicacao = "Gestão de tempo ineficiente causa atrasos e estresse. Para resolver: 1) Adote técnicas de priorização como Eisenhower; 2) Use ferramentas de gestão de tarefas; 3) Treine em autogestão. Exemplo: Funcionários treinados reduziram prazos perdidos em 30%. Benefícios: Aumenta eficiência e reduz burnout.";
+              break;
+            case "pergunta5":
+              explicacao = "Valores e cultura fracos levam a desengajamento. Para resolver: 1) Defina e comunique valores claros; 2) Promova diversidade e inclusão; 3) Alinhe ações com propósito. Exemplo: Empresas com cultura forte têm 50% menos turnover. Benefícios: Fortalece identidade e retém talentos.";
+              break;
+            case "pergunta6":
+              explicacao = "Falta de transversalidade impede aprendizado contínuo. Para resolver: 1) Implemente LMS para treinamentos; 2) Incentive microlearning diário; 3) Crie comunidades de prática. Exemplo: Equipes com LMS aumentaram habilidades em 35%. Benefícios: Acelera desenvolvimento profissional e inovação.";
+              break;
+            default:
+              explicacao = `Para resolver o problema em ${meta.meta}, implemente a trilha "${meta.trilha}".`;
+          }
+          return { ...meta, explicacao };
+        })
         .filter(Boolean);
       const sortedScores = [...pontuacoesPerguntas].sort(
         (a, b) => a.pontuacao - b.pontuacao,

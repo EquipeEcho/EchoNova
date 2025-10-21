@@ -22,15 +22,19 @@ interface DiagnosticoData {
     email?: string;
     cnpj: string; // Campo CNPJ mantido.
   };
-  resultados?: Record<string, {
-    media: number;
-    estagio: string;
-    trilhasDeMelhoria: { meta: string; trilha: string }[];
-    resumoExecutivo: {
-      forca: { meta: string } | null;
-      fragilidade: { meta: string } | null;
-    };
-  }>;
+  // Resultados processados (da branch HEAD) - opcional para o caso de fallback
+  resultados?: Record<
+    string,
+    {
+      media: number;
+      estagio: string;
+      trilhasDeMelhoria: { meta: string; trilha: string; explicacao?: string }[];
+      resumoExecutivo: {
+        forca: { meta: string } | null;
+        fragilidade: { meta: string } | null;
+      };
+    }
+  >;
   dimensoesSelecionadas: string[];
   respostasDimensoes?: Record<string, Record<string, string>>;
   dataProcessamento?: string;
@@ -138,6 +142,9 @@ RESULTADOS POR DIMENSÃO
         if (resultado.trilhasDeMelhoria.length > 0) {
           resultado.trilhasDeMelhoria.forEach((trilha) => {
             content += `  - Meta: ${trilha.meta} -> Trilha Sugerida: ${trilha.trilha}\n`;
+            if (trilha.explicacao) {
+              content += `    Explicação: ${trilha.explicacao}\n`;
+            }
           });
         } else {
           content += "  - Nenhum ponto crítico que exige ação imediata foi identificado. Ótimo trabalho!\n";
@@ -249,9 +256,16 @@ aprofundado e um plano de ação detalhado, entre em contato.
                   <div className="mt-4">
                     <h4 className="font-semibold text-white mb-2">Trilhas de Melhoria:</h4>
                     {resultado.trilhasDeMelhoria.length > 0 ? (
-                      <ul className="list-disc list-inside space-y-1 text-sm text-white/80">
-                        {resultado.trilhasDeMelhoria.map(trilha => (
-                          <li key={trilha.meta}><strong>{trilha.meta}:</strong> {trilha.trilha}</li>
+                      <ul className="list-disc list-inside space-y-2 text-sm text-white/80">
+                        {resultado.trilhasDeMelhoria.map((trilha) => (
+                          <li key={trilha.meta}>
+                            <strong>{trilha.meta}:</strong> {trilha.trilha}
+                            {trilha.explicacao && (
+                              <p className="mt-1 text-m text-white/90 italic">
+                                {trilha.explicacao}
+                              </p>
+                            )}
+                          </li>
                         ))}
                       </ul>
                     ) : (
