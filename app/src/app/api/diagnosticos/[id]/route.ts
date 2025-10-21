@@ -5,12 +5,12 @@ import Diagnostico from "@/models/Diagnostico";
 // GET - Buscar diagnóstico específico
 export async function GET(
   request: Request,
-  context: { params: { id: string } } // A tipagem pode ser simplificada, já que params não é mais uma promessa na versão estável do App Router.
+  context: { params: Promise<{ id: string }> } // A tipagem pode ser simplificada, já que params não é mais uma promessa na versão estável do App Router.
 ) {
   try {
     await connectDB();
 
-    const { id } = context.params; // Versão correta e funcional.
+    const { id } = await context.params; // Versão correta e funcional.
 
     // Verifica se o ID é válido
     if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
