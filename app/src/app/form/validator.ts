@@ -179,15 +179,37 @@ export const debugCPFValidation = (cpf: string) => {
   console.log(`CPF ${cpf} ${isValid ? "VÁLIDO" : "INVÁLIDO"} ✓`);
 };
 
+// ======= Validação de Senha =======
+export function validatePassword(password: string): { valid: boolean; message?: string } {
+  if (!password.trim()) {
+    return { valid: false, message: "Senha obrigatória" };
+  }
+  if (password.trim().length < 6) { 
+    return { valid: false, message: "A senha deve ter pelo menos 6 caracteres" };
+  }
+  return { valid: true };
+}
+
+export function validateConfirmPassword(password: string, confirm: string): { valid: boolean; message?: string } {
+  if (!confirm.trim()) {
+    return { valid: false, message: "Confirmação de senha obrigatória" };
+  }
+  if (password !== confirm) {
+    return { valid: false, message: "As senhas não coincidem" };
+  }
+  return { valid: true };
+}
 
 // ======= Validador genérico =======
 export function validateField(
   fieldId: string,
   value: string
 ): { valid: boolean; message?: string } {
+
   if (!validateRequired(value)) {
     return { valid: false, message: "Campo obrigatório" };
   }
+  
 
   const id = fieldId.toLowerCase();
 
@@ -210,7 +232,16 @@ export function validateField(
   if (id.includes("telefone") && !validatePhone(value)) {
     return { valid: false, message: "Telefone inválido" };
   }
+  if (id.includes("senha")) {
+    return validatePassword(value);
+  }
 
+  if (id.includes("confirmar")) {
+    // pega o valor atual da senha (sem usar document)
+    const senhaValue = (globalThis as any)?.currentPasswordValue || "";
+    return validateConfirmPassword(senhaValue, value);
+  }
   return { valid: true };
 }
+
 

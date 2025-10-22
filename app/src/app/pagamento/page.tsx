@@ -7,6 +7,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   formatCPF,
+  validateConfirmPassword,
+  validatePassword,
   formatCNPJ,
   formatPhone,
   formatCEP,
@@ -21,6 +23,7 @@ import {
   validateCVV,
   validateExpiry,
   debugCPFValidation
+
 } from "../form/validator";
 import { useEffect } from "react";
 
@@ -131,6 +134,22 @@ export default function PagamentoPage() {
         if (!value.trim()) error = 'Telefone é obrigatório';
         else if (!validatePhone(value)) error = 'Telefone inválido';
         break;
+      case 'senha':
+        const passwordValidation = validatePassword(value);
+        if (!passwordValidation.valid) {
+          error = passwordValidation.message ?? 'Senha inválida'; // valor padrão caso seja undefined
+        } else {
+          (globalThis as any).currentPasswordValue = value;
+        }
+        break;
+
+      case 'confirmar':
+        const password = (globalThis as any).currentPasswordValue ?? '';
+        const confirmValidation = validateConfirmPassword(password, value);
+        if (!confirmValidation.valid) {
+          error = confirmValidation.message ?? 'As senhas não coincidem'; // valor padrão
+        }
+        break;
       case 'cpf':
         if (!value.trim()) error = 'CPF é obrigatório';
         else if (!validateCPF(value)) {
@@ -209,7 +228,7 @@ export default function PagamentoPage() {
   };
 
   const validateEtapaDados = () => {
-    const requiredFields = ['nome', 'email', 'telefone', 'cpf', 'nomeEmpresa', 'cnpj', 'endereco', 'cidade', 'estado', 'cep'];
+    const requiredFields = ['nome', 'email', 'telefone', 'senha', 'confirmar', 'nomeEmpresa', 'cnpj', 'endereco', 'cidade', 'estado', 'cep'];
     let hasErrors = false;
 
     requiredFields.forEach(field => {
@@ -394,11 +413,11 @@ export default function PagamentoPage() {
                     <label className="block text-gray-300 mb-2">Senha</label>
                     <input
                       type="password"
+                      name="senha"
                       onChange={(e) => handleInputChange('senha', e.target.value)}
                       className={`w-full p-3 bg-slate-800 border rounded-lg text-white focus:outline-none transition-colors ${errors.senha ? 'border-red-500 focus:border-red-400' : 'border-slate-600 focus:border-emerald-400'
                         }`}
                       placeholder="••••••••••••••••"
-                   
                     />
                     {errors.senha && <p className="text-red-400 text-sm mt-1">{errors.senha}</p>}
                   </div>
@@ -407,6 +426,7 @@ export default function PagamentoPage() {
                     <label className="block text-gray-300 mb-2">Confirmar Senha</label>
                     <input
                       type="password"
+                      name="confirmar"
                       onChange={(e) => handleInputChange('confirmar', e.target.value)}
                       className={`w-full p-3 bg-slate-800 border rounded-lg text-white focus:outline-none transition-colors ${errors.confirmar ? 'border-red-500 focus:border-red-400' : 'border-slate-600 focus:border-emerald-400'
                         }`}
@@ -588,7 +608,7 @@ export default function PagamentoPage() {
                   </div>
                 </div>
 
-                
+
               </div>
 
               <div className="flex justify-between mt-8">
