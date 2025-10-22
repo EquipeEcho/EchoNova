@@ -285,7 +285,7 @@ export default function DiagnosticoAprofundadoPage() {
   return (
     <main className="min-h-screen text-white flex items-center justify-center p-4">
       <div className="w-full max-w-3xl">
-        <Headernaofix/>
+        <Headernaofix Link="/teste" />
         {error && (
           <div className="bg-red-500 text-white p-3 rounded-md mb-4 text-center">
             {error}

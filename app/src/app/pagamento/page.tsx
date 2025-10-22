@@ -42,6 +42,8 @@ export default function PagamentoPage() {
     email: '',
     telefone: '',
     cpf: '',
+    senha: '',
+    confirmar: '',
 
     // Dados da empresa
     nomeEmpresa: '',
@@ -389,17 +391,28 @@ export default function PagamentoPage() {
                   </div>
 
                   <div>
-                    <label className="block text-gray-300 mb-2">CPF</label>
+                    <label className="block text-gray-300 mb-2">Senha</label>
                     <input
-                      type="text"
-                      value={formData.cpf}
-                      onChange={(e) => handleInputChange('cpf', e.target.value)}
-                      className={`w-full p-3 bg-slate-800 border rounded-lg text-white focus:outline-none transition-colors ${errors.cpf ? 'border-red-500 focus:border-red-400' : 'border-slate-600 focus:border-emerald-400'
+                      type="password"
+                      onChange={(e) => handleInputChange('senha', e.target.value)}
+                      className={`w-full p-3 bg-slate-800 border rounded-lg text-white focus:outline-none transition-colors ${errors.senha ? 'border-red-500 focus:border-red-400' : 'border-slate-600 focus:border-emerald-400'
                         }`}
-                      placeholder="000.000.000-00"
-                      maxLength={14}
+                      placeholder="••••••••••••••••"
+                   
                     />
-                    {errors.cpf && <p className="text-red-400 text-sm mt-1">{errors.cpf}</p>}
+                    {errors.senha && <p className="text-red-400 text-sm mt-1">{errors.senha}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-300 mb-2">Confirmar Senha</label>
+                    <input
+                      type="password"
+                      onChange={(e) => handleInputChange('confirmar', e.target.value)}
+                      className={`w-full p-3 bg-slate-800 border rounded-lg text-white focus:outline-none transition-colors ${errors.confirmar ? 'border-red-500 focus:border-red-400' : 'border-slate-600 focus:border-emerald-400'
+                        }`}
+                      placeholder="••••••••••••••••"
+                    />
+                    {errors.confirmar && <p className="text-red-400 text-sm mt-1">{errors.confirmar}</p>}
                   </div>
                 </div>
 
@@ -513,7 +526,7 @@ export default function PagamentoPage() {
                 Dados de Pagamento
               </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="">
                 {/* Dados do Cartão */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-white mb-4">💳 Cartão de Crédito</h3>
@@ -575,65 +588,7 @@ export default function PagamentoPage() {
                   </div>
                 </div>
 
-                {/* Endereço de Cobrança */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-white mb-4">📍 Endereço de Cobrança</h3>
-
-                  <div>
-                    <label className="block text-gray-300 mb-2">Endereço</label>
-                    <input
-                      type="text"
-                      value={formData.enderecoCobranca}
-                      onChange={(e) => handleInputChange('enderecoCobranca', e.target.value)}
-                      className={`w-full p-3 bg-slate-800 border rounded-lg text-white focus:outline-none transition-colors ${errors.enderecoCobranca ? 'border-red-500 focus:border-red-400' : 'border-slate-600 focus:border-emerald-400'
-                        }`}
-                      placeholder="Rua, número, complemento"
-                    />
-                    {errors.enderecoCobranca && <p className="text-red-400 text-sm mt-1">{errors.enderecoCobranca}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-300 mb-2">Cidade</label>
-                    <input
-                      type="text"
-                      value={formData.cidadeCobranca}
-                      onChange={(e) => handleInputChange('cidadeCobranca', e.target.value)}
-                      className={`w-full p-3 bg-slate-800 border rounded-lg text-white focus:outline-none transition-colors ${errors.cidadeCobranca ? 'border-red-500 focus:border-red-400' : 'border-slate-600 focus:border-emerald-400'
-                        }`}
-                      placeholder="Cidade"
-                    />
-                    {errors.cidadeCobranca && <p className="text-red-400 text-sm mt-1">{errors.cidadeCobranca}</p>}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-gray-300 mb-2">Estado</label>
-                      <input
-                        type="text"
-                        value={formData.estadoCobranca}
-                        onChange={(e) => handleInputChange('estadoCobranca', e.target.value.toUpperCase())}
-                        className={`w-full p-3 bg-slate-800 border rounded-lg text-white focus:outline-none transition-colors ${errors.estadoCobranca ? 'border-red-500 focus:border-red-400' : 'border-slate-600 focus:border-emerald-400'
-                          }`}
-                        placeholder="SP"
-                        maxLength={2}
-                      />
-                      {errors.estadoCobranca && <p className="text-red-400 text-sm mt-1">{errors.estadoCobranca}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-gray-300 mb-2">CEP</label>
-                      <input
-                        type="text"
-                        value={formData.cepCobranca}
-                        onChange={(e) => handleInputChange('cepCobranca', e.target.value)}
-                        className={`w-full p-3 bg-slate-800 border rounded-lg text-white focus:outline-none transition-colors ${errors.cepCobranca ? 'border-red-500 focus:border-red-400' : 'border-slate-600 focus:border-emerald-400'
-                          }`}
-                        placeholder="00000-000"
-                        maxLength={9}
-                      />
-                      {errors.cepCobranca && <p className="text-red-400 text-sm mt-1">{errors.cepCobranca}</p>}
-                    </div>
-                  </div>
-                </div>
+                
               </div>
 
               <div className="flex justify-between mt-8">
