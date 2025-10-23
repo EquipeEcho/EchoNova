@@ -253,11 +253,29 @@ export default function PagamentoPage() {
       "cepCobranca",
     ];
 
+    // --- START: fallback para endereço de cobrança usando o endereço principal ---
+    const billingFallback = {
+      enderecoCobranca: formData.endereco || "",
+      cidadeCobranca: formData.cidade || "",
+      estadoCobranca: formData.estado || "",
+      cepCobranca: formData.cep || "",
+    };
+    // Função para obter o valor real (campo especifico ou fallback)
+    const getFieldValue = (field: string) => {
+      if (field in billingFallback) {
+        return (formData as any)[field] && (formData as any)[field].trim()
+          ? (formData as any)[field]
+          : (billingFallback as any)[field];
+      }
+      return (formData as any)[field];
+    };
+    // --- END: fallback ---
+
     const newErrors: { [key: string]: string } = {};
     let hasErrors = false;
 
     for (const field of requiredFields) {
-      const value = formData[field as keyof typeof formData];
+      const value = getFieldValue(field) ?? "";
 
       if (!value || !value.trim()) {
         newErrors[field] = "Campo obrigatório";
