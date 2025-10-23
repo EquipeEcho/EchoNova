@@ -36,6 +36,10 @@ const DiagnosticoSchema = new Schema(
       type: Object,
       required: false,
     },
+    iaResponse: {
+      type: String,
+      required: false,
+    },
     status: {
       type: String,
       enum: ["em_andamento", "concluido", "rascunho"],

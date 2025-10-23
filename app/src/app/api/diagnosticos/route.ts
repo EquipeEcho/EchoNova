@@ -49,7 +49,7 @@ function calcularEstagio(media: number): string {
 async function processarResultados(
   dimensoesSelecionadas: string[],
   respostasDimensoes: any,
-) {
+): Promise<{ resultadosProcessados: any; iaResponse: string | null }> {
   const provider = getChatProvider();
   const message = `Dimensões selecionadas: ${JSON.stringify(dimensoesSelecionadas)}\nRespostas das dimensões: ${JSON.stringify(respostasDimensoes)}`;
   try {
@@ -57,7 +57,7 @@ async function processarResultados(
     console.log('Resposta da IA:', response);
     // The AI should return { resultados: { ... } }
     if (response && typeof response === 'object' && 'resultados' in response) {
-      return response.resultados;
+      return { resultadosProcessados: response.resultados, iaResponse: JSON.stringify(response) };
     } else {
       console.error('Resposta da IA não contém resultados:', response);
       throw new Error('Resposta da IA inválida');
@@ -133,7 +133,7 @@ async function processarResultados(
         resumoExecutivo: { forca, fragilidade },
       };
     }
-    return resultadosFinais;
+    return { resultadosProcessados: resultadosFinais, iaResponse: null };
   }
 }
 
@@ -169,12 +169,13 @@ export async function POST(req: Request) {
       console.log(`Empresa encontrada com ID: ${empresa._id}`);
     }
 
-    const resultadosProcessados = await processarResultados(
+    const { resultadosProcessados, iaResponse } = await processarResultados(
       dados.dimensoesSelecionadas,
       dados.respostasDimensoes,
     );
 
     console.log('Resultados processados:', resultadosProcessados);
+    console.log('Resposta da IA:', iaResponse);
 
     // CRIAÇÃO DO DIAGNÓSTICO COM O OBJETO 'perfil' SIMPLIFICADO
     const novoDiagnostico = await Diagnostico.create({
@@ -183,6 +184,7 @@ export async function POST(req: Request) {
       dimensoesSelecionadas: dados.dimensoesSelecionadas,
       respostasDimensoes: dados.respostasDimensoes,
       resultados: resultadosProcessados,
+      iaResponse: iaResponse,
       status: "concluido",
       dataProcessamento: new Date(),
     });
