@@ -160,31 +160,6 @@ export default function Diagnostico() {
           if (response.ok) {
             toast.success("Diagnóstico gerado com sucesso!");
 
-            // ✅ ENVIA O E-MAIL COM O DIAGNÓSTICO
-            try {
-              const emailResponse = await fetch("/api/send-diagnostico", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  nome: respostasPerfil.empresa,
-                  email: respostasPerfil.email,
-                  diagnostico: `Diagnóstico gerado com base nas dimensões: ${dimensoesSelecionadas.join(", ")}.`,
-                }),
-              });
-
-              const emailData = await emailResponse.json();
-
-              if (emailData.success) {
-                toast.success("Diagnóstico enviado por e-mail!");
-              } else {
-                console.warn("Falha ao enviar e-mail:", emailData.error);
-                toast.error("Não foi possível enviar o e-mail do diagnóstico.");
-              }
-            } catch (emailError) {
-              console.error("Erro ao enviar o e-mail:", emailError);
-              toast.error("Erro ao enviar o e-mail do diagnóstico.");
-            }
-
             // ✅ Redireciona para a página de resultados
             router.push(`/resultados?id=${data.diagnostico._id}`);
           } else {
@@ -197,43 +172,6 @@ export default function Diagnostico() {
           setIsLoading(false);
         }
       };
-
-    /*const enviarEmail = async (respostasFinais: DimensaoRespostas) => {
-
-          const respostasFiltradas: any = {};
-          dimensoesSelecionadas.forEach(dim => {
-            respostasFiltradas[dim] = respostasFinais[dim];
-          });
-          
-          
-          // ✅ ENVIA O E-MAIL COM O DIAGNÓSTICO
-          try {
-            const emailResponse = await fetch("/api/send-diagnostico", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  nome: respostasPerfil.empresa,
-                  email: respostasPerfil.email,
-                  diagnostico: `Diagnóstico gerado com base nas dimensões: ${dimensoesSelecionadas.join(", ")}.`,
-                }),
-            });
-
-              const data = await emailResponse.json();
-
-              const emailData = await emailResponse.json();
-
-              if (emailData.success) {
-                toast.success("Diagnóstico enviado por e-mail!");
-              } else {
-                console.warn("Falha ao enviar e-mail:", emailData.error);
-                toast.error("Não foi possível enviar o e-mail do diagnóstico.");
-              }
-            } catch (emailError) {
-              console.error("Erro ao enviar o e-mail:", emailError);
-              toast.error("Erro ao enviar o e-mail do diagnóstico.");
-            }
-      };*/
-
 
     const salvarLocalStorage = (respostasFinais: DimensaoRespostas) => {
         const diagnosticoCompleto = {
