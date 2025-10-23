@@ -1,38 +1,111 @@
-import { Ondas } from "../clientFuncs";
-import { CadastroLoginPag } from "./clientFuncsCadLog";
-export const metadata = {
-  title: "Cadastro e Login",
-  description: "Crie sua conta e acesse a plataforma",
-};
+"use client";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-export default function Home() {
+export function LoginPage() {
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginCnpj, setLoginCnpj] = useState("");
+  const [loginSenha, setLoginSenha] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!loginEmail && !loginCnpj) {
+      alert("Preencha o e-mail ou CNPJ para fazer login.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: loginEmail.trim(),
+          senha: loginSenha.trim(),
+          cnpj: loginCnpj.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert("Login realizado com sucesso!");
+        console.log("Usuário logado:", data.user);
+
+        // Exemplo: salvar ID da empresa ou redirecionar
+        localStorage.setItem("empresaId", data.user.id);
+        window.location.href = "/dashboard"; // ajuste o destino conforme necessário
+      } else {
+        alert(data.error || "Erro ao efetuar login.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Erro de conexão com o servidor.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <main className="flex flex-col overflow-hidden min-h-screen">
-      <section className="flex-1 main-bg flex flex-row justify-center items-center text-center px-4 sm:px-6 lg:px-8 py-16 sm:py-20 md:py-24 relative">
-        <div className="w-full max-w-lg sm:max-w-md lg:max-w-sm">
-          <CadastroLoginPag />
+    <div className="w-full max-w-sm bg-neutral-900 border border-neutral-700 rounded-2xl shadow-lg p-6">
+      <h2 className="text-white text-xl font-semibold mb-4 text-center">Bem-vindo</h2>
+      <p className="text-neutral-400 text-sm text-center mb-6">
+        Digite seu e-mail ou CNPJ
+      </p>
+
+      <form onSubmit={handleLogin} className="space-y-4">
+        <div>
+          <Label htmlFor="email" className="text-neutral-400">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="email@exemplo.com"
+            value={loginEmail}
+            onChange={(e) => setLoginEmail(e.target.value)}
+            className="bg-neutral-800 border-neutral-700 text-white"
+          />
         </div>
-        <footer className="fixed mb-5 bottom-0 align-center">
-          <a href="/" className="volta-btn">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              className="bi bi-arrow-left"
-              viewBox="0 0 16 16"
-            >
-              <path
-                fillRule="evenodd"
-                d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"
-              />
-            </svg>
-          </a>
-        </footer>
-        <div className="-z-10">
-          <Ondas />
+
+        <div>
+          <Label htmlFor="cnpj" className="text-neutral-400">CNPJ</Label>
+          <Input
+            id="cnpj"
+            type="text"
+            maxLength={18}
+            placeholder="00.000.000/0001-00"
+            value={loginCnpj}
+            onChange={(e) => setLoginCnpj(e.target.value)}
+            className="bg-neutral-800 border-neutral-700 text-white"
+          />
         </div>
-      </section>
-    </main>
+
+        <div>
+          <Label htmlFor="senha" className="text-neutral-400">Senha</Label>
+          <Input
+            id="senha"
+            type="password"
+            placeholder="••••••••"
+            value={loginSenha}
+            onChange={(e) => setLoginSenha(e.target.value)}
+            className="bg-neutral-800 border-neutral-700 text-white"
+          />
+        </div>
+
+        <Button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-bold py-2 rounded-lg"
+        >
+          {loading ? "Entrando..." : "Entrar"}
+        </Button>
+      </form>
+
+      <p className="text-neutral-500 text-xs mt-6 text-center">
+        Caso não tenha se cadastrado, termine o primeiro questionário.
+      </p>
+    </div>
   );
 }

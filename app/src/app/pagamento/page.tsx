@@ -120,7 +120,7 @@ export default function PagamentoPage() {
 
   const validateField = (field: string, value: string) => {
     let error = '';
-
+    
     switch (field) {
       case 'nome':
         if (!value.trim()) error = 'Nome é obrigatório';
@@ -242,16 +242,59 @@ export default function PagamentoPage() {
   };
 
   const validateEtapaPagamento = () => {
-    const requiredFields = ['numeroCartao', 'nomeCartao', 'validadeCartao', 'cvv', 'enderecoCobranca', 'cidadeCobranca', 'estadoCobranca', 'cepCobranca'];
+    const requiredFields = [
+      "numeroCartao",
+      "nomeCartao",
+      "validadeCartao",
+      "cvv",
+      "enderecoCobranca",
+      "cidadeCobranca",
+      "estadoCobranca",
+      "cepCobranca",
+    ];
+
+    const newErrors: { [key: string]: string } = {};
     let hasErrors = false;
 
-    requiredFields.forEach(field => {
-      validateField(field, formData[field as keyof typeof formData]);
-      if (!formData[field as keyof typeof formData] || errors[field]) {
-        hasErrors = true;
-      }
-    });
+    for (const field of requiredFields) {
+      const value = formData[field as keyof typeof formData];
 
+      if (!value || !value.trim()) {
+        newErrors[field] = "Campo obrigatório";
+        hasErrors = true;
+        continue;
+      }
+
+      // Validações específicas
+      switch (field) {
+        case "numeroCartao":
+          if (!validateCard(value)) {
+            newErrors[field] = "Número do cartão inválido";
+            hasErrors = true;
+          }
+          break;
+        case "validadeCartao":
+          if (!validateExpiry(value)) {
+            newErrors[field] = "Validade inválida";
+            hasErrors = true;
+          }
+          break;
+        case "cvv":
+          if (!validateCVV(value)) {
+            newErrors[field] = "CVV inválido";
+            hasErrors = true;
+          }
+          break;
+        case "cepCobranca":
+          if (!validateCEP(value)) {
+            newErrors[field] = "CEP inválido";
+            hasErrors = true;
+          }
+          break;
+      }
+    }
+
+    setErrors(newErrors);
     return !hasErrors;
   };
 
@@ -266,7 +309,31 @@ export default function PagamentoPage() {
       }
     }
   };
+  const teste = async () =>{
+                    if (validateEtapaPagamento()) {
+                      try {
+                        const transacaoId =
+                          searchParams.get("transacaoId") || searchParams.get("id");
 
+                        const response = await fetch("/api/transacoes/finalizar", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ transacaoId }),
+                        });
+
+                        const data = await response.json();
+
+                        if (!response.ok) throw new Error(data.error || "Erro ao finalizar");
+
+                        console.log("Transação concluída:", data);
+                        setEtapaPagamento("confirmacao");
+                      } catch (error) {
+                        console.error("Erro ao finalizar transação:", error);
+                        alert("Erro ao processar pagamento. Tente novamente.");
+                      }
+                    }
+                  
+  }
   const voltarEtapa = () => {
     if (etapaPagamento === 'pagamento') {
       setEtapaPagamento('dados');
@@ -601,7 +668,7 @@ export default function PagamentoPage() {
                         className={`w-full p-3 bg-slate-800 border rounded-lg text-white focus:outline-none transition-colors ${errors.cvv ? 'border-red-500 focus:border-red-400' : 'border-slate-600 focus:border-emerald-400'
                           }`}
                         placeholder="000"
-                        maxLength={4}
+                        maxLength={3}
                       />
                       {errors.cvv && <p className="text-red-400 text-sm mt-1">{errors.cvv}</p>}
                     </div>
@@ -620,29 +687,7 @@ export default function PagamentoPage() {
                 </Button>
 
                 <Button
-                  onClick={async () => {
-                    if (validateEtapaPagamento()) {
-                      try {
-                        const transacaoId = searchParams.get("transacaoId");
-
-                        const response = await fetch("/api/transacoes/finalizar", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ transacaoId }),
-                        });
-
-                        const data = await response.json();
-
-                        if (!response.ok) throw new Error(data.error || "Erro ao finalizar");
-
-                        console.log("Transação concluída:", data.transacao);
-                        setEtapaPagamento("confirmacao");
-                      } catch (error) {
-                        console.error("Erro ao finalizar transação:", error);
-                        alert("Erro ao processar pagamento. Tente novamente.");
-                      }
-                    }
-                  }}
+                  onClick={teste}
                   className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105"
                 >
                   Finalizar Compra →
@@ -684,6 +729,6 @@ export default function PagamentoPage() {
           <Ondas />
         </div>
       </section>
-    </main>
+    </main >
   );
 }

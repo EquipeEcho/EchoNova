@@ -1,18 +1,37 @@
-import mongoose, { model, models } from "mongoose";
+import mongoose, { Schema, model, models } from "mongoose";
 
-const EmpresaSchema = new mongoose.Schema(
+const EmpresaSchema = new Schema(
   {
+    //Dados principais
     nome_empresa: { type: String, required: true },
     cnpj: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true },
-    senha: { type: String, required: false },
+    senha: { type: String, required: false }, // hash com bcrypt
+
+    // Dados organizacionais
     area_atuacao: { type: String, required: false },
     tamanho: { type: String, required: false },
     numero_funcionarios: { type: Number, required: false },
-    // aqui são os bagulhos dos planos
-    planoAtivo: { type: String, enum: ["essencial", "avancado", "escalado", null], default: null },
-    transacaoAtualId: { type: mongoose.Schema.Types.ObjectId, ref: "Transacao", default: null },
-  }, { timestamps: true }
+
+    //Dados de plano / assinatura
+    planoAtivo: {
+      type: String,
+      enum: ["essencial", "avancado", "escalado", null],
+      default: null,
+    },
+    transacaoAtualId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Transacao",
+      default: null,
+    },
+    tipo_usuario: {
+      type: String,
+      enum: ["ADMIN", "USER"],
+      default: "USER",
+    },
+    data_cadastro: { type: Date, default: Date.now },
+  },
+  { timestamps: true }
 );
 
 export default models.Empresa || model("Empresa", EmpresaSchema);

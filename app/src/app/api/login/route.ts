@@ -5,58 +5,84 @@ import Empresa from "@/models/Empresa";
 
 export async function POST(req: Request) {
   try {
-    // Conecta ao banco de dados
     await connectDB();
 
-    // Pega os dados enviados pelo front-end (email, senha e CNPJ)
-    const { email, senha, cnpj } = await req.json();
+    // Lê o corpo cru (para debug seguro)
+    const rawBody = await req.text();
+    console.log("📦 Body recebido:", rawBody);
 
-    // 1. OTIMIZAÇÃO: Verifica se pelo menos um dado de identificação foi fornecido
-    if (!email && !cnpj) {
+    if (!rawBody) {
       return NextResponse.json(
-        { error: "Insira Email ou CNPJ para fazer login" },
-        { status: 401 },
+        { error: "Requisição sem corpo JSON" },
+        { status: 400 }
       );
     }
 
-    // 2. OTIMIZAÇÃO: Realiza UMA ÚNICA consulta ao banco de dados.
-    const query = { $or: [{ email }, { cnpj }] };
-    const empresa = await Empresa.findOne(query);
+    let data;
+    try {
+      data = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json(
+        { error: "JSON inválido" },
+        { status: 400 }
+      );
+    }
 
-    // Se não encontrou empresa, retorna erro 401
+    const email = data?.email?.trim() || "";
+    const senha = data?.senha?.trim() || "";
+    const cnpj = data?.cnpj?.trim() || "";
+
+    if (!email && !cnpj) {
+      console.warn("⚠️ Nenhum email ou CNPJ recebido:", data);
+      return NextResponse.json(
+        { error: "Insira Email ou CNPJ para fazer login" },
+        { status: 400 }
+      );
+    }
+
+    if (!senha) {
+      return NextResponse.json(
+        { error: "Senha é obrigatória" },
+        { status: 400 }
+      );
+    }
+
+    // Busca empresa
+    const empresa = await Empresa.findOne({
+      $or: [{ email }, { cnpj }],
+    });
+
     if (!empresa) {
       return NextResponse.json(
         { error: "Usuário não encontrado" },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
-    // Compara a senha enviada com a senha hash armazenada no banco
-    const senhaOk = await bcrypt.compare(senha, empresa.senha);
+    // Valida senha
+    const senhaOk = await bcrypt.compare(senha, empresa.senha || "");
     if (!senhaOk) {
-      // Se senha incorreta, retorna erro 401
-      return NextResponse.json({ error: "Senha inválida" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Senha incorreta" },
+        { status: 401 }
+      );
     }
 
-    // Se deu tudo certo, retorna sucesso com dados da empresa (sem a senha)
     return NextResponse.json({
       message: "Login bem-sucedido",
       user: {
         id: empresa._id,
-        nome: empresa.nome_empresa,
+        nome_empresa: empresa.nome_empresa,
         email: empresa.email,
+        cnpj: empresa.cnpj,
+        planoAtivo: empresa.planoAtivo,
       },
     });
-  } catch (err: unknown) {
-    // Em caso de erro, retorna status 500
+  } catch (err: any) {
     console.error("Erro no Login:", err);
-    let errorMessage = "Erro ao efetuar login no servidor.";
-    if (err instanceof Error) {
-      errorMessage = err.message;
-    }
     return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 },
+      { error: "Erro interno no servidor" },
+      { status: 500 }
     );
   }
 }

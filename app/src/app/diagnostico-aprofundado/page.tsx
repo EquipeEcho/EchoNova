@@ -152,7 +152,7 @@ export default function DiagnosticoAprofundadoPage() {
       case "selecao":
         return (
           <div className="flex flex-col items-center gap-4">
-            <Select value={resposta} onValueChange={(value) => setResposta(value)}>
+            <Select value={resposta} onValueChange={(value: string) => setResposta(value)}>
               <SelectTrigger className="w-full max-w-xs h-auto py-3 text-lg bg-slate-700 border-slate-500 focus:ring-pink-500">
                 <SelectValue placeholder="Selecione uma opção" />
               </SelectTrigger>

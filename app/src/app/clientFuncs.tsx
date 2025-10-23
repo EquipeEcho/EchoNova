@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { Link } from "lucide-react";
+import { validateCNPJ, validateEmail, validateField } from "./form/validator";
+
 
 export function Ondas() {
   return (
@@ -91,7 +93,7 @@ export function Header() {
           <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
         </svg>
       </a>
-         <DialogCloseButton/>
+      <DialogCloseButton />
       {/* Logo */}
       <div className="fixed top-4 left-4 ">
         <div className="logo-container hover:scale-100 ">
@@ -117,15 +119,15 @@ export function DialogCloseButton() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginCNPJ, setLoginCNPJ] = useState("");
   const [loginSenha, setLoginSenha] = useState("");
-
+  
   // ADICIONADO: Funções de handle para login
   async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
+    console.log("Estou aqui")
     try {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: loginEmail, senha: loginSenha }),
+        body: JSON.stringify({ email: loginEmail,CNPJ: loginCNPJ, senha: loginSenha }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -145,62 +147,64 @@ export function DialogCloseButton() {
       <DialogTrigger asChild>
         <Button className="social-btn">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="w-6 h-6 text-white" viewBox="0 0 16 16">
-      <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
-  <path fillRule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1"/>
-</svg>
-</Button>
+            <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
+            <path fillRule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1" />
+          </svg>
+        </Button>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-md bg-gray-950 text-gray-900 border-slate-800">
         <DialogHeader>
           <DialogTitle className="text-neutral-100">Bem-vindo</DialogTitle>
 
-        <DialogClose asChild>
-          <Button
-            className="cursor-pointer bg-gray-950 absolute right-3 top-3 text-neutral-400 hover:bg-fuchsia-800 text-neutral-100 transition-colors"
-            aria-label="Fechar"
-  
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-5 h-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          <DialogClose asChild>
+            <Button
+              className="cursor-pointer bg-gray-950 absolute right-3 top-3 text-neutral-400 hover:bg-fuchsia-800 text-neutral-100 transition-colors"
+              aria-label="Fechar"
+
             >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </Button>
-        </DialogClose>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </Button>
+          </DialogClose>
         </DialogHeader>
 
 
-          <p className="text-neutral-400 italic font-light text-center">Digite seu e-mail ou CNPJ</p>
+        <p className="text-neutral-400 italic font-light text-center">Digite seu e-mail ou CNPJ</p>
 
 
-            <form className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="login-email" className="text-neutral-400">Email</Label>
-                <Input id="login-email" type="email" placeholder="email@exemplo.com" className="bg-gray-800 border-gray-700 text-white" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="login-cnpj" className="text-neutral-400">CNPJ</Label>
-                <Input id="login-cnpj" type="text" placeholder="00.000.000/0000-00" className="bg-gray-800 border-gray-700 text-white" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="login-password" className="text-neutral-400">Senha</Label>
-                <Input id="login-password" type="password" placeholder="••••••••••••••" className="bg-gray-800 border-gray-700 text-white" />
-              </div>
-              <Button type="submit" className="bg-fuchsia-800 text-white hover:bg-fuchsia-700 cursor-pointer" onClick={handleLogin}>
-                Entrar
-              </Button>
-            </form>
+        <form className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="login-email" className="text-neutral-400">
+              Email
+            </Label>
+            <Input  id="login-email" type="email" placeholder="email@exemplo.com" className="bg-gray-800 border-gray-700 text-white" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="login-cnpj" className="text-neutral-400">CNPJ</Label>
+            <Input id="login-cnpj" type="text" placeholder="00.000.000/0000-00" className="bg-gray-800 border-gray-700 text-white"  value={loginCNPJ} onChange={(e) => setLoginCNPJ(e.target.value)}/>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="login-password" className="text-neutral-400">Senha</Label>
+            <Input id="login-password" type="password" placeholder="••••••••••••••" className="bg-gray-800 border-gray-700 text-white" value={loginSenha} onChange={(e) => setLoginSenha(e.target.value)} />
+          </div>
+          <Button type="submit" className="bg-fuchsia-800 text-white hover:bg-fuchsia-700 cursor-pointer" onClick={handleLogin}>
+            Entrar
+          </Button>
+        </form>
 
-        
+
         <DialogFooter className="sm:justify-center">
           <p className="text-neutral-400 italic font-light text-center">Caso não tenha se cadastrado, termine o primeiro questionário.</p>
         </DialogFooter>
@@ -213,21 +217,21 @@ type HeadernaofixProps = {
   Link: string
 }
 
-export function Headernaofix({ Link }: HeadernaofixProps){
-  return(
-      <div className="py-4 flex-row justify-items-center">
-        <div className="logo-container hover:scale-100 ">   
+export function Headernaofix({ Link }: HeadernaofixProps) {
+  return (
+    <div className="py-4 flex-row justify-items-center">
+      <div className="logo-container hover:scale-100 ">
 
-          <a href={Link}>
-          <Image 
-            src="/img/logo.png" 
-            alt="EchoNova - Diagnóstico Inteligente de Treinamentos" 
-            width={120} 
+        <a href={Link}>
+          <Image
+            src="/img/logo.png"
+            alt="EchoNova - Diagnóstico Inteligente de Treinamentos"
+            width={120}
             height={40}
             className="w-auto object-contain h-12 sm:h-14 md:h-14 lg:h-16"
           />
-          </a>
-        </div>
+        </a>
       </div>
+    </div>
   )
 }
