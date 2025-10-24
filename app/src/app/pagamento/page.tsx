@@ -120,7 +120,7 @@ export default function PagamentoPage() {
 
   const validateField = (field: string, value: string) => {
     let error = '';
-    
+
     switch (field) {
       case 'nome':
         if (!value.trim()) error = 'Nome é obrigatório';
@@ -327,30 +327,38 @@ export default function PagamentoPage() {
       }
     }
   };
-  const teste = async () =>{
-                    if (validateEtapaPagamento()) {
-                      try {
-                        const transacaoId =
-                          searchParams.get("transacaoId") || searchParams.get("id");
+  const teste = async () => {
+    if (validateEtapaPagamento()) {
+      try {
+        const transacaoId =
+          searchParams.get("transacaoId") || searchParams.get("id");
+        console.log("🚀 Enviando para finalizar:", { transacaoId, email: formData.email, cnpj: formData.cnpj, senha: formData.senha });
 
-                        const response = await fetch("/api/transacoes/finalizar", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ transacaoId }),
-                        });
+        const response = await fetch("/api/transacoes/finalizar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            transacaoId,
+            email: formData.email,
+            cnpj: formData.cnpj,
+            senha: formData.senha,
+          }),
+        });
 
-                        const data = await response.json();
 
-                        if (!response.ok) throw new Error(data.error || "Erro ao finalizar");
 
-                        console.log("Transação concluída:", data);
-                        setEtapaPagamento("confirmacao");
-                      } catch (error) {
-                        console.error("Erro ao finalizar transação:", error);
-                        alert("Erro ao processar pagamento. Tente novamente.");
-                      }
-                    }
-                  
+        const data = await response.json();
+
+        if (!response.ok) throw new Error(data.error || "Erro ao finalizar");
+
+        console.log("Transação concluída:", data);
+        setEtapaPagamento("confirmacao");
+      } catch (error) {
+        console.error("Erro ao finalizar transação:", error);
+        alert("Erro ao processar pagamento. Tente novamente.");
+      }
+    }
+
   }
   const voltarEtapa = () => {
     if (etapaPagamento === 'pagamento') {
@@ -710,6 +718,7 @@ export default function PagamentoPage() {
                 >
                   Finalizar Compra →
                 </Button>
+
               </div>
             </div>
           )}
@@ -721,7 +730,7 @@ export default function PagamentoPage() {
                 <CheckIcon className="w-10 h-10 text-white" />
               </div>
 
-              <h2 className="text-3xl font-bold text-white mb-4">🎉 Compra Realizada com Sucesso!</h2>
+              <h2 className="text-3xl font-bold text-white mb-4">Compra Realizada com Sucesso!</h2>
 
               <div className="bg-slate-800/50 rounded-xl p-6 max-w-md mx-auto">
                 <h3 className="text-xl font-semibold text-white mb-2">Resumo da Compra</h3>
@@ -733,9 +742,9 @@ export default function PagamentoPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/">
+                <Link href="/pos-login">
                   <Button className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105">
-                    Voltar ao Início
+                    Acessar o diagnostico aprofundado
                   </Button>
                 </Link>
               </div>

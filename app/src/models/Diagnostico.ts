@@ -15,7 +15,6 @@ const DiagnosticoSchema = new Schema(
       setor: { type: String, required: true },
       porte: { type: String, required: true },
       setorOutro: { type: String, default: "" },
-      // O campo 'nome_empresa' foi REMOVIDO daqui por ser redundante.
     },
     dimensoesSelecionadas: [
       {

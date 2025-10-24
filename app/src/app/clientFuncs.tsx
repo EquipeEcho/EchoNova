@@ -123,14 +123,13 @@ export function DialogCloseButton() {
   // ADICIONADO: Funções de handle para login
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault(); // Adicionado para prevenir o recarregamento da página
-    console.log("Estou aqui");
     try {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: loginEmail,
-          cnpj: loginCNPJ, // <-- CORRIGIDO para minúsculas
+          cnpj: loginCNPJ, 
           senha: loginSenha,
         }),
       });
