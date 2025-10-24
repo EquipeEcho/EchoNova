@@ -119,15 +119,20 @@ export function DialogCloseButton() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginCNPJ, setLoginCNPJ] = useState("");
   const [loginSenha, setLoginSenha] = useState("");
-  
+
   // ADICIONADO: Funções de handle para login
   async function handleLogin(e: React.FormEvent) {
-    console.log("Estou aqui")
+    e.preventDefault(); // Adicionado para prevenir o recarregamento da página
+    console.log("Estou aqui");
     try {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: loginEmail,CNPJ: loginCNPJ, senha: loginSenha }),
+        body: JSON.stringify({
+          email: loginEmail,
+          cnpj: loginCNPJ, // <-- CORRIGIDO para minúsculas
+          senha: loginSenha,
+        }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -189,11 +194,11 @@ export function DialogCloseButton() {
             <Label htmlFor="login-email" className="text-neutral-400">
               Email
             </Label>
-            <Input  id="login-email" type="email" placeholder="email@exemplo.com" className="bg-gray-800 border-gray-700 text-white" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
+            <Input id="login-email" type="email" placeholder="email@exemplo.com" className="bg-gray-800 border-gray-700 text-white" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="login-cnpj" className="text-neutral-400">CNPJ</Label>
-            <Input id="login-cnpj" type="text" placeholder="00.000.000/0000-00" className="bg-gray-800 border-gray-700 text-white"  value={loginCNPJ} onChange={(e) => setLoginCNPJ(e.target.value)}/>
+            <Input id="login-cnpj" type="text" placeholder="00.000.000/0000-00" className="bg-gray-800 border-gray-700 text-white" value={loginCNPJ} onChange={(e) => setLoginCNPJ(e.target.value)} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="login-password" className="text-neutral-400">Senha</Label>
