@@ -30,11 +30,13 @@ export async function POST(request: Request) {
       doc.setFillColor(15, 15, 25);
       doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-      const logoPath = path.join(process.cwd(), "public", "img", "PDFlogo.png");
-      if (fs.existsSync(logoPath)) {
-        const logoData = fs.readFileSync(logoPath);
-        doc.addImage(logoData, "PNG", 10, 10, 40, 20);
-      }
+      const logoPath = path.join(process.cwd(), "public", "img", "PDFlgo.png");
+      const logoData = fs.readFileSync(logoPath);
+      doc.addImage(logoData, "PNG", 0, 0, pageHeight, 0); 
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(22);
+
 
       doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
@@ -51,6 +53,10 @@ export async function POST(request: Request) {
       doc.setFontSize(12);
       doc.setFont("helvetica", "normal");
 
+      const footerLogoPath = path.join(process.cwd(), "public", "img", "PDFlogo.png");
+      const footerLogoData = fs.readFileSync(footerLogoPath);
+      doc.addImage(footerLogoData, "PNG", 0, 150, pageHeight, 0);
+      
       textos.forEach((texto) => {
         doc.text(`${texto}`, 20, yPos);
         yPos += 8;
