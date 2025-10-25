@@ -1,6 +1,7 @@
 // app/src/app/api/diagnostico-ia/route.ts
 
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
+import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
 import { connectDB } from "@/lib/mongodb";
 import { getChatProvider } from "@/lib/ai/providerFactory";
@@ -18,7 +19,7 @@ function getTextForHistory(iaResponse: IaResponse): string {
   if (iaResponse.status === "finalizado" && iaResponse.relatorio_final) {
     return iaResponse.relatorio_final;
   }
-  if ((iaResponse.status === "confirmacao" || iaResponse.status === "confirmação") && iaResponse.resumo_etapa) {
+  if (iaResponse.status === "confirmacao" && iaResponse.resumo_etapa) {
     return iaResponse.resumo_etapa;
   }
   if (iaResponse.proxima_pergunta?.texto) {
@@ -28,10 +29,11 @@ function getTextForHistory(iaResponse: IaResponse): string {
   return "Ok, entendi. Podemos continuar.";
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     // --- 1. AUTENTICAÇÃO E AUTORIZAÇÃO ---
-    const token = req.cookies.get("auth_token")?.value;
+    const cookieStore = await cookies();
+    const token = cookieStore.get("auth_token")?.value;
 
     if (!token) {
       return NextResponse.json({ error: "Não autorizado: token não encontrado." }, { status: 401 });
