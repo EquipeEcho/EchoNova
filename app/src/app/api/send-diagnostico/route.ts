@@ -4,7 +4,7 @@ export async function POST(request: Request) {
   try {
     const { nome, email, diagnostico } = await request.json();
 
-    console.log('Email Recebido na rota', email)
+    //console.log('Email Recebido na rota', email)
 
     // Configura o transporte SMTP
     const transporter = nodemailer.createTransport({

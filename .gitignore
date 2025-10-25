@@ -63,3 +63,5 @@ pnpm-lock.yaml # Para pnpm
 # Se você usa Yarn, pode comentar a linha abaixo, pois
 # o yarn.lock deve ser versionado
 # yarn.lock
+
+todo.md

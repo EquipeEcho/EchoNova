@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { Header, Ondas } from "../clientFuncs";
+import { useState, useEffect } from "react";
+import { Header, Headernaofix, Ondas } from "../clientFuncs";
 import { Button } from "@/components/ui/button";
 import { CheckIcon, ArrowLeftIcon, CreditCardIcon, UserIcon, BuildingIcon } from "lucide-react";
 import Link from "next/link";
@@ -25,7 +25,6 @@ import {
   debugCPFValidation
 
 } from "../form/validator";
-import { useEffect } from "react";
 
 export default function PagamentoPage() {
   const searchParams = useSearchParams();
@@ -68,6 +67,18 @@ export default function PagamentoPage() {
     estadoCobranca: '',
     cepCobranca: ''
   });
+
+  // Redirecionamento automático após confirmação do pagamento
+  useEffect(() => {
+    if (etapaPagamento === 'confirmacao') {
+      const timer = setTimeout(() => {
+        // Redireciona para pos-login após login automático
+        window.location.href = "/pos-login";
+      }, 5000); // Redireciona após 5 segundos
+
+      return () => clearTimeout(timer);
+    }
+  }, [etapaPagamento]);
 
   // Exemplo de uso do ID da transação (para debug e validação futura)
   useEffect(() => {
@@ -120,7 +131,7 @@ export default function PagamentoPage() {
 
   const validateField = (field: string, value: string) => {
     let error = '';
-    
+
     switch (field) {
       case 'nome':
         if (!value.trim()) error = 'Nome é obrigatório';
@@ -327,31 +338,103 @@ export default function PagamentoPage() {
       }
     }
   };
-  const teste = async () =>{
-                    if (validateEtapaPagamento()) {
-                      try {
-                        const transacaoId =
-                          searchParams.get("transacaoId") || searchParams.get("id");
+  const teste = async () => {
+    if (validateEtapaPagamento()) {
+      try {
+        const transacaoId =
+          searchParams.get("transacaoId") || searchParams.get("id");
+        console.log("🚀 Enviando para finalizar:", { transacaoId, email: formData.email, cnpj: formData.cnpj, senha: formData.senha });
 
-                        const response = await fetch("/api/transacoes/finalizar", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ transacaoId }),
-                        });
+        const response = await fetch("/api/transacoes/finalizar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            transacaoId,
+            email: formData.email,
+            cnpj: formData.cnpj,
+            senha: formData.senha,
+          }),
+        });
 
-                        const data = await response.json();
+        const data = await response.json();
 
-                        if (!response.ok) throw new Error(data.error || "Erro ao finalizar");
+        const enviar = await fetch("/api/send-pagamento", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            transacaoId,
+            nome: formData.nome,
+            email: formData.email,
+            status: etapaPagamento,
+          }),
+        });
 
-                        console.log("Transação concluída:", data);
-                        setEtapaPagamento("confirmacao");
-                      } catch (error) {
-                        console.error("Erro ao finalizar transação:", error);
-                        alert("Erro ao processar pagamento. Tente novamente.");
-                      }
-                    }
-                  
+        await enviar.json();
+
+        if (!response.ok) throw new Error(data.error || "Erro ao finalizar");
+
+        console.log("Transação concluída:", data);
+        
+        // Após finalizar a transação, faz login automático do usuário
+        await autoLoginUser(formData.email, formData.cnpj, formData.senha);
+        
+        // Aguarda um breve momento para garantir que o localStorage foi atualizado
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        setEtapaPagamento("confirmacao");
+      } catch (error) {
+        console.error("Erro ao finalizar transação:", error);
+        alert("Erro ao processar pagamento. Tente novamente.");
+      }
+    }
   }
+
+  // Função para login automático após conclusão do pagamento
+  const autoLoginUser = async (email: string, cnpj: string, senha: string) => {
+    try {
+      const loginResponse = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          cnpj,
+          senha,
+        }),
+      });
+
+      const loginData = await loginResponse.json();
+
+      if (loginResponse.ok) {
+        // Salva os dados do usuário no localStorage para persistência
+        const userData = {
+          id: loginData.user.id,
+          nome_empresa: loginData.user.nome_empresa,
+          email: loginData.user.email,
+          planoAtivo: loginData.user.plano,
+        };
+        
+        // Salva no localStorage seguindo exatamente o formato do store
+        const storageData = {
+          state: { 
+            user: userData 
+          },
+          version: 0
+        };
+        
+        localStorage.setItem('auth-storage', JSON.stringify(storageData));
+        
+        // Força uma atualização do store
+        window.dispatchEvent(new Event('storage'));
+        
+        console.log("Login automático realizado com sucesso");
+      } else {
+        console.error("Erro no login automático:", loginData.error);
+      }
+    } catch (error) {
+      console.error("Erro ao realizar login automático:", error);
+    }
+  };
+
   const voltarEtapa = () => {
     if (etapaPagamento === 'pagamento') {
       setEtapaPagamento('dados');
@@ -360,7 +443,7 @@ export default function PagamentoPage() {
     }
   };
 
-  // === Simulação de finalização da transação ===
+  // === Finalização da transação ===
   const finalizarTransacao = async () => {
     const transacaoId = searchParams.get("transacaoId");
 
@@ -379,6 +462,19 @@ export default function PagamentoPage() {
 
       const data = await resposta.json();
 
+      const enviar = await fetch("/api/send-pagamento", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            transacaoId,
+            nome: formData.nome,
+            email: formData.email,
+            status: etapaPagamento,
+          }),
+        });
+
+        await enviar.json();
+//
       if (!resposta.ok) throw new Error(data.error || "Erro ao finalizar transação");
 
       console.log("Transação finalizada com sucesso:", data);
@@ -391,7 +487,7 @@ export default function PagamentoPage() {
 
   return (
     <main className="flex flex-col overflow-hidden min-h-screen">
-      <Header />
+      <Headernaofix Link="" />
 
       <section className="flex-1 main-bg flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-16 sm:py-20 md:py-24 relative">
         {/* Título principal */}
@@ -710,6 +806,7 @@ export default function PagamentoPage() {
                 >
                   Finalizar Compra →
                 </Button>
+
               </div>
             </div>
           )}
@@ -721,7 +818,7 @@ export default function PagamentoPage() {
                 <CheckIcon className="w-10 h-10 text-white" />
               </div>
 
-              <h2 className="text-3xl font-bold text-white mb-4">🎉 Compra Realizada com Sucesso!</h2>
+              <h2 className="text-3xl font-bold text-white mb-4">Compra Realizada com Sucesso!</h2>
 
               <div className="bg-slate-800/50 rounded-xl p-6 max-w-md mx-auto">
                 <h3 className="text-xl font-semibold text-white mb-2">Resumo da Compra</h3>
@@ -730,14 +827,16 @@ export default function PagamentoPage() {
                   <p className="text-gray-300 mb-4">Valor: <span className="text-emerald-400 font-semibold">R$ {preco}/mês</span></p>
                 )}
                 <p className="text-sm text-gray-400">Você receberá um email de confirmação em breve.</p>
+                <p className="text-sm text-emerald-400 mt-4">Redirecionando para o diagnóstico aprofundado em 5 segundos...</p>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/">
-                  <Button className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105">
-                    Voltar ao Início
-                  </Button>
-                </Link>
+                <Button 
+                  onClick={() => window.location.href = "/pos-login"}
+                  className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105"
+                >
+                  Acessar o diagnostico aprofundado agora
+                </Button>
               </div>
             </div>
           )}

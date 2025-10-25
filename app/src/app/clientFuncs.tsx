@@ -16,6 +16,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { Link } from "lucide-react";
 import { validateCNPJ, validateEmail, validateField } from "./form/validator";
+import { useAuthStore } from "@/lib/stores/useAuthStore"; // Importa o store de autenticação
+import { useRouter } from "next/navigation"; // Correção: usar next/navigation em vez de next/router
 
 
 export function Ondas() {
@@ -76,7 +78,7 @@ export function Header() {
           fill="currentColor"
           viewBox="0 0 24 24"
         >
-          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.40s-.644-1.44-1.439-1.40z" />
+          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.204-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919 1.266.058 1.644.07 4.849.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.40s-.644-1.44-1.439-1.40z" />
         </svg>
       </a>
 
@@ -119,26 +121,54 @@ export function DialogCloseButton() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginCNPJ, setLoginCNPJ] = useState("");
   const [loginSenha, setLoginSenha] = useState("");
-  
+  const loginAction = useAuthStore((state) => state.login); // Obtém a ação de login do store
+  const router = useRouter(); // Usa o router do Next.js
+
   // ADICIONADO: Funções de handle para login
   async function handleLogin(e: React.FormEvent) {
-    console.log("Estou aqui")
+    e.preventDefault(); // Adicionado para prevenir o recarregamento da página
     try {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: loginEmail,CNPJ: loginCNPJ, senha: loginSenha }),
+        body: JSON.stringify({
+          email: loginEmail,
+          cnpj: loginCNPJ, 
+          senha: loginSenha,
+        }),
       });
+      
       const data = await res.json();
+      
       if (res.ok) {
-        alert("Login bem-sucedido: " + data.user.email);
-        // Aqui você pode fechar o modal ou redirecionar o usuário
+        // Atualiza o store com os dados do usuário
+        loginAction(data.user);
+        
+        // Fecha o diálogo antes de redirecionar
+        const closeButtons = document.querySelectorAll('[data-state="open"] button[aria-label="Fechar"]');
+        closeButtons.forEach(button => {
+          if (button instanceof HTMLElement) {
+            button.click();
+          }
+        });
+        
+        // Aguarda um breve momento para garantir que o estado foi atualizado
+        setTimeout(() => {
+          // Verifica se o usuário foi realmente salvo no store
+          const currentState = useAuthStore.getState();
+          if (currentState.user) {
+            router.push("/pos-login");
+          } else {
+            // Se não, tenta novamente com window.location
+            window.location.href = "/pos-login";
+          }
+        }, 150);
       } else {
         alert("Erro no login: " + data.error);
       }
     } catch (err) {
       console.error(err);
-      alert("Erro ao tentar fazer login.");
+      alert("Erro ao tentar fazer login. Verifique sua conexão e tente novamente.");
     }
   }
 
@@ -155,7 +185,7 @@ export function DialogCloseButton() {
 
       <DialogContent className="sm:max-w-md bg-gray-950 text-gray-900 border-slate-800">
         <DialogHeader>
-          <DialogTitle className="text-neutral-100">Bem-vindo</DialogTitle>
+          <DialogTitle className="text-neutral-100">Acesso Restrito</DialogTitle>
 
           <DialogClose asChild>
             <Button
@@ -181,7 +211,7 @@ export function DialogCloseButton() {
         </DialogHeader>
 
 
-        <p className="text-neutral-400 italic font-light text-center">Digite seu e-mail ou CNPJ</p>
+        <p className="text-neutral-400 italic font-light text-center">Apenas usuários que já realizaram o diagnóstico e adquiriram um plano podem acessar.</p>
 
 
         <form className="grid gap-4 py-4">
@@ -189,11 +219,11 @@ export function DialogCloseButton() {
             <Label htmlFor="login-email" className="text-neutral-400">
               Email
             </Label>
-            <Input  id="login-email" type="email" placeholder="email@exemplo.com" className="bg-gray-800 border-gray-700 text-white" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
+            <Input id="login-email" type="email" placeholder="email@exemplo.com" className="bg-gray-800 border-gray-700 text-white" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="login-cnpj" className="text-neutral-400">CNPJ</Label>
-            <Input id="login-cnpj" type="text" placeholder="00.000.000/0000-00" className="bg-gray-800 border-gray-700 text-white"  value={loginCNPJ} onChange={(e) => setLoginCNPJ(e.target.value)}/>
+            <Input id="login-cnpj" type="text" placeholder="00.000.000/0000-00" className="bg-gray-800 border-gray-700 text-white" value={loginCNPJ} onChange={(e) => setLoginCNPJ(e.target.value)} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="login-password" className="text-neutral-400">Senha</Label>
@@ -206,7 +236,9 @@ export function DialogCloseButton() {
 
 
         <DialogFooter className="sm:justify-center">
-          <p className="text-neutral-400 italic font-light text-center">Caso não tenha se cadastrado, termine o primeiro questionário.</p>
+          <p className="text-neutral-400 italic font-light text-center">
+            Ainda não tem acesso? <Link href="/form" className="text-fuchsia-400 hover:underline">Faça o diagnóstico gratuito</Link> e adquira um plano.
+          </p>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -235,3 +267,5 @@ export function Headernaofix({ Link }: HeadernaofixProps) {
     </div>
   )
 }
+
+
