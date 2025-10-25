@@ -160,7 +160,7 @@ export default function Diagnostico() {
           if (response.ok) {
             toast.success("Diagnóstico gerado com sucesso!");
 
-            // ✅ Redireciona para a página de resultados
+            // ✅ Redireciona para a página de resultados após concluir o diagnóstico
             router.push(`/resultados?id=${data.diagnostico._id}`);
           } else {
             throw new Error(data.error || "Erro ao salvar diagnóstico.");

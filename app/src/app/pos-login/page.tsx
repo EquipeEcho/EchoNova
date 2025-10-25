@@ -6,41 +6,121 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useAuthStore } from "@/lib/stores/useAuthStore"; // Importa o store de autenticação
 
 export default function PosLoginPage() {
   const [userInfo, setUserInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
+  const { user: authUser, logout } = useAuthStore(); // Obtém o usuário do store
 
   useEffect(() => {
-    // Simular obtenção de informações do usuário logado
-    // Em uma implementação real, isso viria de uma chamada à API ou contexto de autenticação
-    const fetchUserInfo = async () => {
+    let redirected = false;
+    
+    // Função para verificar se o store foi reidratado
+    const checkAuthState = async () => {
+      // Se já foi redirecionado, não faz nada
+      if (redirected) return;
+      
+      // Aguarda um breve momento para garantir que o store foi reidratado
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Obtém o estado atual do store
+      const currentState = useAuthStore.getState();
+      
+      // Se não houver usuário autenticado, redireciona para a página principal
+      if (!authUser && !currentState.user) {
+        // Verifica se há dados no localStorage
+        const localStorageData = localStorage.getItem('auth-storage');
+        if (localStorageData) {
+          try {
+            const parsedData = JSON.parse(localStorageData);
+            if (parsedData.state?.user) {
+              // Se houver dados no localStorage, tenta usá-los
+              console.log("Dados do usuário encontrados no localStorage");
+              // O store deve ser reidratado automaticamente, então aguardamos um pouco mais
+              await new Promise(resolve => setTimeout(resolve, 100));
+              // Verifica novamente o estado
+              const updatedState = useAuthStore.getState();
+              if (!updatedState.user) {
+                redirected = true;
+                router.push("/");
+                return;
+              }
+            } else {
+              redirected = true;
+              router.push("/");
+              return;
+            }
+          } catch (e) {
+            console.error("Erro ao parsear dados do localStorage:", e);
+            redirected = true;
+            router.push("/");
+            return;
+          }
+        } else {
+          redirected = true;
+          router.push("/");
+          return;
+        }
+      }
+
+      // Usa o usuário disponível
+      const user = authUser || useAuthStore.getState().user;
+      
+      // Verifica se o usuário existe
+      if (!user) {
+        redirected = true;
+        router.push("/");
+        return;
+      }
+
       try {
-        // Este é um exemplo - na prática, você buscaria os dados reais do usuário
+        // Busca os dados atualizados da empresa do banco de dados
+        const response = await fetch(`/api/empresa/${user.id}`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || "Erro ao buscar dados do usuário");
+        }
+
+        // Atualiza as informações do usuário com os dados do banco
         const userData = {
-          nome: "Empresa Exemplo Ltda",
-          email: "contato@exemplo.com",
-          plano: "Avançado"
+          nome: data.empresa.nome_empresa,
+          email: data.empresa.email,
+          plano: data.empresa.planoAtivo || "Nenhum"
         };
+        
         setUserInfo(userData);
       } catch (error) {
         console.error("Erro ao carregar informações do usuário:", error);
+        // Em caso de erro, redireciona para a página principal
+        if (!redirected) {
+          redirected = true;
+          router.push("/");
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserInfo();
-  }, []);
+    // Verifica se já temos o usuário no store imediatamente
+    if (authUser) {
+      checkAuthState();
+    } else {
+      // Se não, aguarda um pouco mais para garantir a reidratação
+      const timer = setTimeout(checkAuthState, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [authUser, router]);
 
   const handleStartDiagnostico = () => {
     router.push("/diagnostico-aprofundado");
   };
 
   const handleLogout = () => {
-    // Lógica de logout aqui
+    logout(); // Limpa os dados do usuário do store
     setIsMenuOpen(false);
     router.push("/");
   };
@@ -76,6 +156,25 @@ export default function PosLoginPage() {
   };
 
   if (loading) {
+    return (
+      <main className="flex flex-col min-h-screen h-screen overflow-hidden">
+        <div className="fixed top-4 right-4 z-50">
+          <div className="bg-slate-800/80 backdrop-blur-sm rounded-full px-4 py-2 border border-slate-700/40 flex items-center gap-2">
+            <div className="h-6 w-24 bg-slate-700 rounded animate-pulse"></div>
+          </div>
+        </div>
+        <section className="flex-1 main-bg flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-white text-xl">Carregando informações...</div>
+          <div className="-z-10">
+            <Ondas />
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  // Se não houver usuário autenticado, não renderiza o conteúdo principal
+  if ((!authUser && !useAuthStore.getState().user) || loading) {
     return (
       <main className="flex flex-col min-h-screen h-screen overflow-hidden">
         <div className="fixed top-4 right-4 z-50">

@@ -32,7 +32,15 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Compara a senha enviada com a senha armazenada (hash)
+    // 3. Verifica se a empresa tem um plano ativo (indicando que completou o pagamento)
+    if (!empresa.planoAtivo) {
+      return NextResponse.json(
+        { error: "Conta não ativada. Complete o diagnóstico e adquira um plano para acessar." },
+        { status: 401 },
+      );
+    }
+
+    // 4. Compara a senha enviada com a senha armazenada (hash)
     const senhaOk = await bcrypt.compare(senha, empresa.senha);
     if (!senhaOk) {
       return NextResponse.json(
@@ -41,7 +49,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 4. Cria o Token JWT
+    // 5. Cria o Token JWT
     // O "payload" contém as informações que queremos armazenar no token.
     // NUNCA armazene senhas ou dados sensíveis aqui.
     const payload = {
@@ -57,7 +65,7 @@ export async function POST(req: Request) {
       .setExpirationTime("24h") // O token expira em 24 horas
       .sign(secret);
 
-    // 5. Cria a resposta e armazena o token em um cookie HttpOnly
+    // 6. Cria a resposta e armazena o token em um cookie HttpOnly
     const response = NextResponse.json({
       message: "Login bem-sucedido",
       user: payload, // Retorna os dados do usuário para o frontend usar imediatamente

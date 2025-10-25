@@ -36,6 +36,8 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage', // Nome da chave no localStorage.
       storage: createJSONStorage(() => localStorage), // Especifica que queremos usar o localStorage.
+      // Adiciona um atraso para garantir que o localStorage esteja disponível
+      partialize: (state) => ({ user: state.user }),
     }
   )
 );
