@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Ondas } from "../clientFuncs";
+import { toast } from "sonner";
 
 // Interface mesclada que suporta todos os campos de ambos os arquivos.
 interface DiagnosticoData {
@@ -41,6 +42,37 @@ interface DiagnosticoData {
   dataFinalizacao?: string;
 }
 
+const enviarEmail = async (dados: DiagnosticoData) => {
+  try {
+    const emailResponse = await fetch("/api/send-diagnostico", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nome: dados.perfil.empresa,
+        email: dados.perfil.email,
+        diagnostico: dados.resultados
+          ? Object.entries(dados.resultados).map(([key, value]) => ({
+              dimensao: key,
+              trilhasDeMelhoria: value.trilhasDeMelhoria,
+            }))
+          : [],
+      }),
+    });
+
+    const emailData = await emailResponse.json();
+
+    if (emailData.success) {
+      toast.success("Diagnóstico enviado por e-mail!");
+    } else {
+      console.warn("Falha ao enviar e-mail:", emailData.error);
+      toast.error("Não foi possível enviar o e-mail do diagnóstico.");
+    }
+  } catch (emailError) {
+    console.error("Erro ao enviar o e-mail:", emailError);
+    toast.error("Erro ao enviar o e-mail do diagnóstico.");
+  }
+};
+
 export default function Resultados() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -61,6 +93,13 @@ export default function Resultados() {
     };
     carregarDiagnostico();
   }, [diagnosticoId]);
+
+  // Envia o e-mail apenas quando os dados do diagnóstico estiverem disponíveis
+  useEffect(() => {
+    if (diagnosticoData) {
+      void enviarEmail(diagnosticoData);
+    }
+  }, [diagnosticoData]);
 
   const carregarDoBanco = async (id: string) => {
     try {
@@ -103,6 +142,8 @@ export default function Resultados() {
     setIsLoading(false);
   };
 
+
+  
   // Função de geração de relatório do LADO 2 (com CNPJ).
   const generateReportContent = (data: DiagnosticoData): string => {
     const dataFormatada = new Date(
