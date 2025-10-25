@@ -133,7 +133,7 @@ export default function PosLoginPage() {
     switch (plano?.toLowerCase()) {
       case "essencial":
         return "from-indigo-500 to-purple-600";
-      case "avançado":
+      case "avancado":
         return "from-fuchsia-500 to-pink-600";
       case "escalado":
         return "from-emerald-500 to-teal-600";
@@ -146,7 +146,7 @@ export default function PosLoginPage() {
     switch (plano?.toLowerCase()) {
       case "essencial":
         return "💎";
-      case "avançado":
+      case "avancado":
         return "🚀";
       case "escalado":
         return "👑";
