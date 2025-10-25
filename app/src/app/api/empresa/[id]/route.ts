@@ -1,13 +1,28 @@
+// app/src/app/api/empresa/[id]/route.ts
+
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Empresa from "@/models/Empresa";
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+/**
+ * @description Rota para buscar os dados de uma empresa específica pelo seu ID.
+ * É usada, por exemplo, na página /pos-login para carregar informações atualizadas do usuário.
+ */
+export async function GET(
+  req: Request,
+  // O segundo argumento contém os parâmetros da rota.
+  // A tipagem correta agora indica que `params` é uma Promise.
+  context: { params: Promise<{ id: string }> }
+) {
   try {
     await connectDB();
-    
-    const { id } = params;
-    
+
+    // --- CORREÇÃO APLICADA AQUI ---
+    // Usamos 'await' para esperar que a Promise dos parâmetros seja resolvida
+    // antes de tentar desestruturar o 'id'.
+    const { id } = await context.params;
+
+    // Validação para garantir que o ID foi recebido.
     if (!id) {
       return NextResponse.json(
         { error: "ID da empresa é obrigatório." },
@@ -15,8 +30,12 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       );
     }
 
-    const empresa = await Empresa.findById(id).select('-senha'); // Exclui a senha dos dados retornados
-    
+    // Busca a empresa no banco de dados pelo ID.
+    // A função `.select('-senha')` é uma boa prática de segurança para garantir
+    // que o hash da senha nunca seja retornado pela API.
+    const empresa = await Empresa.findById(id).select('-senha');
+
+    // Se nenhuma empresa for encontrada com esse ID, retorna um erro 404.
     if (!empresa) {
       return NextResponse.json(
         { error: "Empresa não encontrada." },
@@ -24,7 +43,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       );
     }
 
+    // Retorna os dados da empresa em caso de sucesso.
     return NextResponse.json({ empresa });
+
   } catch (error) {
     console.error("Erro ao buscar dados da empresa:", error);
     return NextResponse.json(

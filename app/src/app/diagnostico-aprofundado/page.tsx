@@ -1,5 +1,4 @@
 // app/src/app/diagnostico-aprofundado/page.tsx
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -8,17 +7,17 @@ import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { useAuthStore } from "@/lib/stores/useAuthStore";
 
+// Componentes da UI
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader } from "@/components/ui/loader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Headernaofix, Ondas } from "../clientFuncs";
+import { Ondas } from "../clientFuncs"; // Assumindo que este caminho está correto
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Pencil } from "lucide-react";
 
-// --- (As interfaces e constantes permanecem as mesmas) ---
-// --- TIPOS E INTERFACES ---
+// --- TIPOS E INTERFACES (sem alterações) ---
 type FaseDiagnostico = "setup" | "confirmacao" | "diagnostico" | "finalizado";
 
 interface SetupData {
@@ -50,25 +49,29 @@ const initialSetupQuestions = [
 
 export default function DiagnosticoAprofundadoPage() {
     const router = useRouter();
-    // Verifica se o usuário está logado usando nosso store
     const user = useAuthStore((state) => state.user);
 
-    // Redireciona se não estiver logado
+    // --- CORREÇÃO DE HIDRATAÇÃO (PASSO 1) ---
+    // Este estado garante que a renderização completa só ocorra no cliente.
+    const [isClient, setIsClient] = useState(false);
+
     useEffect(() => {
-        if (!user) {
-            toast.error("Você precisa estar logado para acessar esta página.");
-            router.push("/cadastroLogin");
-        }
-    }, [user, router]);
-    
-    // --- (O resto dos seus estados permanecem os mesmos) ---
+      // Este efeito só roda no cliente, após a primeira renderização.
+      // Marcamos que o cliente está "pronto", o que dispara uma nova renderização.
+      setIsClient(true);
+    }, []);
+
+    // --- (Resto dos estados, com uma pequena alteração em `setupData`) ---
     const [fase, setFase] = useState<FaseDiagnostico>("setup");
     const [setupStep, setSetupStep] = useState(0);
+    
+    // CORREÇÃO DE HIDRATAÇÃO: Inicializa o estado com valores vazios.
+    // Isso garante que o servidor e o cliente renderizem a mesma coisa inicialmente.
     const [setupData, setSetupData] = useState<SetupData>({
-        nomeEmpresa: user?.nome_empresa || "", nomeRepresentante: "", setor: "", numFuncionarios: "", numUnidades: "", politicaLgpd: "", prazo: ""
+        nomeEmpresa: "", nomeRepresentante: "", setor: "", numFuncionarios: "", numUnidades: "", politicaLgpd: "", prazo: ""
     });
+    
     const [editingField, setEditingField] = useState<keyof SetupData | null>(null);
-
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [perguntaAtual, setPerguntaAtual] = useState<Pergunta | null>(null);
     const [resposta, setResposta] = useState<string>("");
@@ -76,8 +79,21 @@ export default function DiagnosticoAprofundadoPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // --- (Lógicas de handleSetupChange, handleNextSetupStep, iniciarDiagnostico permanecem as mesmas) ---
-     const handleSetupChange = (field: keyof SetupData, value: string) => {
+    // --- CORREÇÃO DE HIDRATAÇÃO (PASSO 2) ---
+    // Este `useEffect` preenche os dados do usuário (como o nome da empresa)
+    // somente DEPOIS que confirmamos que estamos no cliente e que o `user` foi carregado.
+    useEffect(() => {
+      if (isClient && user) {
+        setSetupData(prev => ({
+          ...prev,
+          nomeEmpresa: user.nome_empresa || ""
+        }));
+      }
+    }, [isClient, user]);
+    
+    // --- (O resto das suas funções de lógica permanecem exatamente iguais) ---
+    
+    const handleSetupChange = (field: keyof SetupData, value: string) => {
         setSetupData(prev => ({ ...prev, [field]: value }));
     };
 
@@ -123,7 +139,6 @@ export default function DiagnosticoAprofundadoPage() {
                 body: JSON.stringify({
                     sessionId: isInitial ? null : sessionId,
                     resposta_usuario: respostaUsuario,
-                    // CORREÇÃO: Removemos o empresaId daqui. O backend vai pegá-lo do cookie.
                 }),
             });
 
@@ -153,7 +168,6 @@ export default function DiagnosticoAprofundadoPage() {
         }
     };
     
-    // --- (Todas as funções de renderização permanecem as mesmas) ---
     const renderInputField = (type: string, value: string, onChange: (value: string) => void, options?: string[], placeholder?: string | null) => {
         const commonProps = {
             className: "bg-slate-700 border-slate-500 text-center text-lg",
@@ -289,6 +303,17 @@ export default function DiagnosticoAprofundadoPage() {
                 );
         }
     };
+
+    // --- CORREÇÃO DE HIDRATAÇÃO (PASSO 3) ---
+    // Renderiza um loader na primeira passagem no cliente, garantindo que o HTML
+    // seja idêntico ao do servidor.
+    if (!isClient) {
+        return (
+            <main className="flex h-screen items-center justify-center bg-slate-900">
+                <Loader text="Inicializando..." />
+            </main>
+        );
+    }
 
     return (
         <main className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-4">
