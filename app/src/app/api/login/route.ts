@@ -53,7 +53,10 @@ export async function POST(req: Request) {
     // O "payload" contém as informações que queremos armazenar no token.
     // NUNCA armazene senhas ou dados sensíveis aqui.
     const payload = {
-      id: empresa._id,
+      // --- CORREÇÃO APLICADA AQUI ---
+      // Convertemos o _id para string ANTES de criar o token.
+      // Isso garante que o token armazene um texto simples, e não um objeto complexo.
+      id: empresa._id.toString(), 
       email: empresa.email,
       nome_empresa: empresa.nome_empresa,
       plano: empresa.planoAtivo,

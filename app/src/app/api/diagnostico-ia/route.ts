@@ -1,21 +1,36 @@
 // app/src/app/api/diagnostico-ia/route.ts
 
 import { NextResponse } from "next/server";
-import { jwtVerify } from "jose"; // Função para verificar o token
+import { jwtVerify } from "jose";
 import { connectDB } from "@/lib/mongodb";
 import { getChatProvider } from "@/lib/ai/providerFactory";
 import { promptDiagnosticoAprofundado } from "@/lib/prompts";
-import AiSession from "@/models/AiSession"; // Nosso novo modelo para sessões
+import AiSession from "@/models/AiSession";
 import DiagnosticoAprofundado from "@/models/DiagnosticoAprofundado";
-import type { HistoryMessage } from "@/lib/ai/ChatProvider";
+import type { HistoryMessage, IaResponse } from "@/lib/ai/ChatProvider";
 
-// Pega a chave secreta novamente para verificação do token
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+
+// --- FUNÇÃO AUXILIAR ADICIONADA ---
+// Esta função extrai o texto correto da resposta da IA para ser salvo no histórico.
+// Isso mantém o histórico da conversa limpo e legível para a IA nas próximas interações.
+function getTextForHistory(iaResponse: IaResponse): string {
+  if (iaResponse.status === "finalizado" && iaResponse.relatorio_final) {
+    return iaResponse.relatorio_final;
+  }
+  if ((iaResponse.status === "confirmacao" || iaResponse.status === "confirmação") && iaResponse.resumo_etapa) {
+    return iaResponse.resumo_etapa;
+  }
+  if (iaResponse.proxima_pergunta?.texto) {
+    return iaResponse.proxima_pergunta.texto;
+  }
+  // Fallback caso algo inesperado ocorra
+  return "Ok, entendi. Podemos continuar.";
+}
 
 export async function POST(req: Request) {
   try {
     // --- 1. AUTENTICAÇÃO E AUTORIZAÇÃO ---
-    // Pega o token do cookie da requisição
     const token = req.cookies.get("auth_token")?.value;
 
     if (!token) {
@@ -30,7 +45,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Não autorizado: token inválido." }, { status: 401 });
     }
 
-    // O ID da empresa agora vem de uma fonte segura (o token), não do corpo da requisição.
     const empresaId = payload.id;
 
     // --- 2. LÓGICA DO DIAGNÓSTICO ---
@@ -42,17 +56,15 @@ export async function POST(req: Request) {
     let historico: HistoryMessage[];
 
     if (!sessionId) {
-      // --- INICIANDO NOVA SESSÃO NO BANCO DE DADOS ---
+      // --- INICIANDO NOVA SESSÃO ---
       console.log(`MCP: Iniciando nova sessão para a empresa ${empresaId}`);
-      
       session = new AiSession({
         empresaId: empresaId,
         conversationHistory: [],
       });
       historico = [];
-
     } else {
-      // --- CONTINUANDO SESSÃO EXISTENTE DO BANCO DE DADOS ---
+      // --- CONTINUANDO SESSÃO EXISTENTE ---
       session = await AiSession.findById(sessionId);
       if (!session || session.empresaId.toString() !== empresaId) {
         return NextResponse.json({ error: "Sessão inválida ou não pertence a este usuário." }, { status: 400 });
@@ -64,10 +76,15 @@ export async function POST(req: Request) {
     // Envia a mensagem para o provedor de IA
     const iaResponse = await provider.sendMessage(resposta_usuario, historico, promptDiagnosticoAprofundado);
 
-    // Atualiza o histórico na nossa variável de sessão
+    // --- CORREÇÃO APLICADA AQUI ---
+    // Em vez de salvar o JSON inteiro no histórico, salvamos apenas o texto da conversa.
+    // Isso evita que a IA se confunda nas próximas chamadas.
+    const iaTextForHistory = getTextForHistory(iaResponse);
+
+    // Atualiza o histórico na nossa variável de sessão com o texto limpo.
     session.conversationHistory.push(
       { role: 'user', parts: [{ text: resposta_usuario }] },
-      { role: 'model', parts: [{ text: JSON.stringify(iaResponse) }] }
+      { role: 'model', parts: [{ text: iaTextForHistory }] }
     );
 
     // Salva a sessão atualizada no MongoDB
@@ -77,7 +94,6 @@ export async function POST(req: Request) {
     if (iaResponse.status === "finalizado") {
       console.log(`MCP: Finalizando e salvando diagnóstico da sessão: ${session._id}`);
       
-      // Cria o registro permanente do diagnóstico
       const novoDiagnostico = new DiagnosticoAprofundado({
         empresa: empresaId,
         sessionId: session._id.toString(),
@@ -87,12 +103,11 @@ export async function POST(req: Request) {
       });
       await novoDiagnostico.save();
 
-      // IMPORTANTE: Deleta a sessão temporária para manter o banco limpo
       await AiSession.findByIdAndDelete(session._id);
       console.log(`MCP: Sessão temporária ${session._id} removida.`);
     }
 
-    // Retorna o ID da sessão (que é o _id do documento no MongoDB)
+    // Retorna o ID da sessão e a resposta completa da IA para o frontend
     return NextResponse.json({ sessionId: session._id.toString(), ...iaResponse });
 
   } catch (error: unknown) {

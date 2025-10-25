@@ -12,12 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader } from "@/components/ui/loader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Ondas } from "../clientFuncs"; // Assumindo que este caminho está correto
+import { Ondas } from "../clientFuncs";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Pencil } from "lucide-react";
 
-// --- TIPOS E INTERFACES (sem alterações) ---
 type FaseDiagnostico = "setup" | "confirmacao" | "diagnostico" | "finalizado";
 
 interface SetupData {
@@ -50,27 +49,17 @@ const initialSetupQuestions = [
 export default function DiagnosticoAprofundadoPage() {
     const router = useRouter();
     const user = useAuthStore((state) => state.user);
-
-    // --- CORREÇÃO DE HIDRATAÇÃO (PASSO 1) ---
-    // Este estado garante que a renderização completa só ocorra no cliente.
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
-      // Este efeito só roda no cliente, após a primeira renderização.
-      // Marcamos que o cliente está "pronto", o que dispara uma nova renderização.
       setIsClient(true);
     }, []);
 
-    // --- (Resto dos estados, com uma pequena alteração em `setupData`) ---
     const [fase, setFase] = useState<FaseDiagnostico>("setup");
     const [setupStep, setSetupStep] = useState(0);
-    
-    // CORREÇÃO DE HIDRATAÇÃO: Inicializa o estado com valores vazios.
-    // Isso garante que o servidor e o cliente renderizem a mesma coisa inicialmente.
     const [setupData, setSetupData] = useState<SetupData>({
         nomeEmpresa: "", nomeRepresentante: "", setor: "", numFuncionarios: "", numUnidades: "", politicaLgpd: "", prazo: ""
     });
-    
     const [editingField, setEditingField] = useState<keyof SetupData | null>(null);
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [perguntaAtual, setPerguntaAtual] = useState<Pergunta | null>(null);
@@ -79,9 +68,6 @@ export default function DiagnosticoAprofundadoPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // --- CORREÇÃO DE HIDRATAÇÃO (PASSO 2) ---
-    // Este `useEffect` preenche os dados do usuário (como o nome da empresa)
-    // somente DEPOIS que confirmamos que estamos no cliente e que o `user` foi carregado.
     useEffect(() => {
       if (isClient && user) {
         setSetupData(prev => ({
@@ -90,8 +76,6 @@ export default function DiagnosticoAprofundadoPage() {
         }));
       }
     }, [isClient, user]);
-    
-    // --- (O resto das suas funções de lógica permanecem exatamente iguais) ---
     
     const handleSetupChange = (field: keyof SetupData, value: string) => {
         setSetupData(prev => ({ ...prev, [field]: value }));
@@ -110,11 +94,14 @@ export default function DiagnosticoAprofundadoPage() {
         }
     };
     
-     const iniciarDiagnostico = async () => {
+    const iniciarDiagnostico = async () => {
         setIsLoading(true);
-        setFase("diagnostico");
+        
+        // --- CORREÇÃO APLICADA AQUI ---
+        // Criamos uma mensagem explícita para a IA, informando que a confirmação JÁ FOI FEITA.
+        // Isso evita que a IA peça confirmação novamente, quebrando o ciclo de carregamento.
         const setupResumo = `
-            Aqui estão os dados iniciais da empresa:
+            Os dados iniciais da empresa já foram coletados e CONFIRMADOS pelo usuário. São eles:
             - Nome da Empresa: ${setupData.nomeEmpresa}
             - Representante: ${setupData.nomeRepresentante}
             - Setor: ${setupData.setor}
@@ -123,8 +110,12 @@ export default function DiagnosticoAprofundadoPage() {
             - Respeitar LGPD: ${setupData.politicaLgpd}
             - Prazo: ${setupData.prazo}
             
-            Com base nisso, pode começar o diagnóstico com a primeira pergunta investigativa.
+            A etapa de confirmação está CONCLUÍDA.
+            Por favor, inicie o diagnóstico fazendo a PRIMEIRA PERGUNTA INVESTIGATIVA agora.
         `;
+        
+        // A fase é mantida como 'diagnostico' porque esperamos uma pergunta como resposta.
+        setFase("diagnostico");
         await processarResposta(setupResumo, true);
     };
 
@@ -152,13 +143,21 @@ export default function DiagnosticoAprofundadoPage() {
 
             if (!sessionId) setSessionId(data.sessionId);
 
+            // --- LÓGICA DE ROTEAMENTO DA RESPOSTA ---
+            // Adicionamos um tratamento para o caso de 'confirmacao' por segurança,
+            // mas a correção acima deve evitar que ele seja chamado na primeira vez.
             if (data.status === "finalizado") {
                 setRelatorioFinal(data.relatorio_final);
                 setFase("finalizado");
+            } else if (data.status === "confirmacao" || data.status === "confirmação") {
+                // Se a IA ainda assim pedir para confirmar, mostramos a tela de confirmação.
+                setFase("confirmacao");
             } else {
+                // Caso contrário, consideramos que é uma pergunta e seguimos para o diagnóstico.
                 setPerguntaAtual(data.proxima_pergunta);
                 setFase("diagnostico");
             }
+
         } catch (err: any) {
             setError(err.message);
             toast.error(err.message);
@@ -168,6 +167,9 @@ export default function DiagnosticoAprofundadoPage() {
         }
     };
     
+    // O resto do arquivo (funções de renderização) permanece o mesmo...
+    // ...
+    // Nenhuma outra alteração é necessária neste arquivo.
     const renderInputField = (type: string, value: string, onChange: (value: string) => void, options?: string[], placeholder?: string | null) => {
         const commonProps = {
             className: "bg-slate-700 border-slate-500 text-center text-lg",
@@ -304,9 +306,6 @@ export default function DiagnosticoAprofundadoPage() {
         }
     };
 
-    // --- CORREÇÃO DE HIDRATAÇÃO (PASSO 3) ---
-    // Renderiza um loader na primeira passagem no cliente, garantindo que o HTML
-    // seja idêntico ao do servidor.
     if (!isClient) {
         return (
             <main className="flex h-screen items-center justify-center bg-slate-900">
