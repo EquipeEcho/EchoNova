@@ -2,19 +2,18 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Diagnostico from "@/models/Diagnostico";
+import { NextRequest } from "next/server"; // Importar NextRequest
 
 /**
  * @description Rota para deletar um diagnóstico específico.
  * @param req O objeto da requisição.
  * @param context Contém os parâmetros da rota, como o ID do diagnóstico.
  */
-export async function DELETE(req: Request, context: { params: { id: string } }) {
+// --- CORREÇÃO APLICADA NA ASSINATURA DA FUNÇÃO ---
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     await connectDB();
-    // --- CORREÇÃO APLICADA ---
-    // Adicionamos 'await' para esperar a resolução dos parâmetros da rota
-    // antes de desestruturar o ID.
-    const { id } = context.params;
+    const { id } = await context.params; // Adicionado await para consistência
 
     const diagnosticoDeletado = await Diagnostico.findByIdAndDelete(id);
 

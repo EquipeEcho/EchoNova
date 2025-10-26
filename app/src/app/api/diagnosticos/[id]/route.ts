@@ -1,18 +1,18 @@
+// src/app/api/diagnosticos/[id]/route.ts
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Diagnostico from "@/models/Diagnostico";
+import { NextRequest } from "next/server"; // Importar NextRequest
 
 // GET - Buscar diagnóstico específico
 export async function GET(
-  request: Request,
-  context: { params: Promise<{ id: string }> } // A tipagem pode ser simplificada, já que params não é mais uma promessa na versão estável do App Router.
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> } 
 ) {
   try {
     await connectDB();
+    const { id } = await context.params;
 
-    const { id } = await context.params; // Versão correta e funcional.
-
-    // Verifica se o ID é válido
     if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
       return NextResponse.json(
         { error: "ID de diagnóstico inválido" },
@@ -40,13 +40,14 @@ export async function GET(
 }
 
 // PUT - Atualizar diagnóstico
+// --- CORREÇÃO APLICADA NA ASSINATURA DA FUNÇÃO ---
 export async function PUT(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
-    const { id } = context.params;
+    const { id } = await context.params; // Adicionado await
     const dados = await request.json();
 
     const diagnosticoAtualizado = await Diagnostico.findByIdAndUpdate(
@@ -72,13 +73,14 @@ export async function PUT(
 }
 
 // DELETE - Deletar diagnóstico
+// --- CORREÇÃO APLICADA NA ASSINATURA DA FUNÇÃO ---
 export async function DELETE(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
-    const { id } = context.params;
+    const { id } = await context.params; // Adicionado await
 
     const diagnosticoDeletado = await Diagnostico.findByIdAndDelete(id);
 

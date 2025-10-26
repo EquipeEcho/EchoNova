@@ -4,19 +4,18 @@ import { connectDB } from "@/lib/mongodb";
 import Empresa from "@/models/Empresa";
 import Diagnostico from "@/models/Diagnostico";
 import bcrypt from "bcryptjs";
+import { NextRequest } from "next/server"; // Importar NextRequest
 
 /**
  * @description Rota para atualizar uma empresa específica.
  * @param req O objeto da requisição.
  * @param context Contém os parâmetros da rota, como o ID da empresa.
  */
-export async function PUT(req: Request, context: { params: { id: string } }) {
+// --- CORREÇÃO APLICADA NA ASSINATURA DA FUNÇÃO ---
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     await connectDB();
-    // --- CORREÇÃO APLICADA ---
-    // Em rotas dinâmicas do App Router, 'context.params' é uma Promise
-    // e deve ser resolvido com 'await' antes de acessar suas propriedades.
-    const { id } = context.params;
+    const { id } = await context.params; // Adicionado await
     const body = await req.json();
 
     // Se a senha foi enviada e não está vazia, criptografa
@@ -45,7 +44,8 @@ export async function PUT(req: Request, context: { params: { id: string } }) {
  * @param req O objeto da requisição.
  * @param context Contém os parâmetros da rota, como o ID da empresa.
  */
-export async function DELETE(req: Request, context: { params: { id: string } }) {
+// --- CORREÇÃO APLICADA NA ASSINATURA DA FUNÇÃO ---
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     await connectDB();
     const { id } = await context.params;

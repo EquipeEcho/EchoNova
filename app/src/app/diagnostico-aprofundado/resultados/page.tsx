@@ -22,7 +22,7 @@ interface Diagnostico {
 /**
  * @description Página dedicada a exibir o resultado de um Diagnóstico Aprofundado já concluído.
  */
-export default function ResultadoDiagnosticoAprofundadoPage() {
+export default function ResultadoDiagnosticoPage() { // Nome do componente ajustado
   const router = useRouter();
   const params = useParams();
   const { id } = params;
@@ -61,7 +61,6 @@ export default function ResultadoDiagnosticoAprofundadoPage() {
       const textWidth = doc.internal.pageSize.getWidth() - margin * 2;
       const lines = doc.splitTextToSize(diagnostico.finalReport, textWidth);
 
-      // Adiciona um título mais claro ao PDF
       doc.setFontSize(18);
       doc.text("Relatório de Diagnóstico Aprofundado", margin, 20);
       doc.setFontSize(12);

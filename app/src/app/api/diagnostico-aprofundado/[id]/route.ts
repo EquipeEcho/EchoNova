@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
 import { connectDB } from "@/lib/mongodb";
 import DiagnosticoAprofundado from "@/models/DiagnosticoAprofundado";
+import { NextRequest } from "next/server";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 
@@ -13,12 +14,11 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET);
  * garantindo que ele pertença ao usuário autenticado.
  * Usada pela página de visualização de resultados.
  */
-export async function GET(req: Request, context: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     // --- 1. Autenticação ---
-    // --- CORREÇÃO APLICADA ---
-    // A mesma correção é necessária aqui: `await` na chamada de `cookies()`.
-    const cookieStore = await cookies();
+    // --- CORREÇÃO APLICADA AQUI ---
+    const cookieStore = await cookies(); // O 'await' é necessário aqui.
     const token = cookieStore.get("auth_token")?.value;
 
     if (!token) {
@@ -29,7 +29,7 @@ export async function GET(req: Request, context: { params: { id: string } }) {
 
     // --- 2. Lógica de Busca ---
     await connectDB();
-    const { id } = context.params;
+    const { id } = await context.params;
 
     const diagnostico = await DiagnosticoAprofundado.findById(id);
 
