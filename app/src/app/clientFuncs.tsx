@@ -189,7 +189,7 @@ export function DialogCloseButton() {
 
           <DialogClose asChild>
             <Button
-              className="cursor-pointer bg-gray-950 absolute right-3 top-3 text-neutral-400 hover:bg-fuchsia-800 text-neutral-100 transition-colors"
+              className="cursor-pointer bg-gray-950 absolute right-3 top-3 text-neutral-400 hover:bg-fuchsia-800 transition-colors"
               aria-label="Fechar"
 
             >

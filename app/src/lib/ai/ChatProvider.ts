@@ -7,10 +7,17 @@ export interface IaResponse {
     texto: string;
     tipo_resposta: "texto" | "numero" | "multipla_escolha" | "selecao" | "sim_nao";
     opcoes: string[] | null;
+    placeholder?: string | null;
   } | null;
   resumo_etapa: string | null;
   dados_coletados: object;
   relatorio_final: string | null;
+  // CAMPO ADICIONADO: Informações de progresso para a UI
+  progress?: {
+    currentStep: number;
+    totalSteps: number;
+    stepTitle?: string; // Título opcional para a etapa atual
+  };
 }
 
 // Define a estrutura de uma mensagem no histórico, agnóstica de provedor.
