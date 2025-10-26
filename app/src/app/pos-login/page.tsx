@@ -1,3 +1,4 @@
+// src/app/pos-login/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -6,42 +7,36 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useAuthStore } from "@/lib/stores/useAuthStore"; // Importa o store de autenticação
+import { useAuthStore } from "@/lib/stores/useAuthStore";
+import { History } from "lucide-react"; // NOVO: Importando ícone
 
 export default function PosLoginPage() {
   const [userInfo, setUserInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
-  const { user: authUser, logout } = useAuthStore(); // Obtém o usuário do store
+  const { user: authUser, logout } = useAuthStore();
+
+  // --- NOVO ESTADO ---
+  // Armazena o ID do último diagnóstico, se existir.
+  const [ultimoDiagnosticoId, setUltimoDiagnosticoId] = useState<string | null>(null);
 
   useEffect(() => {
     let redirected = false;
     
-    // Função para verificar se o store foi reidratado
     const checkAuthState = async () => {
-      // Se já foi redirecionado, não faz nada
       if (redirected) return;
       
-      // Aguarda um breve momento para garantir que o store foi reidratado
       await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Obtém o estado atual do store
       const currentState = useAuthStore.getState();
       
-      // Se não houver usuário autenticado, redireciona para a página principal
       if (!authUser && !currentState.user) {
-        // Verifica se há dados no localStorage
         const localStorageData = localStorage.getItem('auth-storage');
         if (localStorageData) {
           try {
             const parsedData = JSON.parse(localStorageData);
             if (parsedData.state?.user) {
-              // Se houver dados no localStorage, tenta usá-los
-              console.log("Dados do usuário encontrados no localStorage");
-              // O store deve ser reidratado automaticamente, então aguardamos um pouco mais
               await new Promise(resolve => setTimeout(resolve, 100));
-              // Verifica novamente o estado
               const updatedState = useAuthStore.getState();
               if (!updatedState.user) {
                 redirected = true;
@@ -66,10 +61,8 @@ export default function PosLoginPage() {
         }
       }
 
-      // Usa o usuário disponível
       const user = authUser || useAuthStore.getState().user;
       
-      // Verifica se o usuário existe
       if (!user) {
         redirected = true;
         router.push("/");
@@ -77,39 +70,52 @@ export default function PosLoginPage() {
       }
 
       try {
-        // Busca os dados atualizados da empresa do banco de dados
-        const response = await fetch(`/api/empresa/${user.id}`);
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.error || "Erro ao buscar dados do usuário");
-        }
+        // --- LÓGICA DE BUSCA DOS DOIS DADOS EM PARALELO ---
+        const [empresaRes, ultimoDiagRes] = await Promise.all([
+          fetch(`/api/empresa/${user.id}`),
+          fetch(`/api/diagnostico-aprofundado/ultimo`) // Busca o último diagnóstico
+        ]);
 
-        // Atualiza as informações do usuário com os dados do banco
+        // Processa dados da empresa
+        if (!empresaRes.ok) {
+          const errorData = await empresaRes.json();
+          throw new Error(errorData.error || "Erro ao buscar dados do usuário");
+        }
+        const empresaData = await empresaRes.json();
         const userData = {
-          nome: data.empresa.nome_empresa,
-          email: data.empresa.email,
-          plano: data.empresa.planoAtivo || "Nenhum"
+          nome: empresaData.empresa.nome_empresa,
+          email: empresaData.empresa.email,
+          plano: empresaData.empresa.planoAtivo || "Nenhum"
         };
-        
         setUserInfo(userData);
+
+        // Processa o resultado do último diagnóstico
+        if (ultimoDiagRes.ok) {
+          const diagData = await ultimoDiagRes.json();
+          setUltimoDiagnosticoId(diagData._id); // Salva o ID do diagnóstico
+        } else if (ultimoDiagRes.status === 404) {
+          console.log("Nenhum diagnóstico aprofundado anterior encontrado.");
+          setUltimoDiagnosticoId(null); // Garante que o estado é nulo
+        }
+        
       } catch (error) {
-        console.error("Erro ao carregar informações do usuário:", error);
-        // Em caso de erro, redireciona para a página principal
+        console.error("Erro ao carregar informações da página:", error);
         if (!redirected) {
-          redirected = true;
-          router.push("/");
+          // Apenas redireciona se o erro for crítico (como falha ao buscar dados da empresa)
+          // Se for só o 404 do diagnóstico, a página deve carregar normalmente.
+          if ((error as Error).message.includes("dados do usuário")) {
+            redirected = true;
+            router.push("/");
+          }
         }
       } finally {
         setLoading(false);
       }
     };
 
-    // Verifica se já temos o usuário no store imediatamente
     if (authUser) {
       checkAuthState();
     } else {
-      // Se não, aguarda um pouco mais para garantir a reidratação
       const timer = setTimeout(checkAuthState, 400);
       return () => clearTimeout(timer);
     }
@@ -119,8 +125,16 @@ export default function PosLoginPage() {
     router.push("/diagnostico-aprofundado");
   };
 
+  // --- NOVA FUNÇÃO ---
+  // Navega para a página de resultados do último diagnóstico.
+  const handleViewLastReport = () => {
+    if (ultimoDiagnosticoId) {
+      router.push(`/diagnostico-aprofundado/resultados/${ultimoDiagnosticoId}`);
+    }
+  };
+
   const handleLogout = () => {
-    logout(); // Limpa os dados do usuário do store
+    logout();
     setIsMenuOpen(false);
     router.push("/");
   };
@@ -173,7 +187,6 @@ export default function PosLoginPage() {
     );
   }
 
-  // Se não houver usuário autenticado, não renderiza o conteúdo principal
   if ((!authUser && !useAuthStore.getState().user) || loading) {
     return (
       <main className="flex flex-col min-h-screen h-screen overflow-hidden">
@@ -194,7 +207,6 @@ export default function PosLoginPage() {
 
   return (
     <main className="flex flex-col min-h-screen h-screen overflow-hidden">
-      {/* Header com informações do usuário */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-sm border-b border-slate-800">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="logo-container hover:scale-100">
@@ -211,7 +223,6 @@ export default function PosLoginPage() {
           </div>
           
           <div className="flex items-center gap-4">
-            {/* Informações do plano */}
             {userInfo && (
               <div className="hidden md:flex items-center gap-2 bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700/50 cursor-pointer hover:bg-slate-700/50 transition-colors">
                 <span className="text-gray-300 text-sm">Plano:</span>
@@ -222,7 +233,6 @@ export default function PosLoginPage() {
               </div>
             )}
             
-            {/* Menu do usuário simplificado */}
             <div className="relative">
               <Button 
                 variant="ghost" 
@@ -234,7 +244,6 @@ export default function PosLoginPage() {
                 </div>
               </Button>
               
-              {/* Dropdown simplificado */}
               {isMenuOpen && (
                 <div className="absolute right-0 mt-2 w-64 bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-2 z-50">
                   <div className="px-4 py-2 border-b border-slate-700">
@@ -270,9 +279,7 @@ export default function PosLoginPage() {
         </div>
       </header>
 
-      {/* Conteúdo principal */}
       <section className="flex-1 main-bg flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8 relative pt-16">
-        {/* Conteúdo principal */}
         <div className="max-w-4xl w-full">
           <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight text-white mb-6 sm:mb-8 md:mb-10 animate-fade-in-up text-center">
             Diagnóstico Aprofundado
@@ -305,12 +312,28 @@ export default function PosLoginPage() {
               </li>
             </ul>
             
-            <Button 
-              onClick={handleStartDiagnostico}
-              className="w-full bg-gradient-to-r from-fuchsia-700 to-fuchsia-800 hover:from-fuchsia-800 hover:to-fuchsia-900 text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
-            >
-              Iniciar Diagnóstico Aprofundado
-            </Button>
+            {/* --- CONTAINER PARA OS BOTÕES DE AÇÃO --- */}
+            <div className="flex flex-col gap-4">
+              <Button 
+                onClick={handleStartDiagnostico}
+                className="w-full bg-gradient-to-r from-fuchsia-700 to-fuchsia-800 hover:from-fuchsia-800 hover:to-fuchsia-900 text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
+              >
+                Iniciar Novo Diagnóstico
+              </Button>
+
+              {/* --- NOVO BOTÃO CONDICIONAL --- */}
+              {ultimoDiagnosticoId && (
+                <Button 
+                  onClick={handleViewLastReport}
+                  variant="outline" // Estilo diferente para ser secundário
+                  className="w-full border-fuchsia-500 text-fuchsia-500 hover:bg-fuchsia-500/10 hover:text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
+                >
+                  <History className="mr-2 h-5 w-5" />
+                  Ver Último Relatório Realizado
+                </Button>
+              )}
+            </div>
+
           </div>
 
           <div className="text-gray-400 text-sm max-w-2xl mx-auto">
