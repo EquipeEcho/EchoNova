@@ -9,13 +9,13 @@ import { NextRequest } from "next/server"; // Importar NextRequest
 /**
  * @description Rota para atualizar uma empresa específica.
  * @param req O objeto da requisição.
- * @param context Contém os parâmetros da rota, como o ID da empresa.
+ * @param params Contém os parâmetros da rota, como o ID da empresa.
  */
 // --- CORREÇÃO APLICADA NA ASSINATURA DA FUNÇÃO ---
-export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     await connectDB();
-    const { id } = await context.params; // Adicionado await
+    const { id } = params; // Acesso direto ao ID
     const body = await req.json();
 
     // Se a senha foi enviada e não está vazia, criptografa
@@ -42,13 +42,13 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
 /**
  * @description Rota para deletar uma empresa e todos os seus diagnósticos associados.
  * @param req O objeto da requisição.
- * @param context Contém os parâmetros da rota, como o ID da empresa.
+ * @param params Contém os parâmetros da rota, como o ID da empresa.
  */
 // --- CORREÇÃO APLICADA NA ASSINATURA DA FUNÇÃO ---
-export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     await connectDB();
-    const { id } = await context.params;
+    const { id } = params; // Acesso direto ao ID
 
     // 1. Deletar todos os diagnósticos associados à empresa
     await Diagnostico.deleteMany({ empresa: id });

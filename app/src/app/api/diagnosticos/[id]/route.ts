@@ -7,11 +7,11 @@ import { NextRequest } from "next/server"; // Importar NextRequest
 // GET - Buscar diagnóstico específico
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> } 
+  { params }: { params: { id: string } } 
 ) {
   try {
     await connectDB();
-    const { id } = await context.params;
+    const { id } = await params;
 
     if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
       return NextResponse.json(
@@ -43,11 +43,11 @@ export async function GET(
 // --- CORREÇÃO APLICADA NA ASSINATURA DA FUNÇÃO ---
 export async function PUT(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     await connectDB();
-    const { id } = await context.params; // Adicionado await
+    const { id } = params;
     const dados = await request.json();
 
     const diagnosticoAtualizado = await Diagnostico.findByIdAndUpdate(
@@ -76,11 +76,11 @@ export async function PUT(
 // --- CORREÇÃO APLICADA NA ASSINATURA DA FUNÇÃO ---
 export async function DELETE(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     await connectDB();
-    const { id } = await context.params; // Adicionado await
+    const { id } = params;
 
     const diagnosticoDeletado = await Diagnostico.findByIdAndDelete(id);
 

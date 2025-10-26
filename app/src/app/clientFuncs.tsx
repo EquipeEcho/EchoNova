@@ -116,6 +116,10 @@ export function Header() {
 // CORREÇÃO 5: Componente `Cadastro` removido por ser código legado e não utilizado.
 
 export function DialogCloseButton() {
+  // --- INÍCIO DA CORREÇÃO ---
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  // --- FIM DA CORREÇÃO ---
+
   // ADICIONADO: States para controle de todos os formulários
   // Login
   const [loginEmail, setLoginEmail] = useState("");
@@ -144,25 +148,12 @@ export function DialogCloseButton() {
         // Atualiza o store com os dados do usuário
         loginAction(data.user);
         
-        // Fecha o diálogo antes de redirecionar
-        const closeButtons = document.querySelectorAll('[data-state="open"] button[aria-label="Fechar"]');
-        closeButtons.forEach(button => {
-          if (button instanceof HTMLElement) {
-            button.click();
-          }
-        });
+        // --- CORREÇÃO: Fecha o diálogo via estado ---
+        setIsDialogOpen(false);
         
-        // Aguarda um breve momento para garantir que o estado foi atualizado
-        setTimeout(() => {
-          // Verifica se o usuário foi realmente salvo no store
-          const currentState = useAuthStore.getState();
-          if (currentState.user) {
-            router.push("/pos-login");
-          } else {
-            // Se não, tenta novamente com window.location
-            window.location.href = "/pos-login";
-          }
-        }, 150);
+        // Redireciona para a página de pós-login
+        router.push("/pos-login");
+        
       } else {
         alert("Erro no login: " + data.error);
       }
@@ -173,7 +164,8 @@ export function DialogCloseButton() {
   }
 
   return (
-    <Dialog>
+    // --- CORREÇÃO: Controla o diálogo com o estado ---
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
         <Button className="social-btn">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="w-6 h-6 text-white" viewBox="0 0 16 16">
@@ -191,7 +183,6 @@ export function DialogCloseButton() {
             <Button
               className="cursor-pointer bg-gray-950 absolute right-3 top-3 text-neutral-400 hover:bg-fuchsia-800 transition-colors"
               aria-label="Fechar"
-
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -214,7 +205,7 @@ export function DialogCloseButton() {
         <p className="text-neutral-400 italic font-light text-center">Apenas usuários que já realizaram o diagnóstico e adquiriram um plano podem acessar.</p>
 
 
-        <form className="grid gap-4 py-4">
+        <form className="grid gap-4 py-4" onSubmit={handleLogin}>
           <div className="grid gap-2">
             <Label htmlFor="login-email" className="text-neutral-400">
               Email
@@ -229,7 +220,7 @@ export function DialogCloseButton() {
             <Label htmlFor="login-password" className="text-neutral-400">Senha</Label>
             <Input id="login-password" type="password" placeholder="••••••••••••••" className="bg-gray-800 border-gray-700 text-white" value={loginSenha} onChange={(e) => setLoginSenha(e.target.value)} />
           </div>
-          <Button type="submit" className="bg-fuchsia-800 text-white hover:bg-fuchsia-700 cursor-pointer" onClick={handleLogin}>
+          <Button type="submit" className="bg-fuchsia-800 text-white hover:bg-fuchsia-700 cursor-pointer">
             Entrar
           </Button>
         </form>
@@ -267,5 +258,3 @@ export function Headernaofix({ Link }: HeadernaofixProps) {
     </div>
   )
 }
-
-

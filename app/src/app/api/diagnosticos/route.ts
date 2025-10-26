@@ -4,6 +4,7 @@ import Diagnostico from "@/models/Diagnostico";
 import Empresa from "@/models/Empresa";
 import { getChatProvider } from "@/lib/ai/providerFactory";
 import { promptMiniDiagnostico } from "@/lib/prompts";
+import bcrypt from "bcryptjs"; // --- CORREÇÃO: Importar bcryptjs ---
 
 const mapeamentoPontuacao: Record<string, number> = {
   "p1-1": 4,
@@ -167,13 +168,18 @@ export async function POST(req: Request) {
       }
 
       console.log(`Empresa com email ${dados.perfil.email} não encontrada. Criando nova...`);
+      
+      // --- INÍCIO DA CORREÇÃO DE SEGURANÇA ---
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(`temp_${Date.now()}`, salt);
 
       empresa = await Empresa.create({
         nome_empresa: dados.perfil.empresa,
         email: dados.perfil.email,
         cnpj: cnpjInformado || `TEMP_${Date.now()}`,
-        senha: "senha_placeholder",
+        senha: hashedPassword, // Salva a senha temporária criptografada
       });
+      // --- FIM DA CORREÇÃO DE SEGURANÇA ---
 
       console.log(`Nova empresa criada com ID: ${empresa._id}`);
     } else {

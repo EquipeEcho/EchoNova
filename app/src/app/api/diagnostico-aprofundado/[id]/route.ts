@@ -14,7 +14,7 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET);
  * garantindo que ele pertença ao usuário autenticado.
  * Usada pela página de visualização de resultados.
  */
-export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     // --- 1. Autenticação ---
     // --- CORREÇÃO APLICADA AQUI ---
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
 
     // --- 2. Lógica de Busca ---
     await connectDB();
-    const { id } = await context.params;
+    const { id } = params; // Acesso direto ao ID
 
     const diagnostico = await DiagnosticoAprofundado.findById(id);
 

@@ -10,17 +10,13 @@ import Empresa from "@/models/Empresa";
  */
 export async function GET(
   req: Request,
-  // O segundo argumento contém os parâmetros da rota.
-  // A tipagem correta agora indica que `params` é uma Promise.
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     await connectDB();
 
     // --- CORREÇÃO APLICADA AQUI ---
-    // Usamos 'await' para esperar que a Promise dos parâmetros seja resolvida
-    // antes de tentar desestruturar o 'id'.
-    const { id } = await context.params;
+    const { id } = params;
 
     // Validação para garantir que o ID foi recebido.
     if (!id) {

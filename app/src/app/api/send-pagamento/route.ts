@@ -1,19 +1,34 @@
+// src/app/api/send-pagamento/route.ts
 import nodemailer from "nodemailer";
 import { jsPDF } from "jspdf";
 import fs from "fs";
 import path from "path";
+import { connectDB } from "@/lib/mongodb";
+import Transacao from "@/models/Transacao";
 
 export async function POST(request: Request) {
   try {
-    const { nome, email } = await request.json();
+    const { transacaoId, nome, email } = await request.json();
 
+    if (!transacaoId || !nome || !email) {
+      return Response.json({ success: false, error: "Dados incompletos." }, { status: 400 });
+    }
+
+    await connectDB();
+    const transacao = await Transacao.findById(transacaoId).populate('empresaId', 'nome_empresa');
+
+    if (!transacao) {
+      return Response.json({ success: false, error: "Transação não encontrada" }, { status: 404 });
+    }
+
+    // --- CORREÇÃO: Dados dinâmicos baseados na transação ---
     const Dados = [
-      "ID da Compra: #2025-001",
-      "Nome: Ryan Araújo",
-      "Produto: Teclado Mecânico RGB",
-      "Valor: R$ 249,90",
+      `ID da Transação: #${transacao._id.toString()}`,
+      `Empresa: ${transacao.empresaId.nome_empresa}`,
+      `Comprador: ${nome}`,
+      `Plano Adquirido: ${transacao.plano.charAt(0).toUpperCase() + transacao.plano.slice(1)}`,
+      `Valor: R$ ${transacao.valor.toFixed(2)}`,
       "Status: Pagamento Confirmado",
-      "Entrega: Correios - 5 dias úteis",
     ];
 
     function gerarPDFValidacaoCompra(textos: string[]) {
@@ -37,17 +52,13 @@ export async function POST(request: Request) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(22);
 
-
-      doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(22);
-      doc.text("VALIDAÇÃO DE COMPRA", pageWidth / 2, 40, { align: "center" });
+      doc.text("CONFIRMAÇÃO DE COMPRA", pageWidth / 2, 40, { align: "center" });
 
       doc.setDrawColor(255, 255, 255);
       doc.line(20, 45, pageWidth - 20, 45);
 
       doc.setFontSize(11);
-      doc.text(`Data: ${data}`, 20, 55);
+      doc.text(`Data da Emissão: ${data}`, 20, 55);
 
       let yPos = 70;
       doc.setFontSize(12);
@@ -58,7 +69,7 @@ export async function POST(request: Request) {
       doc.addImage(footerLogoData, "PNG", 0, 150, pageHeight, 0);
       
       textos.forEach((texto) => {
-        doc.text(`${texto}`, 20, yPos);
+        doc.text(texto, 20, yPos);
         yPos += 8;
         if (yPos >= pageHeight - 30) {
           doc.addPage();
@@ -82,12 +93,13 @@ export async function POST(request: Request) {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Seu Diagnóstico Entrenova",
+      subject: "Confirmação de Pagamento - Entrenova",
       html: `
         <div style="font-family: Arial, sans-serif; color: #333;">
           <h2>Olá, ${nome}!</h2>
           <h3>Seu Pagamento foi confirmado!</h3>
-          <p>Segue o comprovante em anexo.</p>
+          <p>Agradecemos por escolher a Entrenova. Segue o comprovante em anexo.</p>
+          <p>Você já pode acessar a plataforma para iniciar seu diagnóstico aprofundado.</p>
           <p>Atenciosamente,</p>
           <strong>Equipe Entrenova</strong>
         </div>

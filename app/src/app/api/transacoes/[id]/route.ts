@@ -1,3 +1,4 @@
+// src/app/api/transacoes/[id]/route.ts
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Transacao from "@/models/Transacao";
@@ -6,10 +7,10 @@ import mongoose from "mongoose";
 
 export async function GET(
   req: Request,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await context.params; // aguarda o params (Next.js 15+)
+    const { id } = params; // Acesso direto ao ID
     await connectDB();
 
     // valida o formato do ID

@@ -7,13 +7,13 @@ import { NextRequest } from "next/server"; // Importar NextRequest
 /**
  * @description Rota para deletar um diagnóstico específico.
  * @param req O objeto da requisição.
- * @param context Contém os parâmetros da rota, como o ID do diagnóstico.
+ * @param params Contém os parâmetros da rota, como o ID do diagnóstico.
  */
 // --- CORREÇÃO APLICADA NA ASSINATURA DA FUNÇÃO ---
-export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     await connectDB();
-    const { id } = await context.params; // Adicionado await para consistência
+    const { id } = params; // Acesso direto ao ID, sem 'await'
 
     const diagnosticoDeletado = await Diagnostico.findByIdAndDelete(id);
 
