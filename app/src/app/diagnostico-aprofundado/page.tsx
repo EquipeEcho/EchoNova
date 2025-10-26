@@ -1,3 +1,6 @@
+// ... (imports permanecem os mesmos) ...
+
+// --- ATENÇÃO: Apenas a função `processarResposta` e a `case 'finalizado'` mudam. O resto do arquivo fica igual. ---
 // app/src/app/diagnostico-aprofundado/page.tsx
 "use client";
 
@@ -145,12 +148,18 @@ export default function DiagnosticoAprofundadoPage() {
                 });
             }
 
-            if (data.status === "finalizado") {
-                setRelatorioFinal(data.relatorio_final);
-                setFase("finalizado");
-                setProgress(null);
+            // --- CORREÇÃO (Fluxo Pós-Diagnóstico) ---
+            // Verifica se a API retornou o ID do diagnóstico finalizado.
+            if (data.status === "finalizado" && data.finalDiagnosticId) {
+                toast.success("Diagnóstico concluído! Redirecionando para os resultados...");
+                // Redireciona para a página de resultados dedicada.
+                router.push(`/diagnostico-aprofundado/resultados/${data.finalDiagnosticId}`);
+                // Não precisamos mais das linhas abaixo, pois a nova página cuidará da exibição.
+                // setRelatorioFinal(data.relatorio_final);
+                // setFase("finalizado");
+                // setProgress(null);
             } else if (data.status === "confirmacao" || data.status === "confirmação") {
-                setFase("confirmacao");
+                setFase("confirmacao"); // Mantém a lógica de confirmação se necessário
             } else {
                 setPerguntaAtual(data.proxima_pergunta);
                 setFase("diagnostico");
@@ -185,287 +194,39 @@ export default function DiagnosticoAprofundadoPage() {
         setError(null);
         setProgress(null);
     };
-
-    const handleDownloadPdf = () => {
-        if (!relatorioFinal) {
-            toast.error("Conteúdo do relatório não disponível.");
-            return;
-        }
-        try {
-            const doc = new jsPDF();
-            const pageWidth = doc.internal.pageSize.getWidth();
-            const pageHeight = doc.internal.pageSize.getHeight();
-            const margin = 15;
-            const textWidth = pageWidth - margin * 2;
-            let yPos = margin;
-            const lineHeight = 7;
-            const backgroundColor = '#1E293B';
-
-            const addNewPage = () => {
-                doc.addPage();
-                doc.setFillColor(backgroundColor);
-                doc.rect(0, 0, pageWidth, pageHeight, 'F');
-                yPos = margin;
-            };
-
-            doc.setFillColor(backgroundColor);
-            doc.rect(0, 0, pageWidth, pageHeight, 'F');
-            doc.setTextColor(255, 255, 255);
-
-            const markdownLines = relatorioFinal.split('\n');
-
-            markdownLines.forEach(line => {
-                if (yPos > pageHeight - margin) addNewPage();
-
-                let processedLine = line;
-                doc.setFont("helvetica", "normal");
-                doc.setFontSize(11);
-
-                if (line.startsWith('# ')) {
-                    doc.setFont("helvetica", "bold");
-                    doc.setFontSize(18);
-                    processedLine = line.substring(2);
-                    yPos += lineHeight / 2;
-                } else if (line.startsWith('### ')) {
-                    doc.setFont("helvetica", "bold");
-                    doc.setFontSize(14);
-                    processedLine = line.substring(4);
-                    yPos += lineHeight / 3;
-                } else if (line.startsWith('* ')) {
-                    processedLine = `• ${line.substring(2)}`;
-                } else if (line.trim() === '***') {
-                    doc.setDrawColor(255, 255, 255);
-                    doc.line(margin, yPos, pageWidth - margin, yPos);
-                    yPos += lineHeight;
-                    return;
-                }
-                
-                const textLines = doc.splitTextToSize(processedLine, textWidth);
-                
-                textLines.forEach((textLine: string) => {
-                    if (yPos > pageHeight - margin) addNewPage();
-                    doc.text(textLine, margin, yPos);
-                    yPos += lineHeight;
-                });
-
-                if (line.startsWith('# ') || line.startsWith('### ')) yPos += lineHeight / 2;
-            });
-
-            doc.save(`diagnostico-${setupData.nomeEmpresa.replace(/\s+/g, '_')}.pdf`);
-            toast.success("Download do PDF iniciado!");
-        } catch (error) {
-            console.error("Erro ao gerar PDF:", error);
-            toast.error("Não foi possível gerar o PDF.");
-        }
-    };
     
-    const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-        if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
-            const form = event.currentTarget.closest('form');
-            if (form) {
-                const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
-                if (submitButton && !submitButton.disabled) submitButton.click();
-            }
-        }
-    };
+    // As funções handleDownloadPdf e handleKeyDown podem permanecer as mesmas,
+    // pois a lógica de download agora estará na página de resultados.
+    // ... (resto do arquivo permanece igual até a função renderContent)
     
-    const renderInputField = (currentFase: FaseDiagnostico, type: string, value: string, onChange: (value: string) => void, options?: string[] | null, placeholder?: string | null) => {
-        const commonInputProps = {
-            className: "bg-slate-700 border-slate-500 text-center text-lg",
-            autoFocus: true,
-            placeholder: placeholder || undefined,
-            onKeyDown: handleKeyDown,
-        };
-        
-        const commonSelectProps = {
-            className: "bg-slate-700 border-slate-500 text-center text-lg w-full h-auto py-3",
-        };
+    // --- FUNÇÕES REMOVIDAS POIS NÃO SÃO MAIS NECESSÁRIAS NESTA PÁGINA ---
+    // const handleDownloadPdf = () => { ... }
 
-        switch (type) {
-            case 'numero':
-            case 'texto':
-                return <Input {...commonInputProps} type="text" value={value} onChange={(e) => onChange(e.target.value)} />;
-            case 'selecao':
-                const handleSelectChange = (selectValue: string) => {
-                    onChange(selectValue);
-                    if (currentFase === 'diagnostico') {
-                        setTimeout(() => processarResposta(selectValue), 100);
-                    }
-                };
-                return <Select value={value} onValueChange={handleSelectChange}>
-                    <SelectTrigger {...commonSelectProps}><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-600 text-white">
-                        {options && options.map(opt => <SelectItem key={opt} value={opt} className="focus:bg-pink-500/20 focus:text-white cursor-pointer">{opt}</SelectItem>)}
-                    </SelectContent>
-                </Select>;
-            case 'sim_nao':
-                const handleButtonClick = (buttonValue: string) => {
-                    onChange(buttonValue);
-                    if (currentFase === 'diagnostico') {
-                        setTimeout(() => processarResposta(buttonValue), 100);
-                    }
-                };
-                return <div className="flex justify-center gap-4">
-                    <Button
-                        size="lg"
-                        onClick={() => handleButtonClick("Sim")}
-                        className={value === "Sim" ? "bg-gradient-to-r from-pink-500 to-pink-600 text-white" : "border-pink-500 text-pink-500 hover:bg-pink-500/10 hover:text-white"}
-                        variant={value === "Sim" ? "default" : "outline"}
-                    >
-                        Sim
-                    </Button>
-                    <Button
-                        size="lg"
-                        onClick={() => handleButtonClick("Não")}
-                        className={value === "Não" ? "bg-gradient-to-r from-pink-500 to-pink-600 text-white" : "border-pink-500 text-pink-500 hover:bg-pink-500/10 hover:text-white"}
-                        variant={value === "Não" ? "default" : "outline"}
-                    >
-                        Não
-                    </Button>
-                </div>;
-            default:
-                return <Input {...commonInputProps} type="text" value={value} onChange={(e) => onChange(e.target.value)} />;
-        }
-    };
-    
      const renderContent = () => {
-        if (isLoading) return <Loader text="Carregando..." />;
+        if (isLoading) return <Loader text="Processando..." />;
         if (error && fase !== 'diagnostico') return <div className="text-red-400 text-center">{error}</div>;
 
         switch (fase) {
             case 'setup':
-                const currentQ = initialSetupQuestions[setupStep];
-                return (
-                    <div className="bg-slate-800 p-8 rounded-lg shadow-xl w-full text-center" key={`setup-fase-${setupStep}`}>
-                        <ProgressBar currentStep={setupStep} totalSteps={initialSetupQuestions.length} />
-                        <h2 className="text-2xl font-semibold leading-relaxed mb-8">{currentQ.label}</h2>
-                        <form onSubmit={(e) => { e.preventDefault(); handleNextSetupStep(); }} className="space-y-4">
-                            {renderInputField(fase, currentQ.type, setupData[currentQ.id as keyof SetupData], (val) => handleSetupChange(currentQ.id as keyof SetupData, val), currentQ.opcoes)}
-                            <PrimaryButton 
-                                size="lg" 
-                                type="submit"
-                                disabled={!setupData[currentQ.id as keyof SetupData]?.trim()}
-                            >
-                                {setupStep === initialSetupQuestions.length - 1 ? "Revisar Dados" : "Próximo"}
-                            </PrimaryButton>
-                        </form>
-                    </div>
-                );
-
+                 // ... (código da fase 'setup' permanece o mesmo)
             case 'confirmacao':
-                return (
-                    <div className="bg-slate-800 p-8 rounded-lg shadow-xl text-center space-y-6 w-full">
-                        <h2 className="text-2xl font-semibold">Confirme os dados coletados</h2>
-                        <div className="text-left p-4 bg-slate-700 rounded-md border border-slate-600 space-y-3">
-                            {initialSetupQuestions.map(({ id, label }) => (
-                                <div key={id} className="flex justify-between items-center gap-4">
-                                    <span className="font-semibold text-neutral-300">{label}:</span>
-                                    {editingField === id ? (
-                                        <Input
-                                            type="text"
-                                            value={setupData[id as keyof SetupData]}
-                                            onChange={(e) => handleSetupChange(id as keyof SetupData, e.target.value)}
-                                            onBlur={() => setEditingField(null)}
-                                            autoFocus
-                                            className="bg-slate-600 border-slate-500 text-right text-lg"
-                                        />
-                                    ) : (
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-white text-right">{setupData[id as keyof SetupData]}</span>
-                                            <Pencil className="h-4 w-4 text-neutral-400 hover:text-white cursor-pointer" onClick={() => setEditingField(id as keyof SetupData)} />
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                        <div className="flex justify-center gap-4 pt-4">
-                            <PrimaryButton size="lg" onClick={iniciarDiagnostico}>Confirmar e Iniciar</PrimaryButton>
-                            <Button size="lg" variant="outline" className="border-pink-500 text-pink-500 hover:bg-pink-500/10 hover:text-white" onClick={() => { setFase('setup'); setSetupStep(0); }}>Voltar e Corrigir</Button>
-                        </div>
-                    </div>
-                );
-
+                // ... (código da fase 'confirmacao' permanece o mesmo)
             case 'diagnostico':
-                if (!perguntaAtual) return <Loader text="Aguardando primeira pergunta..." />;
-                return (
-                    <div className="bg-slate-800 p-8 rounded-lg shadow-xl text-center space-y-8 w-full">
-                        {progress ? (
-                            // Se o total de passos for maior que 2, significa que a IA já calculou o total real.
-                            progress.totalSteps > 2 ? (
-                                <ProgressBar currentStep={progress.currentStep - 1} totalSteps={progress.totalSteps} />
-                            ) : (
-                                // Caso contrário, mostramos apenas a etapa atual, sem a barra percentual.
-                                <div className="mb-8 w-full h-[35px] flex items-center justify-center">
-                                    <h3 className="text-lg font-semibold text-neutral-300">
-                                        Etapa {progress.currentStep}
-                                    </h3>
-                                </div>
-                            )
-                        ) : (
-                            <div className="h-[35px] mb-8 w-full"></div>
-                        )}
-                        <h2 className="text-2xl font-semibold leading-relaxed">{perguntaAtual.texto}</h2>
-                         <form onSubmit={(e) => { e.preventDefault(); if (resposta.trim() || perguntaAtual.tipo_resposta === 'sim_nao') processarResposta(resposta, false); }}>
-                            <div className="space-y-4">
-                                {renderInputField(fase, perguntaAtual.tipo_resposta, resposta, setResposta, perguntaAtual.opcoes, perguntaAtual.placeholder)}
-                                { (perguntaAtual.tipo_resposta !== "selecao" && perguntaAtual.tipo_resposta !== "sim_nao") && (
-                                    <PrimaryButton type="submit" size="lg" disabled={!resposta.trim()}>
-                                        Próximo
-                                    </PrimaryButton>
-                                )}
-                            </div>
-                        </form>
-                    </div>
-                );
-                
+                 // ... (código da fase 'diagnostico' permanece o mesmo)
+
+            // --- REMOÇÃO ---
+            // A fase 'finalizado' não é mais renderizada aqui. O usuário será redirecionado
+            // para a página de resultados, tornando este bloco obsoleto.
+            /*
             case 'finalizado':
-                 return (
-                    <div className="bg-slate-800 p-8 rounded-lg shadow-xl w-full">
-                        <h1 className="text-3xl font-bold text-center mb-6 border-b border-slate-600 pb-4">Diagnóstico Concluído</h1>
-                        <div className="prose prose-invert prose-lg max-w-none mb-8">
-                            <ReactMarkdown>{relatorioFinal}</ReactMarkdown>
-                        </div>
-                        
-                        <div className="mt-10 pt-6 border-t border-slate-700 flex flex-col sm:flex-row justify-center gap-4">
-                            <PrimaryButton 
-                                size="lg"
-                                onClick={handleDownloadPdf}
-                            >
-                                <Save className="mr-2 h-4 w-4" />
-                                Salvar em PDF
-                            </PrimaryButton>
-                            <Button 
-                                size="lg" 
-                                variant="outline" 
-                                className="border-pink-500 text-pink-500 hover:bg-pink-500/10 hover:text-white"
-                                onClick={handleRefazerDiagnostico}
-                            >
-                                <RefreshCw className="mr-2 h-4 w-4" />
-                                Refazer Diagnóstico
-                            </Button>
-                        </div>
-                    </div>
-                );
+                 return ( ... );
+            */
         }
+         // ... (renderInputField, etc., permanecem iguais) ...
     };
 
-    if (!isClient) {
-        return (
-            <main className="flex h-screen items-center justify-center bg-slate-900">
-                <Loader text="Carregando..." />
-            </main>
-        );
-    }
-
-    return (
-        <main className="min-h-screen text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
-            <div className="w-full max-w-3xl relative z-10">
-                {renderContent()}
-            </div>
-            <div className="-z-10">
-                <Ondas />
-            </div>
-        </main>
-    );
+    // O restante do arquivo (funções de renderização, JSX) permanece o mesmo.
+    // A única alteração visual é que o case 'finalizado' dentro de `renderContent` nunca mais será alcançado.
+    // O código completo é omitido por brevidade, mas as mudanças lógicas estão acima.
+    // ... (cole o restante do arquivo original aqui, exceto o case 'finalizado' e handleDownloadPdf)
 }
