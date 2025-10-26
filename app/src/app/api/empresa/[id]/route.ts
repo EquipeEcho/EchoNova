@@ -16,7 +16,7 @@ export async function GET(
     await connectDB();
 
     // --- CORREÇÃO APLICADA AQUI ---
-    const { id } = params;
+    const { id } = await params;
 
     // Validação para garantir que o ID foi recebido.
     if (!id) {

@@ -48,7 +48,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     await connectDB();
-    const { id } = params; // Acesso direto ao ID
+    const { id } = await params; // Acesso direto ao ID
 
     // 1. Deletar todos os diagnósticos associados à empresa
     await Diagnostico.deleteMany({ empresa: id });
