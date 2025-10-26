@@ -112,7 +112,7 @@ export async function POST(request: Request) {
       ],
     };
 
-    await transporter.sendMail(mailOptions);
+    transporter.sendMail(mailOptions);
     return Response.json({ success: true, message: "E-mail enviado com sucesso!" });
   } catch (error: any) {
     console.error("Erro ao enviar o e-mail:", error);
