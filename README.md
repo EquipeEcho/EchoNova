@@ -72,6 +72,7 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 
 
 ### 🟡 Sprint 2 - Geração de Diagnósticos Personalizados - [Detalhes](./docs/Sprint-2/sprint2.backlog.md)
+[![MVP SPRINT 1](https://img.youtube.com/vi/B-3Zbw5OlP4/0.jpg)](https://www.youtube.com/watch?v=7-NhXobXGko)
 | Rank | Prioridade | User Story                                               | Estimativa |
 | ---- | ---------- | -------------------------------------------------------- | ---------- |
 | 6    | Alta       | Convite para escolher um plano após diagnóstico inicial. | 3          |
