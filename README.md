@@ -58,7 +58,7 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 ---
 ## 🚀 MVP - Mínimo Produto Viável
 
-### 🟢 Sprint 1 - Questionário Geral
+### 🟢 Sprint 1 - Questionário Geral - Concluída
 [![MVP SPRINT 1](https://img.youtube.com/vi/B-3Zbw5OlP4/0.jpg)](https://www.youtube.com/watch?v=B-3Zbw5OlP4)
 
 ### 📈 Backlog da Sprint 1 - [Detalhes](./docs/Sprint-1/sprint1.backlog.md)
@@ -71,8 +71,11 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 | 5    | Baixa      | Email de call-to-action após diagnóstico, antes do cadastro.             | 2          |
 
 
-### 🟡 Sprint 2 - Geração de Diagnósticos Personalizados - [Detalhes](./docs/Sprint-2/sprint2.backlog.md)
-[![MVP SPRINT 1](https://img.youtube.com/vi/B-3Zbw5OlP4/0.jpg)](https://www.youtube.com/watch?v=7-NhXobXGko)
+### 🟡 Sprint 2 - Geração de Diagnósticos Personalizados - Concluída
+[![MVP SPRINT 2](https://img.youtube.com/vi/7-NhXobXGko/0.jpg)](https://www.youtube.com/watch?v=7-NhXobXGko)
+
+
+### 📈 Backlog da Sprint 2- [Detalhes](./docs/Sprint-2/sprint2.backlog.md)
 | Rank | Prioridade | User Story                                               | Estimativa |
 | ---- | ---------- | -------------------------------------------------------- | ---------- |
 | 6    | Alta       | Convite para escolher um plano após diagnóstico inicial. | 3          |
@@ -82,7 +85,15 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 | 10   | Alta       | Cadastro disponível somente após pagamento.              | 3          |
 | 11   | Alta       | Questionário aprofundado para relatório detalhado.       | 5          |
 
-### 🔵 Sprint 3 - Dashboard do Cliente
+### 🔵 Sprint 3 - Dashboard do Cliente - Em Progresso
+
+### 📈 Backlog da Sprint 3 - [Detalhes](./docs/Sprint-3/sprint3.backlog.md)
+| Rank | Prioridade | User Story                                                                                      | Estimativa |
+| ---- | ---------- | ----------------------------------------------------------------------------------------------- | ---------- |
+| 12   | Alta       | Visualização das trilhas recomendadas para cada empresa, permitindo acompanhamento estratégico. | 8          |
+| 13   | Média      | Dashboard para visualizar empresas que responderam o questionário simplificado.                 | 5          |
+| 14   | Média      | Dashboard para visualizar empresas cadastradas e que completaram o questionário completo.       | 5          |
+| 15   | Alta       | Exibição das trilhas mais escolhidas no dashboard para apoio à criação de novos conteúdos.      | 3          |
 
 ---
 
