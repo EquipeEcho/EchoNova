@@ -1,5 +1,3 @@
-// src/app/api/diagnostico-aprofundado/[id]/route.ts
-
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";

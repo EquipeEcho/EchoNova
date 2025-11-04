@@ -1,4 +1,3 @@
-// src/app/api/send-pagamento/route.ts
 import nodemailer from "nodemailer";
 import { jsPDF } from "jspdf";
 import fs from "fs";

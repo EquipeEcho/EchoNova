@@ -1,5 +1,3 @@
-// app/src/app/api/diagnostico-ia/route.ts
-
 import { NextResponse, NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";

@@ -1,5 +1,3 @@
-// app/src/app/api/empresa/[id]/route.ts
-
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Empresa from "@/models/Empresa";

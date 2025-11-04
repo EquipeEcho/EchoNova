@@ -1,5 +1,3 @@
-// app/src/app/api/login/route.ts
-
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { SignJWT } from "jose"; // Importa a função para criar o JWT

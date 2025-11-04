@@ -1,8 +1,6 @@
-// src/app/api/admin/empresas/route.ts
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Empresa from "@/models/Empresa";
-import Diagnostico from "@/models/Diagnostico";
 import bcrypt from "bcryptjs";
 
 /**

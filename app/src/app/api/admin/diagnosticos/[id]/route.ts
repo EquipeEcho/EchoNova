@@ -1,4 +1,3 @@
-// src/app/api/admin/diagnosticos/[id]/route.ts
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Diagnostico from "@/models/Diagnostico";
