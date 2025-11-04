@@ -1,5 +1,3 @@
-// src/lib/ai/ChatProvider.ts
-
 // Define a estrutura da resposta que nossa aplicação espera, não importa qual IA a gerou.
 export interface IaResponse {
   status: "iniciado" | "em_andamento" | "confirmacao" | "finalizado";

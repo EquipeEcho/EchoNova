@@ -1,4 +1,3 @@
-// app/src/components/ui/ProgressBar.tsx
 "use client";
 
 interface ProgressBarProps {

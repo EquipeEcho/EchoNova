@@ -1,4 +1,3 @@
-// app/src/components/ui/PrimaryButton.tsx
 "use client";
 
 import { Button, type buttonVariants } from "@/components/ui/button";

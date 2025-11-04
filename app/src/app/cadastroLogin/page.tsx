@@ -1,4 +1,3 @@
-// app/src/app/cadastroLogin/page.tsx
 "use client";
 
 import { LoginForm } from "@/components/ui/LoginForm"; // Importe o novo componente

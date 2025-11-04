@@ -1,4 +1,3 @@
-// src/app/diagnostico-aprofundado/page.tsx
 "use client";
 
 import { useState, useEffect, KeyboardEvent } from "react";

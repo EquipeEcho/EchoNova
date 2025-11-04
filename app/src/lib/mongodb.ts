@@ -9,7 +9,6 @@ const MONGODB_URI = process.env.MONGODB_URI;
 // Se a variável não estiver definida, usa uma URI padrão para desenvolvimento
 if (!MONGODB_URI) {
   console.warn("MONGODB_URI não definida, usando URI padrão para desenvolvimento");
-  // URI padrão para desenvolvimento local
 }
 
 // Interface para armazenar a conexão e a promise da conexão

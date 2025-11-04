@@ -12,10 +12,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { Link } from "lucide-react";
-import { validateCNPJ, validateEmail, validateField } from "./form/validator";
 import { useAuthStore } from "@/lib/stores/useAuthStore"; // Importa o store de autenticação
 import { useRouter } from "next/navigation"; // Correção: usar next/navigation em vez de next/router
 
@@ -113,12 +111,8 @@ export function Header() {
   );
 }
 
-// CORREÇÃO 5: Componente `Cadastro` removido por ser código legado e não utilizado.
-
 export function DialogCloseButton() {
-  // --- INÍCIO DA CORREÇÃO ---
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  // --- FIM DA CORREÇÃO ---
 
   // ADICIONADO: States para controle de todos os formulários
   // Login
