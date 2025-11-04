@@ -1,5 +1,3 @@
-// models/DiagnosticoAprofundado.ts
-
 import mongoose, { Schema, model, models } from "mongoose";
 
 /**

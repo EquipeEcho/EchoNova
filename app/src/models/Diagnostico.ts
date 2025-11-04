@@ -7,9 +7,8 @@ const DiagnosticoSchema = new Schema(
       ref: "Empresa",
       required: true,
     },
-    // O objeto 'perfil' agora corresponde exatamente ao que o formulário envia.
     perfil: {
-      empresa: { type: String, required: true }, // Este é o nome da empresa
+      empresa: { type: String, required: true },
       email: { type: String, required: true },
       cnpj: { type: String, required: true },
       setor: { type: String, required: true },

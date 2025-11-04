@@ -1,8 +1,6 @@
-// app/src/models/AiSession.ts
-
 import mongoose, { Schema, model, models } from "mongoose";
 
-// Esta interface é opcional mas ajuda na tipagem do histórico
+// Tipagem do histórico de mensagens da conversa
 interface HistoryMessage {
   role: "user" | "model";
   parts: [{ text: string }];
