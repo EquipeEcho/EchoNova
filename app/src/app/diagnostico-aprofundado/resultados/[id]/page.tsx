@@ -21,7 +21,7 @@ interface Diagnostico {
 /**
  * @description Página dedicada a exibir o resultado de um Diagnóstico Aprofundado já concluído.
  */
-export default function ResultadoDiagnosticoPage() { // Nome do componente ajustado
+export default function ResultadoDiagnosticoPage() {
   const router = useRouter();
   const params = useParams();
   const { id } = params;
@@ -33,6 +33,7 @@ export default function ResultadoDiagnosticoPage() { // Nome do componente ajust
   useEffect(() => {
     if (id) {
       const fetchDiagnostico = async () => {
+        setLoading(true);
         try {
           const res = await fetch(`/api/diagnostico-aprofundado/${id}`);
           if (!res.ok) {
@@ -52,22 +53,108 @@ export default function ResultadoDiagnosticoPage() { // Nome do componente ajust
     }
   }, [id]);
 
+  /**
+   * @description Função aprimorada para gerar um PDF a partir de um texto Markdown.
+   * Agora inclui suporte para paginação automática e formatação de elementos
+   * básicos de Markdown (títulos, listas, parágrafos e linhas horizontais).
+   */
   const handleDownloadPdf = () => {
     if (!diagnostico?.finalReport) return;
-    try {
-      const doc = new jsPDF();
-      const margin = 15;
-      const textWidth = doc.internal.pageSize.getWidth() - margin * 2;
-      const lines = doc.splitTextToSize(diagnostico.finalReport, textWidth);
 
-      doc.setFontSize(18);
-      doc.text("Relatório de Diagnóstico Aprofundado", margin, 20);
-      doc.setFontSize(12);
-      doc.text(new Date(diagnostico.createdAt).toLocaleDateString('pt-BR'), margin, 27);
+    try {
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      // --- 1. Configurações e Variáveis de Controle ---
+      const margin = 15;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const textWidth = pageWidth - margin * 2;
+      const lineHeight = 7; // Espaçamento entre linhas para texto normal
+      const bottomMargin = 20; // Margem inferior para evitar que o texto cole no rodapé
+
+      // Posição vertical inicial (e mutável)
+      let y = 20;
+
+      // --- 2. Função para adicionar nova página e resetar a posição ---
+      const addPageIfNeeded = (spaceNeeded: number) => {
+        if (y + spaceNeeded > pageHeight - bottomMargin) {
+          doc.addPage();
+          y = margin; // Reseta para a margem superior
+        }
+      };
       
-      doc.text(lines, margin, 40);
+      // --- 3. Processamento e Renderização do Markdown ---
+      const reportLines = diagnostico.finalReport.split('\n');
+
+      reportLines.forEach(line => {
+        // Remove espaços em branco desnecessários no início/fim da linha
+        const trimmedLine = line.trim();
+
+        if (trimmedLine.startsWith('### ')) {
+          addPageIfNeeded(lineHeight * 2);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(14);
+          const text = trimmedLine.substring(4);
+          const splitText = doc.splitTextToSize(text, textWidth);
+          doc.text(splitText, margin, y);
+          y += splitText.length * lineHeight + (lineHeight / 2); // Adiciona espaço extra após o título
+
+        } else if (trimmedLine.startsWith('## ')) {
+          addPageIfNeeded(lineHeight * 2.5);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(16);
+          const text = trimmedLine.substring(3);
+          const splitText = doc.splitTextToSize(text, textWidth);
+          doc.text(splitText, margin, y);
+          y += splitText.length * lineHeight + (lineHeight / 2);
+
+        } else if (trimmedLine.startsWith('# ')) {
+          addPageIfNeeded(lineHeight * 3);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(18);
+          const text = trimmedLine.substring(2);
+          const splitText = doc.splitTextToSize(text, textWidth);
+          doc.text(splitText, margin, y);
+          y += splitText.length * lineHeight + lineHeight;
+        
+        } else if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ')) {
+          addPageIfNeeded(lineHeight);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(12);
+          const text = "• " + trimmedLine.substring(2); // Adiciona o marcador de lista
+          const splitText = doc.splitTextToSize(text, textWidth);
+          doc.text(splitText, margin, y);
+          y += splitText.length * lineHeight;
+
+        } else if (trimmedLine.startsWith('***')) {
+            addPageIfNeeded(lineHeight * 2);
+            y += lineHeight / 2;
+            doc.setDrawColor(150, 150, 150); // Cor cinza para a linha
+            doc.line(margin, y, pageWidth - margin, y); // Desenha a linha
+            y += lineHeight * 1.5;
+
+        } else if (trimmedLine.length > 0) { // Parágrafo normal
+          addPageIfNeeded(lineHeight);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(12);
+          const splitText = doc.splitTextToSize(trimmedLine, textWidth);
+          doc.text(splitText, margin, y);
+          y += splitText.length * lineHeight;
+        
+        } else { // Linha vazia, apenas adiciona um espaço
+           addPageIfNeeded(lineHeight);
+           y += lineHeight / 2;
+        }
+      });
+
+      // --- 4. Salvando o arquivo ---
       doc.save(`diagnostico-aprofundado-${diagnostico._id}.pdf`);
       toast.success("Download do PDF iniciado!");
+
     } catch (e) {
       console.error("Erro ao gerar PDF:", e);
       toast.error("Não foi possível gerar o PDF.");
@@ -83,7 +170,9 @@ export default function ResultadoDiagnosticoPage() { // Nome do componente ajust
         <div className="text-center text-red-400">
           <h2>Erro ao Carregar</h2>
           <p>{error}</p>
-          <Button onClick={() => router.push("/pos-login")} className="mt-4">Voltar</Button>
+          <Button onClick={() => router.push("/pos-login")} className="mt-4">
+            Voltar
+          </Button>
         </div>
       );
     }
