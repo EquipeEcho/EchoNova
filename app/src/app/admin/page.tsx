@@ -117,7 +117,7 @@ const EmpresaForm: FC<{
           className="bg-gray-800 border-gray-600 text-white"
         />
       </div>
-       <div>
+      <div>
         {/* --- CORREÇÃO DE ESTILO --- */}
         <Label htmlFor="senha" className="text-gray-300">Nova Senha (opcional)</Label>
         <Input
@@ -196,7 +196,7 @@ export default function AdminPage() {
       }
     }
   };
-  
+
   const handleDeleteDiagnostico = async (id: string) => {
     if (window.confirm("Tem certeza que deseja excluir este diagnóstico?")) {
       try {
@@ -218,7 +218,7 @@ export default function AdminPage() {
     setEditingEmpresa(empresa);
     setIsDialogOpen(true);
   };
-  
+
   const handleSaveEmpresa = async (empresa: Partial<Empresa>) => {
     const isCreating = !empresa._id;
     const url = isCreating ? "/api/admin/empresas" : `/api/admin/empresas/${empresa._id}`;
@@ -256,15 +256,15 @@ export default function AdminPage() {
 
       <Tabs defaultValue="empresas" className="w-full">
         <TabsList className="grid w-full grid-cols-2 max-w-md bg-gray-800">
-            {/* --- CORREÇÃO DE ESTILO --- */}
+          {/* --- CORREÇÃO DE ESTILO --- */}
           <TabsTrigger value="empresas" className="data-[state=active]:bg-gray-700 data-[state=active]:text-white text-gray-300">
-              Empresas ({empresas.length})
-            </TabsTrigger>
+            Empresas ({empresas.length})
+          </TabsTrigger>
           <TabsTrigger value="diagnosticos" className="data-[state=active]:bg-gray-700 data-[state=active]:text-white text-gray-300">
-              Diagnósticos ({diagnosticos.length})
-            </TabsTrigger>
+            Diagnósticos ({diagnosticos.length})
+          </TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="empresas">
           <div className="mb-4">
             <Button onClick={handleAddNewEmpresa}>Adicionar Nova Empresa</Button>
@@ -288,7 +288,7 @@ export default function AdminPage() {
                     <td className="p-4">{empresa.cnpj}</td>
                     <td className="p-4">{empresa.planoAtivo || "N/A"}</td>
                     <td className="p-4 flex gap-2">
-                        {/* --- CORREÇÃO DE ESTILO --- */}
+                      {/* --- CORREÇÃO DE ESTILO --- */}
                       <Button variant="outline" size="sm" onClick={() => handleEditEmpresa(empresa)} className="text-white border-gray-600 hover:bg-gray-700 hover:text-white">Editar</Button>
                       <Button variant="destructive" size="sm" onClick={() => handleDeleteEmpresa(empresa._id)}>Excluir</Button>
                     </td>
@@ -328,21 +328,21 @@ export default function AdminPage() {
           </div>
         </TabsContent>
       </Tabs>
-      
+
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          {/* --- CORREÇÃO DE ESTILO --- */}
-          <DialogContent className="bg-gray-900 border-gray-700 text-white">
-              <DialogHeader>
-                  <DialogTitle>{editingEmpresa?._id ? "Editar Empresa" : "Criar Nova Empresa"}</DialogTitle>
-              </DialogHeader>
-              {editingEmpresa && (
-                  <EmpresaForm 
-                      empresa={editingEmpresa}
-                      onSave={handleSaveEmpresa}
-                      onCancel={() => setIsDialogOpen(false)}
-                  />
-              )}
-          </DialogContent>
+        {/* --- CORREÇÃO DE ESTILO --- */}
+        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle>{editingEmpresa?._id ? "Editar Empresa" : "Criar Nova Empresa"}</DialogTitle>
+          </DialogHeader>
+          {editingEmpresa && (
+            <EmpresaForm
+              empresa={editingEmpresa}
+              onSave={handleSaveEmpresa}
+              onCancel={() => setIsDialogOpen(false)}
+            />
+          )}
+        </DialogContent>
       </Dialog>
     </div>
   );

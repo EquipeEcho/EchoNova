@@ -10,7 +10,7 @@ import { NextRequest } from "next/server"; // Importar NextRequest
  * @param req O objeto da requisição.
  * @param params Contém os parâmetros da rota, como o ID da empresa.
  */
-// --- CORREÇÃO APLICADA NA ASSINATURA DA FUNÇÃO ---
+
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     await connectDB();
@@ -43,7 +43,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
  * @param req O objeto da requisição.
  * @param params Contém os parâmetros da rota, como o ID da empresa.
  */
-// --- CORREÇÃO APLICADA NA ASSINATURA DA FUNÇÃO ---
+
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     await connectDB();

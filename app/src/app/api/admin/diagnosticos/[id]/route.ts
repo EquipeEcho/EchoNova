@@ -8,7 +8,7 @@ import { NextRequest } from "next/server"; // Importar NextRequest
  * @param req O objeto da requisição.
  * @param params Contém os parâmetros da rota, como o ID do diagnóstico.
  */
-// --- CORREÇÃO APLICADA NA ASSINATURA DA FUNÇÃO ---
+
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     await connectDB();
