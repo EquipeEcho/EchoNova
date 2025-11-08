@@ -82,17 +82,23 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       <div className="flex gap-2">
         <Button
           type="button"
-          variant={loginType === "empresa" ? "default" : "outline"}
-          className={loginType === "empresa" ? "bg-fuchsia-800 text-white" : ""}
+          variant="outline"
+          className={
+            loginType === "empresa"
+              ? "bg-fuchsia-800 hover:bg-fuchsia-700 text-white border-fuchsia-800 cursor-pointer"
+              : "bg-transparent hover:bg-white text-gray-300 border-gray-700 cursor-pointer"
+          }
           onClick={() => setLoginType("empresa")}
         >
           Empresa
         </Button>
         <Button
           type="button"
-          variant={loginType === "funcionario" ? "default" : "outline"}
+          variant="outline"
           className={
-            loginType === "funcionario" ? "bg-fuchsia-800 text-white" : ""
+            loginType === "funcionario"
+              ? "bg-fuchsia-800 hover:bg-fuchsia-700 text-white border-fuchsia-800 cursor-pointer"
+              : "bg-transparent hover:bg-white text-gray-300 border-gray-700 cursor-pointer"
           }
           onClick={() => setLoginType("funcionario")}
         >
