@@ -1,22 +1,24 @@
 "use client";
+
+import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import { Link } from "lucide-react";
-import { useAuthStore } from "@/lib/stores/useAuthStore"; // Importa o store de autenticação
-import { useRouter } from "next/navigation"; // Correção: usar next/navigation em vez de next/router
-
+import { Input } from "@/components/ui/input";
+import { useAuthStore } from "@/lib/stores/useAuthStore";
+// ADICIONADO: importa o componente com abas
+import { LoginForm } from "@/components/ui/LoginForm";
 
 export function Ondas() {
   return (
@@ -114,65 +116,33 @@ export function Header() {
 export function DialogCloseButton() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // ADICIONADO: States para controle de todos os formulários
-  // Login
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginCNPJ, setLoginCNPJ] = useState("");
-  const [loginSenha, setLoginSenha] = useState("");
-  const loginAction = useAuthStore((state) => state.login); // Obtém a ação de login do store
-  const router = useRouter(); // Usa o router do Next.js
-
-  // ADICIONADO: Funções de handle para login
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault(); // Adicionado para prevenir o recarregamento da página
-    try {
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: loginEmail,
-          cnpj: loginCNPJ, 
-          senha: loginSenha,
-        }),
-      });
-      
-      const data = await res.json();
-      
-      if (res.ok) {
-        // Atualiza o store com os dados do usuário
-        loginAction(data.user);
-        
-        // --- CORREÇÃO: Fecha o diálogo via estado ---
-        setIsDialogOpen(false);
-        
-        // Redireciona para a página de pós-login
-        router.push("/pos-login");
-        
-      } else {
-        alert("Erro no login: " + data.error);
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao tentar fazer login. Verifique sua conexão e tente novamente.");
-    }
-  }
-
   return (
-    // --- CORREÇÃO: Controla o diálogo com o estado ---
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
         <Button className="social-btn">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="w-6 h-6 text-white" viewBox="0 0 16 16">
+          {/* ...ícone... */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="currentColor"
+            className="w-6 h-6 text-white"
+            viewBox="0 0 16 16"
+          >
             <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
-            <path fillRule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1" />
+            <path
+              fillRule="evenodd"
+              d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1"
+            />
           </svg>
         </Button>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-md bg-gray-950 text-gray-900 border-slate-800">
         <DialogHeader>
-          <DialogTitle className="text-neutral-100">Acesso Restrito</DialogTitle>
-
+          <DialogTitle className="text-neutral-100">
+            Acesso Restrito
+          </DialogTitle>
           <DialogClose asChild>
             <Button
               className="cursor-pointer bg-gray-950 absolute right-3 top-3 text-neutral-400 hover:bg-fuchsia-800 transition-colors"
@@ -195,34 +165,21 @@ export function DialogCloseButton() {
           </DialogClose>
         </DialogHeader>
 
+        <p className="text-neutral-400 italic font-light text-center">
+          Apenas usuários que já realizaram o diagnóstico e adquiriram um plano
+          podem acessar.
+        </p>
 
-        <p className="text-neutral-400 italic font-light text-center">Apenas usuários que já realizaram o diagnóstico e adquiriram um plano podem acessar.</p>
-
-
-        <form className="grid gap-4 py-4" onSubmit={handleLogin}>
-          <div className="grid gap-2">
-            <Label htmlFor="login-email" className="text-neutral-400">
-              Email
-            </Label>
-            <Input id="login-email" type="email" placeholder="email@exemplo.com" className="bg-gray-800 border-gray-700 text-white" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="login-cnpj" className="text-neutral-400">CNPJ</Label>
-            <Input id="login-cnpj" type="text" placeholder="00.000.000/0000-00" className="bg-gray-800 border-gray-700 text-white" value={loginCNPJ} onChange={(e) => setLoginCNPJ(e.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="login-password" className="text-neutral-400">Senha</Label>
-            <Input id="login-password" type="password" placeholder="••••••••••••••" className="bg-gray-800 border-gray-700 text-white" value={loginSenha} onChange={(e) => setLoginSenha(e.target.value)} />
-          </div>
-          <Button type="submit" className="bg-fuchsia-800 text-white hover:bg-fuchsia-700 cursor-pointer">
-            Entrar
-          </Button>
-        </form>
-
+        {/* SUBSTITUI FORM ANTIGO PELO COMPONENTE COM ABAS */}
+        <LoginForm onSuccess={() => setIsDialogOpen(false)} />
 
         <DialogFooter className="sm:justify-center">
           <p className="text-neutral-400 italic font-light text-center">
-            Ainda não tem acesso? <Link href="/form" className="text-fuchsia-400 hover:underline">Faça o diagnóstico gratuito</Link> e adquira um plano.
+            Ainda não tem acesso?{" "}
+            <Link href="/form" className="text-fuchsia-400 hover:underline">
+              Faça o diagnóstico gratuito
+            </Link>{" "}
+            e adquira um plano.
           </p>
         </DialogFooter>
       </DialogContent>
@@ -231,14 +188,13 @@ export function DialogCloseButton() {
 }
 
 type HeadernaofixProps = {
-  Link: string
-}
+  Link: string;
+};
 
 export function Headernaofix({ Link }: HeadernaofixProps) {
   return (
     <div className="py-4 flex-row justify-items-center">
       <div className="logo-container hover:scale-100 ">
-
         <a href={Link}>
           <Image
             src="/img/logo.png"
@@ -250,5 +206,5 @@ export function Headernaofix({ Link }: HeadernaofixProps) {
         </a>
       </div>
     </div>
-  )
+  );
 }
