@@ -58,6 +58,11 @@ export default function ResultadoDiagnosticoPage() {
    * Agora inclui suporte para paginação automática e formatação de elementos
    * básicos de Markdown (títulos, listas, parágrafos e linhas horizontais).
    */
+  /**
+   * @description Função aprimorada para gerar um PDF a partir de um texto Markdown.
+   * CORRIGIDO: Agora calcula corretamente a altura do texto com quebra de linha
+   * para implementar a paginação automática de forma robusta.
+   */
   const handleDownloadPdf = () => {
     if (!diagnostico?.finalReport) return;
 
@@ -74,12 +79,11 @@ export default function ResultadoDiagnosticoPage() {
       const pageHeight = doc.internal.pageSize.getHeight();
       const textWidth = pageWidth - margin * 2;
       const lineHeight = 7; // Espaçamento entre linhas para texto normal
-      const bottomMargin = 20; // Margem inferior para evitar que o texto cole no rodapé
+      const bottomMargin = 20;
 
-      // Posição vertical inicial (e mutável)
       let y = 20;
 
-      // --- 2. Função para adicionar nova página e resetar a posição ---
+      // --- 2. Função para adicionar nova página (sem alterações) ---
       const addPageIfNeeded = (spaceNeeded: number) => {
         if (y + spaceNeeded > pageHeight - bottomMargin) {
           doc.addPage();
@@ -87,67 +91,75 @@ export default function ResultadoDiagnosticoPage() {
         }
       };
       
-      // --- 3. Processamento e Renderização do Markdown ---
+      // --- 3. Processamento e Renderização do Markdown (LÓGICA CORRIGIDA) ---
       const reportLines = diagnostico.finalReport.split('\n');
 
       reportLines.forEach(line => {
-        // Remove espaços em branco desnecessários no início/fim da linha
         const trimmedLine = line.trim();
+        let splitText: string[];
+        let spaceNeeded: number;
 
-        if (trimmedLine.startsWith('### ')) {
-          addPageIfNeeded(lineHeight * 2);
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(14);
-          const text = trimmedLine.substring(4);
-          const splitText = doc.splitTextToSize(text, textWidth);
-          doc.text(splitText, margin, y);
-          y += splitText.length * lineHeight + (lineHeight / 2); // Adiciona espaço extra após o título
-
-        } else if (trimmedLine.startsWith('## ')) {
-          addPageIfNeeded(lineHeight * 2.5);
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(16);
-          const text = trimmedLine.substring(3);
-          const splitText = doc.splitTextToSize(text, textWidth);
-          doc.text(splitText, margin, y);
-          y += splitText.length * lineHeight + (lineHeight / 2);
-
-        } else if (trimmedLine.startsWith('# ')) {
-          addPageIfNeeded(lineHeight * 3);
+        if (trimmedLine.startsWith('# ')) {
           doc.setFont("helvetica", "bold");
           doc.setFontSize(18);
           const text = trimmedLine.substring(2);
-          const splitText = doc.splitTextToSize(text, textWidth);
+          splitText = doc.splitTextToSize(text, textWidth);
+          spaceNeeded = splitText.length * lineHeight + lineHeight; // Altura do texto + margem inferior
+          addPageIfNeeded(spaceNeeded);
           doc.text(splitText, margin, y);
-          y += splitText.length * lineHeight + lineHeight;
+          y += spaceNeeded;
+
+        } else if (trimmedLine.startsWith('## ')) {
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(16);
+          const text = trimmedLine.substring(3);
+          splitText = doc.splitTextToSize(text, textWidth);
+          spaceNeeded = splitText.length * lineHeight + (lineHeight / 2);
+          addPageIfNeeded(spaceNeeded);
+          doc.text(splitText, margin, y);
+          y += spaceNeeded;
+
+        } else if (trimmedLine.startsWith('### ')) {
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(14);
+          const text = trimmedLine.substring(4);
+          splitText = doc.splitTextToSize(text, textWidth);
+          spaceNeeded = splitText.length * lineHeight + (lineHeight / 2);
+          addPageIfNeeded(spaceNeeded);
+          doc.text(splitText, margin, y);
+          y += spaceNeeded;
         
         } else if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ')) {
-          addPageIfNeeded(lineHeight);
           doc.setFont("helvetica", "normal");
           doc.setFontSize(12);
           const text = "• " + trimmedLine.substring(2); // Adiciona o marcador de lista
-          const splitText = doc.splitTextToSize(text, textWidth);
-          doc.text(splitText, margin, y);
-          y += splitText.length * lineHeight;
+          splitText = doc.splitTextToSize(text, textWidth - 5); // Menor largura para item de lista
+          spaceNeeded = splitText.length * lineHeight;
+          addPageIfNeeded(spaceNeeded);
+          doc.text(splitText, margin + 5, y); // Adiciona um recuo
+          y += spaceNeeded;
 
         } else if (trimmedLine.startsWith('***')) {
-            addPageIfNeeded(lineHeight * 2);
+            spaceNeeded = lineHeight * 2;
+            addPageIfNeeded(spaceNeeded);
             y += lineHeight / 2;
-            doc.setDrawColor(150, 150, 150); // Cor cinza para a linha
-            doc.line(margin, y, pageWidth - margin, y); // Desenha a linha
+            doc.setDrawColor(150, 150, 150);
+            doc.line(margin, y, pageWidth - margin, y);
             y += lineHeight * 1.5;
 
         } else if (trimmedLine.length > 0) { // Parágrafo normal
-          addPageIfNeeded(lineHeight);
           doc.setFont("helvetica", "normal");
           doc.setFontSize(12);
-          const splitText = doc.splitTextToSize(trimmedLine, textWidth);
+          splitText = doc.splitTextToSize(trimmedLine, textWidth);
+          spaceNeeded = splitText.length * lineHeight;
+          addPageIfNeeded(spaceNeeded);
           doc.text(splitText, margin, y);
-          y += splitText.length * lineHeight;
+          y += spaceNeeded;
         
         } else { // Linha vazia, apenas adiciona um espaço
-           addPageIfNeeded(lineHeight);
-           y += lineHeight / 2;
+           spaceNeeded = lineHeight / 2;
+           addPageIfNeeded(spaceNeeded);
+           y += spaceNeeded;
         }
       });
 

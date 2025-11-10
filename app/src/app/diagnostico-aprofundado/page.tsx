@@ -102,7 +102,7 @@ export default function DiagnosticoAprofundadoPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [perguntaAtual, setPerguntaAtual] = useState<Pergunta | null>(null);
   const [resposta, setResposta] = useState<string>("");
-  const [relatorioFinal, setRelatorioFinal] = useState<string | null>(null);
+  const [setRelatorioFinal] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<ProgressState | null>(null);
