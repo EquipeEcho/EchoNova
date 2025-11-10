@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from "react"; // Removido o useRef
 import { useParams, useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
-import { jsPDF } from "jspdf";
+import { jsPDF } from "jspdf"; // Apenas o jsPDF é necessário
 import { Ondas } from "@/app/clientFuncs";
 import { Loader } from "@/components/ui/loader";
 import { Button } from "@/components/ui/button";
@@ -18,9 +18,6 @@ interface Diagnostico {
   createdAt: string;
 }
 
-/**
- * @description Página dedicada a exibir o resultado de um Diagnóstico Aprofundado já concluído.
- */
 export default function ResultadoDiagnosticoPage() {
   const router = useRouter();
   const params = useParams();
@@ -54,124 +51,207 @@ export default function ResultadoDiagnosticoPage() {
   }, [id]);
 
   /**
-   * @description Função aprimorada para gerar um PDF a partir de um texto Markdown.
-   * Agora inclui suporte para paginação automática e formatação de elementos
-   * básicos de Markdown (títulos, listas, parágrafos e linhas horizontais).
-   */
-  /**
-   * @description Função aprimorada para gerar um PDF a partir de um texto Markdown.
-   * CORRIGIDO: Agora calcula corretamente a altura do texto com quebra de linha
-   * para implementar a paginação automática de forma robusta.
+   * @description Gera um PDF de alta qualidade a partir de um texto Markdown.
+   * A função interpreta manualmente os elementos do Markdown (títulos, listas, etc.)
+   * e os desenha no PDF, aplicando um tema escuro e lidando com quebra de página.
    */
   const handleDownloadPdf = () => {
-    if (!diagnostico?.finalReport) return;
+  if (!diagnostico?.finalReport) return;
 
-    try {
-      const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
+  toast.info("Gerando seu relatório em PDF...");
 
-      // --- 1. Configurações e Variáveis de Controle ---
-      const margin = 15;
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const textWidth = pageWidth - margin * 2;
-      const lineHeight = 7; // Espaçamento entre linhas para texto normal
-      const bottomMargin = 20;
+  try {
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-      let y = 20;
+    // --- 1. CONFIGURAÇÕES E CONSTANTES ---
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
+    const textWidth = pageWidth - margin * 2;
+    let y = margin + 10; 
+    const lineHeightBase = 5; 
 
-      // --- 2. Função para adicionar nova página (sem alterações) ---
-      const addPageIfNeeded = (spaceNeeded: number) => {
-        if (y + spaceNeeded > pageHeight - bottomMargin) {
-          doc.addPage();
-          y = margin; // Reseta para a margem superior
-        }
+    // --- FUNÇÕES AUXILIARES ---
+
+    // FUNÇÃO AUXILIAR PARA IMPRIMIR TEXTO COM MARKDOWN INLINE (NEGITO) E QUEBRA DE LINHA CORRETA
+    const printMarkdownText = (
+        text: string, 
+        currentY: number, 
+        currentX: number, 
+        maxWidth: number, 
+        baseFontSize: number, 
+        normalColor: string, 
+        boldColor: string = normalColor
+    ) => {
+        doc.setFontSize(baseFontSize);
+        
+        const tempFont = doc.getFont();
+        doc.setFont(tempFont.fontName, "normal"); 
+        const textLines = doc.splitTextToSize(text, maxWidth); 
+        
+        let lineY = currentY;
+        let finalY = currentY;
+
+        textLines.forEach(line => {
+            const parts = line.split(/(\*\*.*?\*\*)/g).filter(p => p.length > 0);
+            let currentX_local = currentX;
+
+            parts.forEach(part => {
+                const isBold = part.startsWith('**') && part.endsWith('**');
+                const content = isBold ? part.substring(2, part.length - 2) : part;
+
+                doc.setFont("helvetica", isBold ? "bold" : "normal");
+                doc.setTextColor(isBold ? boldColor : normalColor);
+
+                doc.text(content, currentX_local, lineY);
+                currentX_local += doc.getTextWidth(content); 
+            });
+
+            lineY += lineHeightBase + (baseFontSize / 10); 
+            finalY = lineY;
+        });
+
+        return finalY;
+    };
+    
+    // Seção para calcular o espaço necessário com base na altura
+    const calculateSpace = (text: string, size: number, verticalPadding: number = 3) => {
+        doc.setFontSize(size);
+        doc.setFont("helvetica", "normal"); 
+        const lines = doc.splitTextToSize(text, textWidth); 
+        return lines.length * (lineHeightBase + (size / 10)) + verticalPadding;
+    };
+
+    // FUNÇÃO AUXILIAR DE PAGINAÇÃO
+    const addPageIfNeeded = (spaceNeeded: number) => {
+      if (y + spaceNeeded > pageHeight - margin) {
+        doc.addPage();
+        doc.setFillColor(15, 23, 42); 
+        doc.rect(0, 0, pageWidth, pageHeight, "F");
+        doc.setTextColor("#cbd5e1"); 
+        y = margin; 
+      }
+    };
+
+    // --- 3. APLICAÇÃO DO TEMA ESCURO INICIAL ---
+    doc.setFillColor(15, 23, 42); 
+    doc.rect(0, 0, pageWidth, pageHeight, "F");
+    doc.setTextColor("#cbd5e1"); 
+
+    // Título Principal do Documento
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor("#f1f5f9"); 
+    doc.text("Relatório de Diagnóstico", pageWidth / 2, y, { align: "center" });
+    y += 10; 
+
+    // --- 4. PROCESSAMENTO DO MARKDOWN ---
+    const lines = diagnostico.finalReport.split('\n');
+
+    lines.forEach((line, index) => { 
+      const trimmedLine = line.trim();
+      let splitText: string[];
+      let spaceNeeded: number;
+      const normalTextColor = "#cbd5e1"; 
+      const boldTextColor = "#f1f5f9"; 
+
+      // Função auxiliar para estimar o buffer do próximo parágrafo
+      const estimateNextTextBuffer = (nextIndex: number, defaultBuffer: number) => {
+          const nextLine = lines[nextIndex] ? lines[nextIndex].trim() : '';
+          // Verifica se a próxima linha é um parágrafo de texto normal
+          if (nextLine && !nextLine.startsWith('#') && !nextLine.startsWith('*') && !nextLine.startsWith('-') && !nextLine.startsWith('***')) {
+              // Estima espaço para as primeiras linhas do parágrafo. Usamos 50 caracteres como amostra.
+              return calculateSpace(nextLine.substring(0, 50) + "...", 12, 1); 
+          }
+          return defaultBuffer;
       };
-      
-      // --- 3. Processamento e Renderização do Markdown (LÓGICA CORRIGIDA) ---
-      const reportLines = diagnostico.finalReport.split('\n');
 
-      reportLines.forEach(line => {
-        const trimmedLine = line.trim();
-        let splitText: string[];
-        let spaceNeeded: number;
-
-        if (trimmedLine.startsWith('# ')) {
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(18);
-          const text = trimmedLine.substring(2);
-          splitText = doc.splitTextToSize(text, textWidth);
-          spaceNeeded = splitText.length * lineHeight + lineHeight; // Altura do texto + margem inferior
-          addPageIfNeeded(spaceNeeded);
-          doc.text(splitText, margin, y);
-          y += spaceNeeded;
-
-        } else if (trimmedLine.startsWith('## ')) {
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(16);
-          const text = trimmedLine.substring(3);
-          splitText = doc.splitTextToSize(text, textWidth);
-          spaceNeeded = splitText.length * lineHeight + (lineHeight / 2);
-          addPageIfNeeded(spaceNeeded);
-          doc.text(splitText, margin, y);
-          y += spaceNeeded;
-
-        } else if (trimmedLine.startsWith('### ')) {
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(14);
-          const text = trimmedLine.substring(4);
-          splitText = doc.splitTextToSize(text, textWidth);
-          spaceNeeded = splitText.length * lineHeight + (lineHeight / 2);
-          addPageIfNeeded(spaceNeeded);
-          doc.text(splitText, margin, y);
-          y += spaceNeeded;
+      if (trimmedLine.startsWith('# ')) {
+        // --- Título H1 (#) ---
+        const text = trimmedLine.substring(2);
+        spaceNeeded = calculateSpace(text, 18, 5); 
+        addPageIfNeeded(spaceNeeded);
         
-        } else if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ')) {
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(12);
-          const text = "• " + trimmedLine.substring(2); // Adiciona o marcador de lista
-          splitText = doc.splitTextToSize(text, textWidth - 5); // Menor largura para item de lista
-          spaceNeeded = splitText.length * lineHeight;
-          addPageIfNeeded(spaceNeeded);
-          doc.text(splitText, margin + 5, y); // Adiciona um recuo
-          y += spaceNeeded;
+        y = printMarkdownText(text, y, margin, textWidth, 18, boldTextColor, boldTextColor);
+        y += 2; 
 
-        } else if (trimmedLine.startsWith('***')) {
-            spaceNeeded = lineHeight * 2;
-            addPageIfNeeded(spaceNeeded);
-            y += lineHeight / 2;
-            doc.setDrawColor(150, 150, 150);
-            doc.line(margin, y, pageWidth - margin, y);
-            y += lineHeight * 1.5;
-
-        } else if (trimmedLine.length > 0) { // Parágrafo normal
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(12);
-          splitText = doc.splitTextToSize(trimmedLine, textWidth);
-          spaceNeeded = splitText.length * lineHeight;
-          addPageIfNeeded(spaceNeeded);
-          doc.text(splitText, margin, y);
-          y += spaceNeeded;
+      } else if (trimmedLine.startsWith('### ')) {
+        // --- Título H3 (###) com Agrupamento de Conteúdo (Rosa) ---
+        const text = trimmedLine.substring(4);
+        const titleSpace = calculateSpace(text, 14, 4);
         
-        } else { // Linha vazia, apenas adiciona um espaço
-           spaceNeeded = lineHeight / 2;
-           addPageIfNeeded(spaceNeeded);
-           y += spaceNeeded;
-        }
-      });
+        const minTextBuffer = estimateNextTextBuffer(index + 1, 0);
 
-      // --- 4. Salvando o arquivo ---
-      doc.save(`diagnostico-aprofundado-${diagnostico._id}.pdf`);
-      toast.success("Download do PDF iniciado!");
+        const totalSpaceNeeded = titleSpace + minTextBuffer;
+        
+        addPageIfNeeded(totalSpaceNeeded); 
 
-    } catch (e) {
-      console.error("Erro ao gerar PDF:", e);
-      toast.error("Não foi possível gerar o PDF.");
-    }
-  };
+        // Desenha o Título H3
+        doc.setFontSize(14);
+        doc.setTextColor("#f472b6"); 
+        y = printMarkdownText(text, y, margin, textWidth, 14, "#f472b6", "#f1f5f9");
+        y += 2; 
+
+      } else if (trimmedLine.startsWith('#### ')) {
+        // --- Título H4 (####) com Agrupamento de Conteúdo (Azul) ---
+        const text = trimmedLine.substring(5);
+        const titleSpace = calculateSpace(text, 13, 3);
+        
+        // **APLICANDO AGRUPAMENTO**
+        const minTextBuffer = estimateNextTextBuffer(index + 1, 0);
+
+        const totalSpaceNeeded = titleSpace + minTextBuffer;
+        
+        addPageIfNeeded(totalSpaceNeeded); // Verifica se o título + buffer cabem na página.
+        
+        // Desenha o Título H4
+        doc.setFontSize(13); 
+        doc.setTextColor("#60a5fa"); // Azul
+        y = printMarkdownText(text, y, margin, textWidth, 13, "#60a5fa", "#f1f5f9");
+        y += 2; 
+
+      } else if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ')) {
+        // --- Lista (* ou -) ---
+        const text = "• " + trimmedLine.substring(2);
+        spaceNeeded = calculateSpace(text, 12, 0); 
+        addPageIfNeeded(spaceNeeded);
+        
+        y = printMarkdownText(text, y, margin + 5, textWidth - 5, 12, normalTextColor, boldTextColor);
+        
+      } else if (trimmedLine.startsWith('***')) {
+        // --- Linha Horizontal (***) ---
+        addPageIfNeeded(6); 
+        y += 3;
+        doc.setDrawColor(71, 85, 105); 
+        doc.line(margin, y, pageWidth - margin, y);
+        y += 3;
+
+      } else if (trimmedLine.length > 0) {
+        // --- Parágrafo normal ---
+        const text = trimmedLine;
+        spaceNeeded = calculateSpace(text, 12, 3); 
+        addPageIfNeeded(spaceNeeded);
+        
+        y = printMarkdownText(text, y, margin, textWidth, 12, normalTextColor, boldTextColor);
+        y += 1; 
+
+      } else { 
+        // --- Linha vazia ---
+        addPageIfNeeded(4);
+        y += 4;
+      }
+    });
+
+    // --- 5. SALVAR O PDF ---
+    doc.save(`diagnostico-aprofundado-${diagnostico._id}.pdf`);
+    toast.success("Download do PDF iniciado!");
+
+  } catch (e) {
+    console.error("Erro ao gerar PDF:", e);
+    toast.error("Não foi possível gerar o PDF. Tente novamente.");
+  }
+};
+
 
   const renderContent = () => {
     if (loading) {
@@ -182,18 +262,18 @@ export default function ResultadoDiagnosticoPage() {
         <div className="text-center text-red-400">
           <h2>Erro ao Carregar</h2>
           <p>{error}</p>
-          <Button onClick={() => router.push("/pos-login")} className="mt-4">
-            Voltar
-          </Button>
+          <Button onClick={() => router.push("/pos-login")} className="mt-4">Voltar</Button>
         </div>
       );
     }
     if (diagnostico) {
       return (
+        // O layout da página permanece o mesmo, apenas a função de download mudou
         <div className="bg-slate-800 p-8 rounded-lg shadow-xl w-full">
           <h1 className="text-3xl font-bold text-center mb-6 border-b border-slate-600 pb-4">
             Resultado do Diagnóstico
           </h1>
+          {/* A ref não é mais necessária aqui */}
           <div className="prose prose-invert prose-lg max-w-none mb-8">
             <ReactMarkdown>{diagnostico.finalReport}</ReactMarkdown>
           </div>

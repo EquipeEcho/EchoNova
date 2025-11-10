@@ -27,7 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     // --- 2. Lógica de Busca ---
     await connectDB();
-    const { id } = params; // Acesso direto ao ID
+    const { id } = await params; // Acesso direto ao ID
 
     const diagnostico = await DiagnosticoAprofundado.findById(id);
 

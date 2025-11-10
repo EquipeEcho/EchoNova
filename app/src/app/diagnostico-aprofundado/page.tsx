@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, KeyboardEvent } from "react";
+import { useState, useEffect, KeyboardEvent, useRef } from "react"; // useRef não é usado aqui, mas mantido por consistência
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
@@ -102,7 +102,8 @@ export default function DiagnosticoAprofundadoPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [perguntaAtual, setPerguntaAtual] = useState<Pergunta | null>(null);
   const [resposta, setResposta] = useState<string>("");
-  const [setRelatorioFinal] = useState<string | null>(null);
+  // --- CORREÇÃO APLICADA AQUI ---
+  const [relatorioFinal, setRelatorioFinal] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<ProgressState | null>(null);
@@ -372,7 +373,6 @@ export default function DiagnosticoAprofundadoPage() {
         );
 
       case "diagnostico":
-        // Verifica se é a tela final de confirmação
         if (perguntaAtual?.texto.includes("Estou pronto para compilar")) {
           return (
             <div className="bg-slate-800 p-8 rounded-lg shadow-xl w-full max-w-2xl">
@@ -383,7 +383,6 @@ export default function DiagnosticoAprofundadoPage() {
                 {perguntaAtual.texto}
               </p>
               
-              {/* --- INÍCIO DA CORREÇÃO --- */}
               <div className="bg-slate-900/50 p-4 rounded-lg space-y-3 max-h-60 overflow-y-auto mb-6 text-sm">
                 {dadosColetados && Object.entries(dadosColetados).map(([key, value]: [string, any]) => (
                   <div key={key} className="border-b border-slate-700/50 pb-2 last:border-b-0">
@@ -410,7 +409,6 @@ export default function DiagnosticoAprofundadoPage() {
                   </div>
                 ))}
               </div>
-              {/* --- FIM DA CORREÇÃO --- */}
               
               <div className="grid grid-cols-2 gap-4 mt-8">
                 <Button
@@ -429,7 +427,6 @@ export default function DiagnosticoAprofundadoPage() {
           );
         }
 
-        // Renderização padrão para as outras perguntas do diagnóstico
         return (
           <div className="relative bg-slate-800 p-8 rounded-lg shadow-xl w-full max-w-xl">
             {progress && progress.totalSteps > initialSetupQuestions.length && (
