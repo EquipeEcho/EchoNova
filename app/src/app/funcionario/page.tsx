@@ -58,10 +58,9 @@ interface FuncionarioData {
 const TABS = [
   "Perfil",
   "Trilhas",
-  "Conquistas",
   "Microcursos",
   "Explorar Microcursos",
-  "Editar Perfil",
+  "Alterar Senha",
 ] as const;
 type TabKey = (typeof TABS)[number];
 
@@ -74,8 +73,6 @@ export default function FuncionarioPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabKey>("Perfil");
   const [editForm, setEditForm] = useState({
-    nome: "",
-    email: "",
     senhaAtual: "",
     novaSenha: "",
     confirmarSenha: "",
@@ -116,22 +113,7 @@ export default function FuncionarioPage() {
               status: "não_iniciado",
             },
           ],
-          conquistas: [
-            {
-              id: "c1",
-              titulo: "Primeira Trilha Concluída",
-              descricao: "Concluiu a primeira trilha de aprendizado.",
-              data: "2025-09-30",
-              icone: "🏅",
-            },
-            {
-              id: "c2",
-              titulo: "Meta Semanal",
-              descricao: "Completou 3 microcursos em uma semana.",
-              data: "2025-10-10",
-              icone: "🔥",
-            },
-          ],
+          conquistas: [],
           microcursosConcluidos: [
             {
               id: "m1",
@@ -213,13 +195,6 @@ export default function FuncionarioPage() {
         };
         await new Promise((r) => setTimeout(r, 400));
         setFuncionario(data);
-        setEditForm({
-          nome: data.nome,
-          email: data.email,
-          senhaAtual: "",
-          novaSenha: "",
-          confirmarSenha: "",
-        });
       } catch (e: any) {
         toast.error(e.message);
       } finally {
@@ -284,6 +259,34 @@ export default function FuncionarioPage() {
     }
   };
 
+  const handleSavePassword = async () => {
+    if (!editForm.senhaAtual) {
+      toast.error("Informe a senha atual");
+      return;
+    }
+    if (!editForm.novaSenha) {
+      toast.error("Informe a nova senha");
+      return;
+    }
+    if (editForm.novaSenha !== editForm.confirmarSenha) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+
+    try {
+      // Aqui você faria a chamada à API para atualizar a senha
+      toast.success("Senha alterada com sucesso!");
+      setEditForm({
+        senhaAtual: "",
+        novaSenha: "",
+        confirmarSenha: "",
+      });
+      setTab("Perfil");
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
   if (loading)
     return (
       <div className="relative min-h-screen bg-linear-to-br from-gray-950 via-fuchsia-950 to-gray-900 flex items-center justify-center">
@@ -310,7 +313,7 @@ export default function FuncionarioPage() {
         <div className="bg-neutral-900/80 backdrop-blur-sm border border-neutral-700 rounded-2xl shadow-2xl p-6 md:p-10 lg:p-12">
           {/* Tabs */}
           <div className="flex flex-wrap gap-2 mb-8">
-            {TABS.filter((t) => t !== "Editar Perfil").map((t) => (
+            {TABS.filter((t) => t !== "Alterar Senha").map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
@@ -341,7 +344,7 @@ export default function FuncionarioPage() {
                   {funcionario.nome}
                 </h1>
                 <button
-                  onClick={() => setTab("Editar Perfil")}
+                  onClick={() => setTab("Alterar Senha")}
                   className="text-xs text-neutral-400 hover:text-fuchsia-400 transition-colors flex items-center gap-1"
                 >
                   <svg
@@ -350,9 +353,13 @@ export default function FuncionarioPage() {
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
-                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                    <path
+                      fillRule="evenodd"
+                      d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                      clipRule="evenodd"
+                    />
                   </svg>
-                  Editar perfil
+                  Alterar senha
                 </button>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -364,46 +371,12 @@ export default function FuncionarioPage() {
             </div>
           )}
 
-          {tab === "Editar Perfil" && (
+          {tab === "Alterar Senha" && (
             <div className="max-w-2xl mx-auto">
               <h2 className="text-2xl font-semibold text-white mb-6">
-                Editar Perfil
+                Alterar Senha
               </h2>
               <div className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-300 mb-2">
-                    Nome
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.nome}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, nome: e.target.value })
-                    }
-                    className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-fuchsia-600 transition"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-300 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={editForm.email}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, email: e.target.value })
-                    }
-                    className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-fuchsia-600 transition"
-                  />
-                </div>
-
-                <hr className="border-neutral-700 my-6" />
-
-                <h3 className="text-lg font-semibold text-neutral-300">
-                  Alterar Senha
-                </h3>
-
                 <div>
                   <label className="block text-sm font-medium text-neutral-300 mb-2">
                     Senha Atual
@@ -454,10 +427,10 @@ export default function FuncionarioPage() {
 
                 <div className="flex gap-3 pt-4">
                   <Button
-                    onClick={handleSaveProfile}
+                    onClick={handleSavePassword}
                     className="flex-1 bg-fuchsia-700 hover:bg-fuchsia-600 text-white"
                   >
-                    Salvar Alterações
+                    Alterar Senha
                   </Button>
                   <Button
                     onClick={() => setTab("Perfil")}
@@ -548,40 +521,7 @@ export default function FuncionarioPage() {
             </div>
           )}
 
-          {tab === "Conquistas" && (
-            <div>
-              <h2 className="text-2xl font-semibold text-white mb-6 text-center">
-                Conquistas
-              </h2>
-              {funcionario.conquistas.length === 0 ? (
-                <Empty text="Nenhuma conquista ainda. Continue avançando!" />
-              ) : (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {funcionario.conquistas.map((c) => (
-                    <div
-                      key={c.id}
-                      className="relative bg-neutral-900/70 border border-neutral-700 rounded-xl p-5 hover:border-fuchsia-700 transition"
-                    >
-                      <div className="flex items-center gap-4 mb-3">
-                        <div className="h-12 w-12 rounded-xl bg-linear-to-br from-fuchsia-600/20 to-pink-500/20 border border-fuchsia-700/40 flex items-center justify-center text-2xl">
-                          {c.icone || "🏆"}
-                        </div>
-                        <div className="min-w-0">
-                          <h3 className="text-white font-semibold truncate">
-                            {c.titulo}
-                          </h3>
-                          <p className="text-xs text-neutral-500">
-                            {new Date(c.data).toLocaleDateString("pt-BR")}
-                          </p>
-                        </div>
-                      </div>
-                      <p className="text-sm text-neutral-400">{c.descricao}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+         
 
           {tab === "Microcursos" && (
             <div>
@@ -644,7 +584,7 @@ export default function FuncionarioPage() {
                       className="group bg-neutral-900/70 border border-neutral-700 rounded-xl overflow-hidden hover:border-fuchsia-700 transition"
                     >
                       {/* Thumbnail */}
-                      <div className="h-32 bg-gradient-to-br from-fuchsia-900/40 to-pink-900/40 flex items-center justify-center">
+                      <div className="h-32 bg-linear-to-br from-fuchsia-900/40 to-pink-900/40 flex items-center justify-center">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="h-12 w-12 text-fuchsia-300/60"
