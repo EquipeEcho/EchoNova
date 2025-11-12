@@ -52,9 +52,9 @@ const enviarEmail = async (dados: DiagnosticoData) => {
         email: dados.perfil.email,
         diagnostico: dados.resultados
           ? Object.entries(dados.resultados).map(([key, value]) => ({
-              dimensao: key,
-              trilhasDeMelhoria: value.trilhasDeMelhoria,
-            }))
+            dimensao: key,
+            trilhasDeMelhoria: value.trilhasDeMelhoria,
+          }))
           : [],
       }),
     });
@@ -143,7 +143,7 @@ export default function Resultados() {
   };
 
 
-  
+
   // Função de geração de relatório do LADO 2 (com CNPJ).
   const generateReportContent = (data: DiagnosticoData): string => {
     const dataFormatada = new Date(
@@ -322,7 +322,7 @@ aprofundado e um plano de ação detalhado, entre em contato.
             <p className="text-white/80">Os resultados detalhados não puderam ser carregados. Verifique o relatório para ver suas respostas.</p>
           </div>
         )}
-        
+
         <div className="relative rounded-xl p-6 mb-6 text-center shadow-lg border border-white/10 backdrop-blur-md overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-purple-700 via-pink-600 to-pink-500 opacity-30 pointer-events-none"></div>
           <div className="relative z-10">
@@ -334,7 +334,22 @@ aprofundado e um plano de ação detalhado, entre em contato.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
-                onClick={() => router.push('/planos')}
+                onClick={() => {
+                  // Salva informações básicas do diagnóstico antes de ir pros planos
+                  if (diagnosticoData?.perfil) {
+                    localStorage.setItem(
+                      "dadosQuestionario",
+                      JSON.stringify({
+                        nome: diagnosticoData.perfil.empresa || "",
+                        email: diagnosticoData.perfil.email || "",
+                        cnpj: diagnosticoData.perfil.cnpj || "",
+                        empresa: diagnosticoData.perfil.empresa || "",
+                      })
+                    );
+                    console.log("DadosQuestionario salvos:", diagnosticoData.perfil);
+                  }
+                  router.push("/planos");
+                }}
                 className="flex-1 px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
               >
                 ⭐ Ver Planos e Começar Jornada

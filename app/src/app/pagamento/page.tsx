@@ -68,22 +68,49 @@ export default function PagamentoPage() {
     cepCobranca: ''
   });
 
+  useEffect(() => {
+    const dadosSalvos = localStorage.getItem("dadosQuestionario");
+    if (dadosSalvos) {
+      try {
+        const dados = JSON.parse(dadosSalvos);
+        setFormData((prev) => ({
+          ...prev,
+          nome: dados.nome || "",
+          email: dados.email || "",
+          cnpj: dados.cnpj || "",
+          nomeEmpresa: dados.empresa || "",
+        }));
+        console.log("🟢 Dados carregados automaticamente do questionário:", dados);
+      } catch (error) {
+        console.error("Erro ao carregar dados do questionário:", error);
+      }
+    }
+  }, []);
+
   // Redirecionamento automático após confirmação do pagamento
   useEffect(() => {
-    if (etapaPagamento === 'confirmacao') {
-      const timer = setTimeout(() => {
-        // Redireciona para pos-login após login automático
-        window.location.href = "/pos-login";
-      }, 5000); // Redireciona após 5 segundos
+    if (etapaPagamento === "confirmacao") {
+      // Remove dados sensíveis após o pagamento
+      localStorage.removeItem("dadosQuestionario");
+      localStorage.removeItem("empresaId");
+      localStorage.removeItem("diagnosticoCompleto");
+      console.log(" Dados locais limpos após pagamento concluído.");
 
+      // Redireciona para pos-login após 5 segundos
+      const timer = setTimeout(() => {
+        window.location.href = "/pos-login";
+      }, 5000);
+
+      // Evita vazamento de memória
       return () => clearTimeout(timer);
     }
   }, [etapaPagamento]);
 
+
   // Exemplo de uso do ID da transação (para debug e validação futura)
   useEffect(() => {
     if (transacaoId) {
-      console.log("🔗 Transação carregada:", transacaoId);
+      console.log("Transação carregada:", transacaoId);
       // No futuro: buscar detalhes da transação via fetch(`/api/transacoes/${transacaoId}`)
     } else {
       console.warn(" Nenhum ID de transação encontrado na URL.");
@@ -374,13 +401,13 @@ export default function PagamentoPage() {
         if (!response.ok) throw new Error(data.error || "Erro ao finalizar");
 
         console.log("Transação concluída:", data);
-        
+
         // Após finalizar a transação, faz login automático do usuário
         await autoLoginUser(formData.email, formData.cnpj, formData.senha);
-        
+
         // Aguarda um breve momento para garantir que o localStorage foi atualizado
         await new Promise(resolve => setTimeout(resolve, 100));
-        
+
         setEtapaPagamento("confirmacao");
       } catch (error) {
         console.error("Erro ao finalizar transação:", error);
@@ -412,20 +439,20 @@ export default function PagamentoPage() {
           email: loginData.user.email,
           planoAtivo: loginData.user.plano,
         };
-        
+
         // Salva no localStorage seguindo exatamente o formato do store
         const storageData = {
-          state: { 
-            user: userData 
+          state: {
+            user: userData
           },
           version: 0
         };
-        
+
         localStorage.setItem('auth-storage', JSON.stringify(storageData));
-        
+
         // Força uma atualização do store
         window.dispatchEvent(new Event('storage'));
-        
+
         console.log("Login automático realizado com sucesso");
       } else {
         console.error("Erro no login automático:", loginData.error);
@@ -463,18 +490,18 @@ export default function PagamentoPage() {
       const data = await resposta.json();
 
       const enviar = await fetch("/api/send-pagamento", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            transacaoId,
-            nome: formData.nome,
-            email: formData.email,
-            status: etapaPagamento,
-          }),
-        });
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transacaoId,
+          nome: formData.nome,
+          email: formData.email,
+          status: etapaPagamento,
+        }),
+      });
 
-        await enviar.json();
-//
+      await enviar.json();
+      //
       if (!resposta.ok) throw new Error(data.error || "Erro ao finalizar transação");
 
       console.log("Transação finalizada com sucesso:", data);
@@ -831,7 +858,7 @@ export default function PagamentoPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button 
+                <Button
                   onClick={() => window.location.href = "/pos-login"}
                   className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105"
                 >
