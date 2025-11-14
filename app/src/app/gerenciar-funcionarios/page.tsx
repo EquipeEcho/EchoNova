@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Headernaofix, Ondas } from "@/app/clientFuncs";
+
 interface Funcionario {
   id: string;
   nome: string;
@@ -22,6 +23,8 @@ type ModalMode = "criar" | "editar" | null;
 
 export default function GerenciarFuncionariosPage() {
   const router = useRouter();
+
+  // ID da empresa logada vem daqui
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 
@@ -31,6 +34,7 @@ export default function GerenciarFuncionariosPage() {
   const [selectedFuncionario, setSelectedFuncionario] =
     useState<Funcionario | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+
   const [formData, setFormData] = useState({
     nome: "",
     email: "",
@@ -40,45 +44,32 @@ export default function GerenciarFuncionariosPage() {
     status: "ativo" as "ativo" | "inativo",
   });
 
+  // BUSCA APENAS OS FUNCIONÁRIOS DA EMPRESA (eu fiz antes e a empresa conseguia ver todos os funcionários de todas as empresas kkkkkkkkk)
+
   useEffect(() => {
+    if (!user?.id) return;
     fetchFuncionarios();
-  }, []);
+  }, [user]);
 
   const fetchFuncionarios = async () => {
     try {
       setLoading(true);
-      // Simulação de dados - substituir por chamada real à API
-      await new Promise((r) => setTimeout(r, 500));
-      const mockData: Funcionario[] = [
-        {
-          id: "1",
-          nome: "João Silva",
-          email: "joao.silva@empresa.com",
-          matricula: "12345",
-          cargo: "Analista de Vendas",
-          dataCadastro: "2025-01-15",
-          status: "ativo",
-        },
-        {
-          id: "2",
-          nome: "Maria Santos",
-          email: "maria.santos@empresa.com",
-          matricula: "12346",
-          cargo: "Gerente de Vendas",
-          dataCadastro: "2025-02-10",
-          status: "ativo",
-        },
-        {
-          id: "3",
-          nome: "Pedro Costa",
-          email: "pedro.costa@empresa.com",
-          matricula: "12347",
-          cargo: "Analista de Atendimento",
-          dataCadastro: "2025-03-05",
-          status: "inativo",
-        },
-      ];
-      setFuncionarios(mockData);
+
+      // envia empresaId para filtrar no backend
+      const res = await fetch(`/api/funcionarios?empresaId=${user?.id}`);
+      const data = await res.json();
+
+      const formatados = data.map((f: any) => ({
+        id: f._id,
+        nome: f.nome,
+        email: f.email,
+        matricula: f.matricula,
+        cargo: f.cargo,
+        status: f.status,
+        dataCadastro: f.data_cadastro || f.createdAt,
+      }));
+
+      setFuncionarios(formatados);
     } catch (e: any) {
       toast.error("Erro ao carregar funcionários: " + e.message);
     } finally {
@@ -86,8 +77,11 @@ export default function GerenciarFuncionariosPage() {
     }
   };
 
+  // ABRE MODAL (editar/criar)
+
   const handleOpenModal = (mode: ModalMode, funcionario?: Funcionario) => {
     setModalOpen(mode);
+
     if (mode === "editar" && funcionario) {
       setSelectedFuncionario(funcionario);
       setFormData({
@@ -124,72 +118,76 @@ export default function GerenciarFuncionariosPage() {
     });
   };
 
+
+  //SALVAR FUNCIONÁRIO (criar/editar)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (
-      !formData.nome ||
-      !formData.email ||
-      !formData.matricula ||
-      !formData.cargo
-    ) {
+    if (!formData.nome || !formData.email || !formData.matricula || !formData.cargo) {
       toast.error("Preencha todos os campos obrigatórios");
-      return;
-    }
-
-    if (modalOpen === "criar" && !formData.senha) {
-      toast.error("A senha é obrigatória para novos funcionários");
       return;
     }
 
     try {
       if (modalOpen === "criar") {
-        // Criar novo funcionário
-        const novoFuncionario: Funcionario = {
-          id: String(Date.now()),
-          nome: formData.nome,
-          email: formData.email,
-          matricula: formData.matricula,
-          cargo: formData.cargo,
-          dataCadastro: new Date().toISOString().split("T")[0],
-          status: formData.status,
-        };
-        setFuncionarios([...funcionarios, novoFuncionario]);
+        // criação inclui empresaId automaticamente
+        const res = await fetch("/api/funcionarios", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...formData,
+            empresaId: user?.id,
+          }),
+        });
+
+        if (!res.ok) throw new Error("Erro ao criar funcionário");
         toast.success("Funcionário cadastrado com sucesso!");
-      } else if (modalOpen === "editar" && selectedFuncionario) {
-        // Editar funcionário existente
-        const funcionariosAtualizados = funcionarios.map((f) =>
-          f.id === selectedFuncionario.id
-            ? {
-                ...f,
-                nome: formData.nome,
-                email: formData.email,
-                matricula: formData.matricula,
-                cargo: formData.cargo,
-                status: formData.status,
-              }
-            : f
-        );
-        setFuncionarios(funcionariosAtualizados);
+      }
+
+      if (modalOpen === "editar" && selectedFuncionario) {
+        const res = await fetch(`/api/funcionarios/${selectedFuncionario.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...formData,
+            empresaId: user?.id,
+          }),
+        });
+
+        if (!res.ok) throw new Error("Erro ao atualizar funcionário");
         toast.success("Funcionário atualizado com sucesso!");
       }
+
+      fetchFuncionarios();
       handleCloseModal();
     } catch (e: any) {
-      toast.error("Erro ao salvar funcionário: " + e.message);
+      toast.error(e.message);
     }
   };
+
+
+  // DELETE
 
   const handleDelete = async (id: string) => {
     if (!confirm("Tem certeza que deseja excluir este funcionário?")) return;
 
     try {
-      // Aqui você faria a chamada à API para deletar
-      setFuncionarios(funcionarios.filter((f) => f.id !== id));
-      toast.success("Funcionário excluído com sucesso!");
+      const res = await fetch(`/api/funcionarios/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) throw new Error("Erro ao excluir");
+
+      toast.success("Funcionário excluído!");
+      fetchFuncionarios();
     } catch (e: any) {
-      toast.error("Erro ao excluir funcionário: " + e.message);
+      toast.error(e.message);
     }
   };
+
+
+  // FILTRO DA BUSCA
 
   const filteredFuncionarios = funcionarios.filter(
     (f) =>
@@ -199,28 +197,37 @@ export default function GerenciarFuncionariosPage() {
       f.cargo.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+
+  // LOGOUT
+
   const handleLogout = () => {
     logout();
-    router.push("/");
+    router.push("/pos-login");
   };
+
+  // LOADING SCREEN
 
   if (loading) {
     return (
       <div className="relative min-h-screen bg-linear-to-br from-gray-950 via-fuchsia-950 to-gray-900 flex items-center justify-center">
         <Headernaofix Link="/" />
         <Ondas />
-        <div className="text-white">Carregando...</div>
       </div>
     );
   }
+
+
+  // UI FINAL
 
   return (
     <div className="relative min-h-screen bg-linear-to-br from-gray-950 to-gray-850">
       <Headernaofix Link="/" />
       <Ondas />
+
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-20">
         <div className="bg-neutral-900/80 backdrop-blur-sm border border-neutral-700 rounded-2xl shadow-2xl p-6 md:p-10">
-          {/* Header */}
+
+          {/* HEADER */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
             <div>
               <h1 className="text-3xl font-bold bg-linear-to-r from-fuchsia-400 to-pink-400 bg-clip-text text-transparent">
@@ -230,6 +237,7 @@ export default function GerenciarFuncionariosPage() {
                 Cadastre, edite e gerencie sua equipe
               </p>
             </div>
+
             <div className="flex gap-2">
               <Button
                 onClick={() => handleOpenModal("criar")}
@@ -237,6 +245,7 @@ export default function GerenciarFuncionariosPage() {
               >
                 + Novo Funcionário
               </Button>
+
               <Button
                 onClick={handleLogout}
                 className="bg-gray-800 hover:bg-gray-700 text-white border border-neutral-700"
@@ -246,7 +255,7 @@ export default function GerenciarFuncionariosPage() {
             </div>
           </div>
 
-          {/* Busca */}
+          {/* BUSCA */}
           <div className="mb-6">
             <Input
               type="text"
@@ -257,7 +266,7 @@ export default function GerenciarFuncionariosPage() {
             />
           </div>
 
-          {/* Lista de Funcionários */}
+          {/* LISTA */}
           <div className="space-y-4">
             {filteredFuncionarios.length === 0 ? (
               <div className="bg-neutral-900/70 border border-neutral-700 rounded-xl p-10 text-center text-neutral-400">
@@ -277,30 +286,34 @@ export default function GerenciarFuncionariosPage() {
                         <h3 className="text-lg font-semibold text-white">
                           {funcionario.nome}
                         </h3>
+
                         <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            funcionario.status === "ativo"
-                              ? "bg-green-500/20 text-green-400 border border-green-600/40"
-                              : "bg-gray-500/20 text-gray-400 border border-gray-600/40"
-                          }`}
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${funcionario.status === "ativo"
+                            ? "bg-green-500/20 text-green-400 border border-green-600/40"
+                            : "bg-gray-500/20 text-gray-400 border border-gray-600/40"
+                            }`}
                         >
                           {funcionario.status === "ativo" ? "Ativo" : "Inativo"}
                         </span>
                       </div>
+
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-neutral-400">
                         <div>
                           <span className="text-neutral-500">Email:</span>{" "}
                           {funcionario.email}
                         </div>
+
                         <div>
                           <span className="text-neutral-500">Matrícula:</span>{" "}
                           {funcionario.matricula}
                         </div>
+
                         <div>
                           <span className="text-neutral-500">Cargo:</span>{" "}
                           {funcionario.cargo}
                         </div>
                       </div>
+
                       <div className="text-xs text-neutral-500 mt-2">
                         Cadastrado em:{" "}
                         {new Date(funcionario.dataCadastro).toLocaleDateString(
@@ -308,6 +321,7 @@ export default function GerenciarFuncionariosPage() {
                         )}
                       </div>
                     </div>
+
                     <div className="flex gap-2">
                       <Button
                         onClick={() => handleOpenModal("editar", funcionario)}
@@ -315,6 +329,7 @@ export default function GerenciarFuncionariosPage() {
                       >
                         Editar
                       </Button>
+
                       <Button
                         onClick={() => handleDelete(funcionario.id)}
                         className="bg-red-700 hover:bg-red-600 text-white text-sm px-4 py-2"
@@ -330,7 +345,7 @@ export default function GerenciarFuncionariosPage() {
         </div>
       </div>
 
-      {/* Modal Criar/Editar */}
+      {/* MODAL */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -340,6 +355,7 @@ export default function GerenciarFuncionariosPage() {
                   ? "Cadastrar Novo Funcionário"
                   : "Editar Funcionário"}
               </h2>
+
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                   <Label htmlFor="nome" className="text-neutral-300">
@@ -432,7 +448,7 @@ export default function GerenciarFuncionariosPage() {
 
                 <div>
                   <Label htmlFor="status" className="text-neutral-300">
-                    Status
+                    Status *
                   </Label>
                   <select
                     id="status"
@@ -444,6 +460,7 @@ export default function GerenciarFuncionariosPage() {
                       })
                     }
                     className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-fuchsia-600 transition"
+                    required
                   >
                     <option value="ativo">Ativo</option>
                     <option value="inativo">Inativo</option>
@@ -470,6 +487,7 @@ export default function GerenciarFuncionariosPage() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

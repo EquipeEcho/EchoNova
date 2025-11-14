@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAuthStore } from "@/lib/stores/useAuthStore";
-import { History } from "lucide-react"; // NOVO: Importando ícone
+import { History } from "lucide-react"; // Importando ícone
+import { toast } from "sonner";
 
 export default function PosLoginPage() {
   const [userInfo, setUserInfo] = useState<any>(null);
@@ -22,13 +23,13 @@ export default function PosLoginPage() {
 
   useEffect(() => {
     let redirected = false;
-    
+
     const checkAuthState = async () => {
       if (redirected) return;
-      
+
       await new Promise(resolve => setTimeout(resolve, 200));
       const currentState = useAuthStore.getState();
-      
+
       if (!authUser && !currentState.user) {
         const localStorageData = localStorage.getItem('auth-storage');
         if (localStorageData) {
@@ -61,7 +62,7 @@ export default function PosLoginPage() {
       }
 
       const user = authUser || useAuthStore.getState().user;
-      
+
       if (!user) {
         redirected = true;
         router.push("/");
@@ -96,7 +97,7 @@ export default function PosLoginPage() {
           console.log("Nenhum diagnóstico aprofundado anterior encontrado.");
           setUltimoDiagnosticoId(null); // Garante que o estado é nulo
         }
-        
+
       } catch (error) {
         console.error("Erro ao carregar informações da página:", error);
         if (!redirected) {
@@ -122,6 +123,41 @@ export default function PosLoginPage() {
 
   const handleStartDiagnostico = () => {
     router.push("/diagnostico-aprofundado");
+  };
+
+  //isso aqui é pro botão da tela de funcionarios pra fazer funcionar
+  const handleTesteCreateFuncionario = async () => {
+    if (!authUser?.id) {
+      toast.error("Usuário não encontrado na sessão.");
+      return;
+    }
+
+    try {
+      const novoFuncionario = {
+        nome: "Funcionário de Teste",
+        email: `teste${Date.now()}@empresa.com`,
+        matricula: String(Math.floor(Math.random() * 90000 + 10000)),
+        cargo: "Cargo de Teste",
+        senha: "123456",
+        status: "ativo",
+        empresaId: authUser.id,
+      };
+
+      const res = await fetch("/api/funcionarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(novoFuncionario),
+      });
+
+      if (!res.ok) throw new Error("Falha ao criar funcionário");
+
+      toast.success("Funcionário de teste criado com sucesso!");
+      router.push("/gerenciar-funcionarios");
+
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Erro ao criar funcionário de teste.");
+    }
   };
 
   // --- NOVA FUNÇÃO ---
@@ -210,17 +246,17 @@ export default function PosLoginPage() {
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="logo-container hover:scale-100">
             <Link href="/pos-login">
-              <Image 
-                src="/img/logo.png" 
-                alt="EchoNova - Diagnóstico Inteligente de Treinamentos" 
-                width={120} 
+              <Image
+                src="/img/logo.png"
+                alt="EchoNova - Diagnóstico Inteligente de Treinamentos"
+                width={120}
                 height={40}
                 className="h-8 w-auto object-contain sm:h-10 md:h-12 lg:h-14"
                 priority
               />
             </Link>
           </div>
-          
+
           <div className="flex items-center gap-4">
             {userInfo && (
               <div className="hidden md:flex items-center gap-2 bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700/50 cursor-pointer hover:bg-slate-700/50 transition-colors">
@@ -231,10 +267,10 @@ export default function PosLoginPage() {
                 </div>
               </div>
             )}
-            
+
             <div className="relative">
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 className="relative h-10 w-10 rounded-full hover:bg-slate-800 p-0 cursor-pointer"
                 onClick={toggleMenu}
               >
@@ -242,7 +278,7 @@ export default function PosLoginPage() {
                   {userInfo?.nome?.charAt(0) || "U"}
                 </div>
               </Button>
-              
+
               {isMenuOpen && (
                 <div className="absolute right-0 mt-2 w-64 bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-2 z-50">
                   <div className="px-4 py-2 border-b border-slate-700">
@@ -285,8 +321,8 @@ export default function PosLoginPage() {
           </h1>
 
           <p className="relative z-20 text-sm xs:text-base sm:text-lg md:text-xl text-gray-200 max-w-xs xs:max-w-sm sm:max-w-2xl md:max-w-3xl mb-8 sm:mb-10 md:mb-12 leading-relaxed animate-fade-in-up-delay poetic-text text-center mx-auto">
-            Com base no seu plano {userInfo?.plano}, você tem acesso ao diagnóstico aprofundado. 
-            Este processo irá analisar detalhadamente os pontos críticos da sua empresa para 
+            Com base no seu plano {userInfo?.plano}, você tem acesso ao diagnóstico aprofundado.
+            Este processo irá analisar detalhadamente os pontos críticos da sua empresa para
             oferecer recomendações personalizadas.
           </p>
 
@@ -310,19 +346,26 @@ export default function PosLoginPage() {
                 <span>Relatório completo com plano de ação</span>
               </li>
             </ul>
-            
+
             {/* --- CONTAINER PARA OS BOTÕES DE AÇÃO --- */}
             <div className="flex flex-col gap-4">
-              <Button 
+              <Button
                 onClick={handleStartDiagnostico}
                 className="w-full bg-gradient-to-r from-fuchsia-700 to-fuchsia-800 hover:from-fuchsia-800 hover:to-fuchsia-900 text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
               >
                 Iniciar Novo Diagnóstico
               </Button>
 
+              <Button
+                onClick={handleTesteCreateFuncionario}
+                className="w-full bg-gradient-to-r from-fuchsia-700 to-fuchsia-800 hover:from-fuchsia-800 hover:to-fuchsia-900 text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
+              >
+                essebotãoédeteste
+              </Button>
+
               {/* --- NOVO BOTÃO CONDICIONAL --- */}
               {ultimoDiagnosticoId && (
-                <Button 
+                <Button
                   onClick={handleViewLastReport}
                   variant="outline" // Estilo diferente para ser secundário
                   className="w-full border-fuchsia-500 text-fuchsia-500 hover:bg-fuchsia-500/10 hover:text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
@@ -337,7 +380,7 @@ export default function PosLoginPage() {
 
           <div className="text-gray-400 text-sm max-w-2xl mx-auto">
             <p>
-              O diagnóstico aprofundado leva em média 15-20 minutos para ser concluído. 
+              O diagnóstico aprofundado leva em média 15-20 minutos para ser concluído.
               Recomendamos que você reserve um tempo tranquilo para responder com atenção.
             </p>
           </div>
@@ -347,6 +390,6 @@ export default function PosLoginPage() {
           <Ondas />
         </div>
       </section>
-    </main>
+    </main >
   );
 }
