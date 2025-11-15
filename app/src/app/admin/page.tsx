@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, FC } from "react";
+import { useState, useEffect, useCallback, type FC } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -155,8 +156,12 @@ export default function AdminPage() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEmpresa, setEditingEmpresa] = useState<Partial<Empresa> | null>(null);
+  const [selectedDiagnosticos, setSelectedDiagnosticos] = useState<Set<string>>(new Set());
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [creatingEmpresa, setCreatingEmpresa] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [empresasRes, diagnosticosRes] = await Promise.all([
@@ -174,25 +179,28 @@ export default function AdminPage() {
       setEmpresas(empresasData.data);
       setDiagnosticos(diagnosticosData.data);
       setError(null);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const handleDeleteEmpresa = async (id: string) => {
     if (window.confirm("Tem certeza que deseja excluir esta empresa e todos os seus diagnósticos associados?")) {
       try {
         const res = await fetch(`/api/admin/empresas/${id}`, { method: "DELETE" });
         if (!res.ok) throw new Error("Falha ao excluir empresa.");
+        toast.success('Empresa excluída');
         fetchData();
-      } catch (err: any) {
-        alert(`Erro: ${err.message}`);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        toast.error(message || 'Erro ao excluir empresa');
       }
     }
   };
@@ -202,9 +210,11 @@ export default function AdminPage() {
       try {
         const res = await fetch(`/api/admin/diagnosticos/${id}`, { method: "DELETE" });
         if (!res.ok) throw new Error("Falha ao excluir diagnóstico.");
+        toast.success('Diagnóstico excluído');
         fetchData();
-      } catch (err: any) {
-        alert(`Erro: ${err.message}`);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        toast.error(message || 'Erro ao excluir diagnóstico');
       }
     }
   };
@@ -239,8 +249,9 @@ export default function AdminPage() {
       setIsDialogOpen(false);
       setEditingEmpresa(null);
       fetchData();
-    } catch (err: any) {
-      alert(`Erro: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(message || 'Erro ao salvar empresa');
     }
   };
 
@@ -266,8 +277,43 @@ export default function AdminPage() {
         </TabsList>
 
         <TabsContent value="empresas">
-          <div className="mb-4">
+          <div className="mb-4 flex items-center gap-3">
             <Button onClick={handleAddNewEmpresa}>Adicionar Nova Empresa</Button>
+            <Button onClick={async () => {
+              // Quick-create: open modal prefilled
+              setEditingEmpresa({ nome_empresa: "", email: "", cnpj: "" });
+              setIsDialogOpen(true);
+            }} variant="secondary">Criar Empresa (form)</Button>
+            <Button
+              onClick={async () => {
+                // Quick-create automatic company with minimal info
+                if (creatingEmpresa) return;
+                setCreatingEmpresa(true);
+                try {
+                  const ts = Date.now();
+                  const nome = `Empresa Teste ${ts}`;
+                  const email = `teste+${ts}@example.com`;
+                  // simple pseudo-cnpj (14 digits)
+                  const cnpj = ts.toString().padStart(14, "0").slice(-14);
+                  const res = await fetch('/api/admin/empresas', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome_empresa: nome, email, cnpj, senha: 'Teste123!' }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) throw new Error(data.error || 'Falha ao criar empresa de teste');
+                  toast.success('Empresa de teste criada');
+                  fetchData();
+                } catch (err: unknown) {
+                  const message = err instanceof Error ? err.message : String(err);
+                  toast.error(message || 'Erro ao criar empresa de teste');
+                } finally {
+                  setCreatingEmpresa(false);
+                }
+              }}
+            >
+              {creatingEmpresa ? 'Criando...' : 'Criar Empresa de Teste'}
+            </Button>
           </div>
           <div className="overflow-x-auto bg-gray-800 rounded-lg">
             <table className="w-full text-sm text-left">
@@ -289,7 +335,7 @@ export default function AdminPage() {
                     <td className="p-4">{empresa.planoAtivo || "N/A"}</td>
                     <td className="p-4 flex gap-2">
                       {/* --- CORREÇÃO DE ESTILO --- */}
-                      <Button variant="outline" size="sm" onClick={() => handleEditEmpresa(empresa)} className="text-white border-gray-600 hover:bg-gray-700 hover:text-white">Editar</Button>
+                      <Button size="sm" onClick={() => handleEditEmpresa(empresa)} className="bg-pink-600 hover:bg-pink-700 text-white border-pink-600">Editar</Button>
                       <Button variant="destructive" size="sm" onClick={() => handleDeleteEmpresa(empresa._id)}>Excluir</Button>
                     </td>
                   </tr>
@@ -300,10 +346,83 @@ export default function AdminPage() {
         </TabsContent>
 
         <TabsContent value="diagnosticos">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={selectedDiagnosticos.size === 0 || bulkDeleting}
+                onClick={() => {
+                  if (selectedDiagnosticos.size === 0) return toast.error('Nenhum diagnóstico selecionado.');
+                  setShowBulkConfirm(true);
+                }}
+              >
+                {bulkDeleting ? 'Excluindo...' : 'Excluir selecionados'}
+              </Button>
+            </div>
+            <div className="text-sm text-gray-300">Selecionados: {selectedDiagnosticos.size}</div>
+          </div>
+
+          {/* Bulk delete confirmation dialog */}
+          <Dialog open={showBulkConfirm} onOpenChange={setShowBulkConfirm}>
+            <DialogContent className="bg-gray-900 border-gray-700 text-white">
+              <DialogHeader>
+                <DialogTitle>Confirmar exclusão em lote</DialogTitle>
+              </DialogHeader>
+              <div className="py-2">
+                <p>Deseja excluir {selectedDiagnosticos.size} diagnósticos selecionados? Esta ação é irreversível.</p>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline" onClick={() => setShowBulkConfirm(false)}>Cancelar</Button>
+                </DialogClose>
+                <Button
+                  variant="destructive"
+                  onClick={async () => {
+                    try {
+                      setBulkDeleting(true);
+                      const ids = Array.from(selectedDiagnosticos);
+                      const res = await fetch('/api/admin/diagnosticos/bulk-delete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || 'Falha ao excluir diagnósticos.');
+                      toast.success(`${data.deletedCount || ids.length} diagnósticos excluídos`);
+                      setSelectedDiagnosticos(new Set());
+                      fetchData();
+                      setShowBulkConfirm(false);
+                    } catch (err: unknown) {
+                      const message = err instanceof Error ? err.message : String(err);
+                      toast.error(message || 'Erro ao excluir diagnósticos');
+                    } finally {
+                      setBulkDeleting(false);
+                    }
+                  }}
+                >
+                  {bulkDeleting ? 'Excluindo...' : 'Confirmar exclusão'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <div className="overflow-x-auto bg-gray-800 rounded-lg">
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-gray-300 uppercase bg-gray-700">
                 <tr>
+                  <th className="p-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedDiagnosticos.size === diagnosticos.length && diagnosticos.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedDiagnosticos(new Set(diagnosticos.map(d => d._id)));
+                        } else {
+                          setSelectedDiagnosticos(new Set());
+                        }
+                      }}
+                    />
+                  </th>
                   <th className="p-4">Empresa</th>
                   <th className="p-4">Dimensões</th>
                   <th className="p-4">Status</th>
@@ -314,6 +433,18 @@ export default function AdminPage() {
               <tbody>
                 {diagnosticos.map((diag) => (
                   <tr key={diag._id} className="border-b border-gray-700 hover:bg-gray-700">
+                    <td className="p-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedDiagnosticos.has(diag._id)}
+                        onChange={(e) => {
+                          const next = new Set(selectedDiagnosticos);
+                          if (e.target.checked) next.add(diag._id);
+                          else next.delete(diag._id);
+                          setSelectedDiagnosticos(next);
+                        }}
+                      />
+                    </td>
                     <td className="p-4">{diag.empresa?.nome_empresa || diag.perfil.empresa}</td>
                     <td className="p-4">{diag.dimensoesSelecionadas.join(", ")}</td>
                     <td className="p-4">{diag.status}</td>

@@ -3,7 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import Empresa from "@/models/Empresa";
 import Diagnostico from "@/models/Diagnostico";
 import bcrypt from "bcryptjs";
-import { NextRequest } from "next/server"; // Importar NextRequest
+import type { NextRequest } from "next/server"; // Importar NextRequest como tipo
 
 /**
  * @description Rota para atualizar uma empresa específica.
@@ -11,10 +11,10 @@ import { NextRequest } from "next/server"; // Importar NextRequest
  * @param params Contém os parâmetros da rota, como o ID da empresa.
  */
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectDB();
-    const { id } = params; // Acesso direto ao ID
+    const { id } = await params; // Acesso direto ao ID
     const body = await req.json();
 
     // Se a senha foi enviada e não está vazia, criptografa
@@ -33,8 +33,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     return NextResponse.json({ success: true, data: empresaAtualizada });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido.";
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }
 
@@ -44,7 +45,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
  * @param params Contém os parâmetros da rota, como o ID da empresa.
  */
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectDB();
     const { id } = await params; // Acesso direto ao ID
@@ -60,7 +61,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     }
 
     return NextResponse.json({ success: true, message: "Empresa e diagnósticos associados deletados com sucesso." });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido.";
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }

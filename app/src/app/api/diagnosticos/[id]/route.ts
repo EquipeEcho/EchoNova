@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Diagnostico from "@/models/Diagnostico";
-import { NextRequest } from "next/server"; // Importar NextRequest
+import type { NextRequest } from "next/server"; // Importar apenas como tipo
 
 // GET - Buscar diagnóstico específico
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } } 
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> } 
 ) {
   try {
     await connectDB();
@@ -32,9 +32,10 @@ export async function GET(
     }
 
     return NextResponse.json({ diagnostico });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error(`Erro ao buscar diagnóstico:`, err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const errorMessage = err instanceof Error ? err.message : "Erro desconhecido.";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
@@ -42,11 +43,11 @@ export async function GET(
 // --- CORREÇÃO APLICADA NA ASSINATURA DA FUNÇÃO ---
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
-    const { id } = params;
+    const { id } = await params;
     const dados = await request.json();
 
     const diagnosticoAtualizado = await Diagnostico.findByIdAndUpdate(
@@ -66,20 +67,21 @@ export async function PUT(
       message: "Diagnóstico atualizado com sucesso",
       diagnostico: diagnosticoAtualizado,
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : "Erro desconhecido.";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
 // DELETE - Deletar diagnóstico
 // --- CORREÇÃO APLICADA NA ASSINATURA DA FUNÇÃO ---
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
-    const { id } = params;
+    const { id } = await params;
 
     const diagnosticoDeletado = await Diagnostico.findByIdAndDelete(id);
 
@@ -93,7 +95,8 @@ export async function DELETE(
     return NextResponse.json({
       message: "Diagnóstico deletado com sucesso",
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : "Erro desconhecido.";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

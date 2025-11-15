@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, KeyboardEvent, useRef } from "react"; // useRef não é usado aqui, mas mantido por consistência
+import { useState, useEffect, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
@@ -20,7 +20,7 @@ import {
 import { Ondas } from "../clientFuncs";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { Pencil, Save, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 type FaseDiagnostico = "setup" | "confirmacao" | "diagnostico" | "finalizado";
 
@@ -96,18 +96,17 @@ export default function DiagnosticoAprofundadoPage() {
     numUnidades: "",
     politicaLgpd: "",
   });
-  const [editingField, setEditingField] = useState<keyof SetupData | null>(
+  const [_editingField, setEditingField] = useState<keyof SetupData | null>(
     null
   );
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [perguntaAtual, setPerguntaAtual] = useState<Pergunta | null>(null);
   const [resposta, setResposta] = useState<string>("");
-  // --- CORREÇÃO APLICADA AQUI ---
-  const [relatorioFinal, setRelatorioFinal] = useState<string | null>(null);
+  const [_relatorioFinal, setRelatorioFinal] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<ProgressState | null>(null);
-  const [dadosColetados, setDadosColetados] = useState<any | null>(null); // Estado para o resumo
+  const [dadosColetados, setDadosColetados] = useState<Record<string, unknown> | null>(null); // Estado para o resumo
 
   useEffect(() => {
     if (isClient && user) {
@@ -163,7 +162,7 @@ export default function DiagnosticoAprofundadoPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/diagnostico-ia", {
+        const res = await fetch("/api/diagnostico-ia", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -200,9 +199,10 @@ export default function DiagnosticoAprofundadoPage() {
         setPerguntaAtual(data.proxima_pergunta);
         setFase("diagnostico");
       }
-    } catch (err: any) {
-      setError(err.message);
-      toast.error(err.message);
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+      setError(message);
+      toast.error(message);
     } finally {
       setIsLoading(false);
       setResposta("");
@@ -275,7 +275,6 @@ export default function DiagnosticoAprofundadoPage() {
         );
       case "numero":
         return <Input type="number" {...commonProps} />;
-      case "texto":
       default:
         return <Input type="text" {...commonProps} />;
     }
@@ -286,7 +285,7 @@ export default function DiagnosticoAprofundadoPage() {
     if (error && fase !== "diagnostico") return <div className="text-red-400 text-center">{error}</div>;
 
     switch (fase) {
-      case "setup":
+      case "setup": {
         const currentQuestion = initialSetupQuestions[setupStep];
         return (
           <div className="bg-slate-800 p-8 rounded-lg shadow-xl w-full max-w-lg">
@@ -301,9 +300,9 @@ export default function DiagnosticoAprofundadoPage() {
               totalSteps={initialSetupQuestions.length}
             />
             <div className="space-y-4">
-              <label className="block text-lg text-center font-semibold text-white">
+              <h3 className="block text-lg text-center font-semibold text-white">
                 {currentQuestion.label}
-              </label>
+              </h3>
               {currentQuestion.type === "selecao" || currentQuestion.type === "sim_nao" ? (
                 <Select
                   value={setupData[currentQuestion.id as keyof SetupData]}
@@ -336,6 +335,7 @@ export default function DiagnosticoAprofundadoPage() {
             </PrimaryButton>
           </div>
         );
+      }
 
       case "confirmacao":
         return (
@@ -384,15 +384,15 @@ export default function DiagnosticoAprofundadoPage() {
               </p>
               
               <div className="bg-slate-900/50 p-4 rounded-lg space-y-3 max-h-60 overflow-y-auto mb-6 text-sm">
-                {dadosColetados && Object.entries(dadosColetados).map(([key, value]: [string, any]) => (
+                {dadosColetados && Object.entries(dadosColetados).map(([key, value]: [string, unknown]) => (
                   <div key={key} className="border-b border-slate-700/50 pb-2 last:border-b-0">
                     <h3 className="font-bold text-pink-400 capitalize mb-1">{key.replace(/_/g, ' ')}</h3>
                     <div className="pl-2 text-slate-300">
-                      {typeof value === 'string' ? (
-                        <p>{value}</p>
+                          {typeof value === 'string' ? (
+                        <p>{String(value)}</p>
                       ) : Array.isArray(value) ? (
                         <ul className="list-disc list-inside">
-                          {value.map((item, index) => <li key={index}>{String(item)}</li>)}
+                          {value.map((item) => <li key={String(item)}>{String(item)}</li>)}
                         </ul>
                       ) : typeof value === 'object' && value !== null ? (
                         <ul className="space-y-1">

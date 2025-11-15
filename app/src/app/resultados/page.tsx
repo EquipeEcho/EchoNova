@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Ondas } from "../clientFuncs";
 import { toast } from "sonner";
@@ -75,52 +75,21 @@ const enviarEmail = async (dados: DiagnosticoData) => {
 
 export default function Resultados() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const diagnosticoId = searchParams.get("id");
+  // Avoid useSearchParams (prerender-time issues). Read search on client mount.
+  const [diagnosticoId, setDiagnosticoId] = useState<string | null>(null);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      setDiagnosticoId(sp.get("id"));
+    }
+  }, []);
 
   const [diagnosticoData, setDiagnosticoData] =
     useState<DiagnosticoData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Lógica de carregamento de dados (idêntica e preservada).
-  useEffect(() => {
-    const carregarDiagnostico = async () => {
-      if (diagnosticoId) {
-        await carregarDoBanco(diagnosticoId);
-      } else {
-        carregarDoLocalStorage();
-      }
-    };
-    carregarDiagnostico();
-  }, [diagnosticoId]);
-
-  // Envia o e-mail apenas quando os dados do diagnóstico estiverem disponíveis
-  useEffect(() => {
-    if (diagnosticoData) {
-      void enviarEmail(diagnosticoData);
-    }
-  }, [diagnosticoData]);
-
-  const carregarDoBanco = async (id: string) => {
-    try {
-      const response = await fetch(`/api/diagnosticos/${id}`);
-      const data = await response.json();
-
-      if (response.ok) {
-        setDiagnosticoData(data.diagnostico);
-      } else {
-        console.error("Erro ao carregar diagnóstico:", data.error);
-        carregarDoLocalStorage();
-      }
-    } catch (error) {
-      console.error("Erro de conexão:", error);
-      carregarDoLocalStorage();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const carregarDoLocalStorage = () => {
+  const carregarDoLocalStorage = useCallback(() => {
     const dados = localStorage.getItem("diagnosticoCompleto");
     if (dados) {
       try {
@@ -140,7 +109,46 @@ export default function Resultados() {
       router.push("/form");
     }
     setIsLoading(false);
-  };
+  }, [router]);
+
+  const carregarDoBanco = useCallback(async (id: string) => {
+    try {
+      const response = await fetch(`/api/diagnosticos/${id}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setDiagnosticoData(data.diagnostico);
+      } else {
+        console.error("Erro ao carregar diagnóstico:", data.error);
+        carregarDoLocalStorage();
+      }
+    } catch (error) {
+      console.error("Erro de conexão:", error);
+      carregarDoLocalStorage();
+    } finally {
+      setIsLoading(false);
+    }
+  }, [carregarDoLocalStorage]);
+
+  useEffect(() => {
+    const carregarDiagnostico = async () => {
+      if (diagnosticoId) {
+        await carregarDoBanco(diagnosticoId);
+      } else {
+        carregarDoLocalStorage();
+      }
+    };
+    void carregarDiagnostico();
+  }, [diagnosticoId, carregarDoBanco, carregarDoLocalStorage]);
+
+  // Envia o e-mail apenas quando os dados do diagnóstico estiverem disponíveis
+  useEffect(() => {
+    if (diagnosticoData) {
+      void enviarEmail(diagnosticoData);
+    }
+  }, [diagnosticoData]);
+
+  /* carregamento functions are defined above using useCallback */
 
 
   
@@ -167,11 +175,11 @@ RESULTADOS POR DIMENSÃO
 
     if (data.resultados) {
       data.dimensoesSelecionadas.forEach((dimensao) => {
-        const resultado = data.resultados![dimensao];
+        const resultado = data.resultados?.[dimensao];
         if (!resultado) return;
 
         content += `\nDIMENSÃO: ${dimensao.toUpperCase()}\n`;
-        content += "-".repeat(9 + dimensao.length) + "\n";
+  content += `${"-".repeat(9 + dimensao.length)}\n`;
         content += `ESTÁGIO DE MATURIDADE: ${resultado.estagio}\n`;
         content += `Média de Pontuação: ${resultado.media.toFixed(2)} / 4.00\n\n`;
         content += "PONTO FORTE PRINCIPAL (Pode inspirar outras áreas):\n";
@@ -232,7 +240,7 @@ aprofundado e um plano de ação detalhado, entre em contato.
           href="/"
           className="absolute top-6 left-6 z-10 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all duration-300 transform hover:scale-105 backdrop-blur-sm border border-white/30 flex items-center gap-2"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" focusable="false" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -271,7 +279,7 @@ aprofundado e um plano de ação detalhado, entre em contato.
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden">
       <Link href="/" className="absolute top-6 left-6 z-10 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all duration-300 transform hover:scale-105 backdrop-blur-sm border border-white/30 flex items-center gap-2">
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+        <svg aria-hidden="true" focusable="false" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
         <span className="hidden sm:inline">Home</span>
       </Link>
 
@@ -284,7 +292,7 @@ aprofundado e um plano de ação detalhado, entre em contato.
         {diagnosticoData.resultados ? (
           <div className="flex flex-wrap gap-6 mb-8 justify-center">
             {diagnosticoData.dimensoesSelecionadas.map((dimensao) => {
-              const resultado = diagnosticoData.resultados![dimensao];
+              const resultado = diagnosticoData.resultados?.[dimensao];
               if (!resultado) return null;
 
               return (
@@ -324,7 +332,7 @@ aprofundado e um plano de ação detalhado, entre em contato.
         )}
         
         <div className="relative rounded-xl p-6 mb-6 text-center shadow-lg border border-white/10 backdrop-blur-md overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-700 via-pink-600 to-pink-500 opacity-30 pointer-events-none"></div>
+          <div className="absolute inset-0 bg-linear-to-r from-purple-700 via-pink-600 to-pink-500 opacity-30 pointer-events-none"></div>
           <div className="relative z-10">
             <h2 className="text-xl font-bold text-white mb-2 flex items-center justify-center gap-2">
               🚀 Transforme Estes Insights em Ação!
@@ -334,12 +342,14 @@ aprofundado e um plano de ação detalhado, entre em contato.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
+                type="button"
                 onClick={() => router.push('/planos')}
                 className="flex-1 px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
               >
                 ⭐ Ver Planos e Começar Jornada
               </button>
               <button
+                type="button"
                 onClick={handleDownloadReport}
                 className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
               >
@@ -351,12 +361,14 @@ aprofundado e um plano de ação detalhado, entre em contato.
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button
+            type="button"
             onClick={handleNewDiagnostic}
             className="px-6 py-3 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
           >
             🔄 Fazer Novo Diagnóstico
           </button>
           <button
+            type="button"
             onClick={() => router.push('/')}
             className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
           >

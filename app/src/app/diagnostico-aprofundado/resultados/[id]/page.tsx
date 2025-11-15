@@ -39,9 +39,10 @@ export default function ResultadoDiagnosticoPage() {
           }
           const data = await res.json();
           setDiagnostico(data);
-        } catch (err: any) {
-          setError(err.message);
-          toast.error(err.message);
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err);
+          setError(message);
+          toast.error(message);
         } finally {
           setLoading(false);
         }
@@ -92,11 +93,11 @@ export default function ResultadoDiagnosticoPage() {
         let lineY = currentY;
         let finalY = currentY;
 
-        textLines.forEach(line => {
-            const parts = line.split(/(\*\*.*?\*\*)/g).filter(p => p.length > 0);
-            let currentX_local = currentX;
+    textLines.forEach((line: string) => {
+      const parts = line.split(/(\*\*.*?\*\*)/g).filter((p: string) => p.length > 0);
+      let currentX_local = currentX;
 
-            parts.forEach(part => {
+      parts.forEach((part: string) => {
                 const isBold = part.startsWith('**') && part.endsWith('**');
                 const content = isBold ? part.substring(2, part.length - 2) : part;
 
@@ -150,7 +151,7 @@ export default function ResultadoDiagnosticoPage() {
 
     lines.forEach((line, index) => { 
       const trimmedLine = line.trim();
-      let splitText: string[];
+  let _splitText: string[];
       let spaceNeeded: number;
       const normalTextColor = "#cbd5e1"; 
       const boldTextColor = "#f1f5f9"; 
@@ -161,7 +162,7 @@ export default function ResultadoDiagnosticoPage() {
           // Verifica se a próxima linha é um parágrafo de texto normal
           if (nextLine && !nextLine.startsWith('#') && !nextLine.startsWith('*') && !nextLine.startsWith('-') && !nextLine.startsWith('***')) {
               // Estima espaço para as primeiras linhas do parágrafo. Usamos 50 caracteres como amostra.
-              return calculateSpace(nextLine.substring(0, 50) + "...", 12, 1); 
+              return calculateSpace(`${nextLine.substring(0, 50)}...`, 12, 1); 
           }
           return defaultBuffer;
       };
@@ -211,8 +212,8 @@ export default function ResultadoDiagnosticoPage() {
         y += 2; 
 
       } else if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ')) {
-        // --- Lista (* ou -) ---
-        const text = "• " + trimmedLine.substring(2);
+  // --- Lista (* ou -) ---
+  const text = `• ${trimmedLine.substring(2)}`;
         spaceNeeded = calculateSpace(text, 12, 0); 
         addPageIfNeeded(spaceNeeded);
         

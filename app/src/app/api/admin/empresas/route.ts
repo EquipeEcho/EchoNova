@@ -12,8 +12,9 @@ export async function GET() {
     await connectDB();
     const empresas = await Empresa.find({}).sort({ nome_empresa: 1 });
     return NextResponse.json({ success: true, data: empresas });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
 
@@ -40,11 +41,13 @@ export async function POST(req: Request) {
         const novaEmpresa = await Empresa.create(body);
         return NextResponse.json({ success: true, data: novaEmpresa }, { status: 201 });
 
-    } catch (error: any) {
-        // Trata erro de duplicidade
-        if (error.code === 11000) {
-            return NextResponse.json({ success: false, error: "Email ou CNPJ já cadastrado." }, { status: 409 });
-        }
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    // Trata erro de duplicidade
+    const code = (error as { code?: number } | undefined)?.code;
+    const message = error instanceof Error ? error.message : String(error);
+    if (code === 11000) {
+      return NextResponse.json({ success: false, error: "Email ou CNPJ já cadastrado." }, { status: 409 });
     }
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
+  }
 }

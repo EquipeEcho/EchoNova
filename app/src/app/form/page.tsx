@@ -1,13 +1,14 @@
 "use client";
 import { useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import DiagnosticoPage from "./utils";
-import { perguntasPerfil, RespostasPerfil } from "./Perfil";
-import { perguntasPC, RespostasPC } from "./PessoasCultura";
-import { perguntasEO, RespostasEO } from "./EstruturaOperacoes";
-import { perguntasMC, RespostasMC } from "./MercadoClientes";
-import { perguntasDF, RespostasDF } from "./DirecaoFuturo";
+import type { Pergunta } from "./utils";
+import { perguntasPerfil, type RespostasPerfil } from "./Perfil";
+import { perguntasPC, type RespostasPC } from "./PessoasCultura";
+import { perguntasEO, type RespostasEO } from "./EstruturaOperacoes";
+import { perguntasMC, type RespostasMC } from "./MercadoClientes";
+import { perguntasDF, type RespostasDF } from "./DirecaoFuturo";
 
 // --- PASSO 1: IMPORTE O LOADER E O SONNER (PARA NOTIFICAÇÕES) ---
 import { Loader } from "@/components/ui/loader";
@@ -24,7 +25,6 @@ type DimensaoRespostas = {
 type Dimensao = keyof DimensaoRespostas;
 
 export default function Diagnostico() {
-    const searchParams = useSearchParams();
     const router = useRouter();
 
     // --- PASSO 2: ADICIONE O ESTADO DE LOADING ---
@@ -138,9 +138,9 @@ export default function Diagnostico() {
         setIsLoading(true);
 
         try {
-          const respostasFiltradas: any = {};
-          dimensoesSelecionadas.forEach(dim => {
-            respostasFiltradas[dim] = respostasFinais[dim];
+          const respostasFiltradas: Record<string, unknown> = {};
+          dimensoesSelecionadas.forEach((dim) => {
+            respostasFiltradas[dim as string] = respostasFinais[dim as Dimensao];
           });
 
           const response = await fetch("/api/diagnosticos", {
@@ -163,24 +163,25 @@ export default function Diagnostico() {
           } else {
             throw new Error(data.error || "Erro ao salvar diagnóstico.");
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : String(error);
           console.error("Erro de conexão ou API:", error);
-          toast.error(error.message);
+          toast.error(message);
         } finally {
           setIsLoading(false);
         }
       };
 
-    const salvarLocalStorage = (respostasFinais: DimensaoRespostas) => {
+  const _salvarLocalStorage = (respostasFinais: DimensaoRespostas) => {
         const diagnosticoCompleto = {
             perfil: respostasPerfil,
             dimensoes: respostasFinais,
             dimensoesSelecionadas,
             dataFinalizacao: new Date().toISOString()
         };
-        localStorage.setItem('diagnosticoCompleto', JSON.stringify(diagnosticoCompleto));
-        router.push('/resultados'); // Redireciona mesmo com fallback
-    };
+    localStorage.setItem('diagnosticoCompleto', JSON.stringify(diagnosticoCompleto));
+    router.push('/resultados'); // Redireciona mesmo com fallback
+  };
 
     const toggleDimensao = (d: Dimensao) => {
         if (dimensoesSelecionadas.includes(d)) {
@@ -223,6 +224,7 @@ export default function Diagnostico() {
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <path
               strokeLinecap="round"
@@ -261,6 +263,7 @@ export default function Diagnostico() {
           ).map((dimensao) => (
             <button
               key={dimensao.id}
+              type="button"
               onClick={() => toggleDimensao(dimensao.id)}
               className={`px-6 py-4 rounded-lg font-semibold border transition-all duration-300 text-center ${dimensoesSelecionadas.includes(dimensao.id)
                 ? "bg-pink-600 border-pink-500 text-white transform scale-105 shadow-lg"
@@ -276,9 +279,10 @@ export default function Diagnostico() {
           Dimensões selecionadas: {dimensoesSelecionadas.length}/3
         </p>
         <button
+          type="button"
           onClick={() => setFase("dimensao")}
           disabled={dimensoesSelecionadas.length === 0}
-          className="cursor-pointer px-8 py-3 rounded-lg bg-gradient-to-r from-pink-500 to-pink-600 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:from-pink-600 hover:to-pink-700 transition-all duration-300 transform hover:scale-105"
+          className="cursor-pointer px-8 py-3 rounded-lg bg-linear-to-r from-pink-500 to-pink-600 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:from-pink-600 hover:to-pink-700 transition-all duration-300 transform hover:scale-105"
         >
           Começar Diagnóstico
         </button>
@@ -289,8 +293,8 @@ export default function Diagnostico() {
     if (fase === "dimensao") {
         const dimAtual = dimensoesSelecionadas[indiceDimensaoAtual];
         const isUltimaDimensao = indiceDimensaoAtual === dimensoesSelecionadas.length - 1;
-        let perguntas: any[] = [];
-        let respostasIniciais = respostasDimensoes[dimAtual];
+  let perguntas: Pergunta<RespostasPC | RespostasEO | RespostasDF | RespostasMC>[] = [];
+  const respostasIniciais = respostasDimensoes[dimAtual];
         let titulo = "";
 
         switch (dimAtual) {

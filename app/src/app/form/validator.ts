@@ -48,7 +48,7 @@ export function validateCNPJ(cnpj: string): boolean {
 
   let tamanho = cleaned.length - 2;
   let numeros = cleaned.substring(0, tamanho);
-  let digitos = cleaned.substring(tamanho);
+  const digitos = cleaned.substring(tamanho);
   let soma = 0;
   let pos = tamanho - 7;
 
@@ -124,14 +124,14 @@ export const validateCPF = (cpf: string) => {
   if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) return false;
 
   let sum = 0;
-  for (let i = 0; i < 9; i++) sum += parseInt(digits[i]) * (10 - i);
+  for (let i = 0; i < 9; i++) sum += parseInt(digits[i], 10) * (10 - i);
   const firstDigit = (sum % 11) < 2 ? 0 : 11 - (sum % 11);
-  if (parseInt(digits[9]) !== firstDigit) return false;
+  if (parseInt(digits[9], 10) !== firstDigit) return false;
 
   sum = 0;
-  for (let i = 0; i < 10; i++) sum += parseInt(digits[i]) * (11 - i);
+  for (let i = 0; i < 10; i++) sum += parseInt(digits[i], 10) * (11 - i);
   const secondDigit = (sum % 11) < 2 ? 0 : 11 - (sum % 11);
-  if (parseInt(digits[10]) !== secondDigit) return false;
+  if (parseInt(digits[10], 10) !== secondDigit) return false;
 
   return true;
 };
@@ -139,7 +139,7 @@ export const validateCPF = (cpf: string) => {
 export function validateDate(date: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
   const d = new Date(date);
-  return !isNaN(d.getTime());
+  return !Number.isNaN(d.getTime());
 }
 
 export function validatePhone(phone: string): boolean {
@@ -153,8 +153,8 @@ export const validateExpiry = (expiry: string) => {
   const digits = expiry.replace(/\D/g, '');
   if (digits.length !== 4) return false;
 
-  const month = parseInt(digits.substring(0, 2));
-  const year = parseInt(digits.substring(2, 4));
+  const month = parseInt(digits.substring(0, 2), 10);
+  const year = parseInt(digits.substring(2, 4), 10);
   const currentYear = new Date().getFullYear() % 100;
   const currentMonth = new Date().getMonth() + 1;
 
@@ -168,14 +168,14 @@ export const debugCPFValidation = (cpf: string) => {
   if (digits.length !== 11) return console.log("CPF deve ter 11 dígitos");
 
   let sum = 0;
-  for (let i = 0; i < 9; i++) sum += parseInt(digits[i]) * (10 - i);
+  for (let i = 0; i < 9; i++) sum += parseInt(digits[i], 10) * (10 - i);
   const firstDigit = (sum % 11) < 2 ? 0 : 11 - (sum % 11);
 
   sum = 0;
-  for (let i = 0; i < 10; i++) sum += parseInt(digits[i]) * (11 - i);
+  for (let i = 0; i < 10; i++) sum += parseInt(digits[i], 10) * (11 - i);
   const secondDigit = (sum % 11) < 2 ? 0 : 11 - (sum % 11);
 
-  const isValid = firstDigit === parseInt(digits[9]) && secondDigit === parseInt(digits[10]);
+  const isValid = firstDigit === parseInt(digits[9], 10) && secondDigit === parseInt(digits[10], 10);
   console.log(`CPF ${cpf} ${isValid ? "VÁLIDO" : "INVÁLIDO"} ✓`);
 };
 
@@ -238,7 +238,7 @@ export function validateField(
 
   if (id.includes("confirmar")) {
     // pega o valor atual da senha (sem usar document)
-    const senhaValue = (globalThis as any)?.currentPasswordValue || "";
+    const senhaValue = (globalThis as unknown as { currentPasswordValue?: string }).currentPasswordValue ?? "";
     return validateConfirmPassword(senhaValue, value);
   }
   return { valid: true };

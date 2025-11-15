@@ -13,7 +13,6 @@ export function getChatProvider(): ChatProvider {
     case "OLLAMA":
       console.log("Usando o provedor: Ollama");
       return new OllamaProvider();
-    case "GEMINI":
     default:
       console.log("Usando o provedor padrão: Gemini");
       try {
