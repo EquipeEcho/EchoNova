@@ -23,8 +23,6 @@ type ModalMode = "criar" | "editar" | null;
 
 export default function GerenciarFuncionariosPage() {
   const router = useRouter();
-
-  // ID da empresa logada vem daqui
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 
@@ -34,7 +32,6 @@ export default function GerenciarFuncionariosPage() {
   const [selectedFuncionario, setSelectedFuncionario] =
     useState<Funcionario | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-
   const [formData, setFormData] = useState({
     nome: "",
     email: "",
@@ -44,19 +41,30 @@ export default function GerenciarFuncionariosPage() {
     status: "ativo" as "ativo" | "inativo",
   });
 
-  // BUSCA APENAS OS FUNCIONÁRIOS DA EMPRESA (eu fiz antes e a empresa conseguia ver todos os funcionários de todas as empresas kkkkkkkkk)
-
+  // ----------------------------------------------------
+  // Carregar funcionários só da empresa logada (user.id)
+  // ----------------------------------------------------
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user) return; // segurança extra
     fetchFuncionarios();
   }, [user]);
 
   const fetchFuncionarios = async () => {
+    if (!user?.id) {
+      console.warn("User ainda não carregado.");
+      return;
+    }
+
     try {
       setLoading(true);
 
-      // envia empresaId para filtrar no backend
-      const res = await fetch(`/api/funcionarios?empresaId=${user?.id}`);
+      const res = await fetch(`/api/funcionarios?empresaId=${user.id}`);
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Erro ao buscar funcionários");
+      }
+
       const data = await res.json();
 
       const formatados = data.map((f: any) => ({
@@ -70,15 +78,18 @@ export default function GerenciarFuncionariosPage() {
       }));
 
       setFuncionarios(formatados);
+
     } catch (e: any) {
-      toast.error("Erro ao carregar funcionários: " + e.message);
+      toast.error(e.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // ABRE MODAL (editar/criar)
 
+  // ----------------------------------------------------
+  // Modal abrir/fechar
+  // ----------------------------------------------------
   const handleOpenModal = (mode: ModalMode, funcionario?: Funcionario) => {
     setModalOpen(mode);
 
@@ -118,77 +129,103 @@ export default function GerenciarFuncionariosPage() {
     });
   };
 
-
-  //SALVAR FUNCIONÁRIO (criar/editar)
-
+  // ----------------------------------------------------
+  // Criar / Editar funcionário (usa /api/funcionarios)
+  // ----------------------------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.nome || !formData.email || !formData.matricula || !formData.cargo) {
+    // validação básica do formulário
+    if (
+      !formData.nome ||
+      !formData.email ||
+      !formData.matricula ||
+      !formData.cargo
+    ) {
       toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
+
+    // garante que temos um usuário logado com id
+    if (!user?.id) {
+      toast.error("Erro: usuário não identificado.");
       return;
     }
 
     try {
       if (modalOpen === "criar") {
-        // criação inclui empresaId automaticamente
         const res = await fetch("/api/funcionarios", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ...formData,
-            empresaId: user?.id,
+            empresaId: user.id, // vincula ao dono logado
           }),
         });
 
-        if (!res.ok) throw new Error("Erro ao criar funcionário");
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || "Erro ao criar funcionário");
+        }
+
         toast.success("Funcionário cadastrado com sucesso!");
-      }
+      } else if (modalOpen === "editar" && selectedFuncionario) {
+        const res = await fetch(
+          `/api/funcionarios/${selectedFuncionario.id}?empresaId=${user.id}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(formData), // empresaId vem pela query
+          }
+        );
 
-      if (modalOpen === "editar" && selectedFuncionario) {
-        const res = await fetch(`/api/funcionarios/${selectedFuncionario.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...formData,
-            empresaId: user?.id,
-          }),
-        });
 
-        if (!res.ok) throw new Error("Erro ao atualizar funcionário");
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || "Erro ao atualizar funcionário");
+        }
+
         toast.success("Funcionário atualizado com sucesso!");
       }
 
-      fetchFuncionarios();
+      // recarrega a lista e fecha o modal depois de criar/editar
+      await fetchFuncionarios();
       handleCloseModal();
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(e.message || "Erro ao salvar funcionário");
     }
   };
 
-
-  // DELETE
-
+  // ----------------------------------------------------
+  // Excluir funcionário (rota singular /api/funcionarios/[id])
+  // ----------------------------------------------------
   const handleDelete = async (id: string) => {
     if (!confirm("Tem certeza que deseja excluir este funcionário?")) return;
 
     try {
-      const res = await fetch(`/api/funcionarios/${id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `/api/funcionarios/${id}?empresaId=${user!.id}`,
+        {
+          method: "DELETE",
+        }
+      );
 
-      if (!res.ok) throw new Error("Erro ao excluir");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Erro ao excluir");
+      }
 
-      toast.success("Funcionário excluído!");
-      fetchFuncionarios();
+      toast.success("Funcionário excluído com sucesso!");
+      await fetchFuncionarios();
     } catch (e: any) {
+      console.error(e);
       toast.error(e.message);
     }
   };
 
-
-  // FILTRO DA BUSCA
-
+  // ----------------------------------------------------
+  // Filtro de busca
+  // ----------------------------------------------------
   const filteredFuncionarios = funcionarios.filter(
     (f) =>
       f.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -197,15 +234,13 @@ export default function GerenciarFuncionariosPage() {
       f.cargo.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-
-  // LOGOUT
-
+  // ----------------------------------------------------
+  // "Sair" = voltar para /pos-login SEM deslogar
+  // ----------------------------------------------------
   const handleLogout = () => {
-    logout();
+    // não chama logout() pra continuar logado
     router.push("/pos-login");
   };
-
-  // LOADING SCREEN
 
   if (loading) {
     return (
@@ -216,9 +251,6 @@ export default function GerenciarFuncionariosPage() {
     );
   }
 
-
-  // UI FINAL
-
   return (
     <div className="relative min-h-screen bg-linear-to-br from-gray-950 to-gray-850">
       <Headernaofix Link="/" />
@@ -226,8 +258,7 @@ export default function GerenciarFuncionariosPage() {
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-20">
         <div className="bg-neutral-900/80 backdrop-blur-sm border border-neutral-700 rounded-2xl shadow-2xl p-6 md:p-10">
-
-          {/* HEADER */}
+          {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
             <div>
               <h1 className="text-3xl font-bold bg-linear-to-r from-fuchsia-400 to-pink-400 bg-clip-text text-transparent">
@@ -237,7 +268,6 @@ export default function GerenciarFuncionariosPage() {
                 Cadastre, edite e gerencie sua equipe
               </p>
             </div>
-
             <div className="flex gap-2">
               <Button
                 onClick={() => handleOpenModal("criar")}
@@ -245,7 +275,6 @@ export default function GerenciarFuncionariosPage() {
               >
                 + Novo Funcionário
               </Button>
-
               <Button
                 onClick={handleLogout}
                 className="bg-gray-800 hover:bg-gray-700 text-white border border-neutral-700"
@@ -255,7 +284,7 @@ export default function GerenciarFuncionariosPage() {
             </div>
           </div>
 
-          {/* BUSCA */}
+          {/* Busca */}
           <div className="mb-6">
             <Input
               type="text"
@@ -266,7 +295,7 @@ export default function GerenciarFuncionariosPage() {
             />
           </div>
 
-          {/* LISTA */}
+          {/* Lista de Funcionários */}
           <div className="space-y-4">
             {filteredFuncionarios.length === 0 ? (
               <div className="bg-neutral-900/70 border border-neutral-700 rounded-xl p-10 text-center text-neutral-400">
@@ -286,7 +315,6 @@ export default function GerenciarFuncionariosPage() {
                         <h3 className="text-lg font-semibold text-white">
                           {funcionario.nome}
                         </h3>
-
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${funcionario.status === "ativo"
                             ? "bg-green-500/20 text-green-400 border border-green-600/40"
@@ -296,24 +324,20 @@ export default function GerenciarFuncionariosPage() {
                           {funcionario.status === "ativo" ? "Ativo" : "Inativo"}
                         </span>
                       </div>
-
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-neutral-400">
                         <div>
                           <span className="text-neutral-500">Email:</span>{" "}
                           {funcionario.email}
                         </div>
-
                         <div>
                           <span className="text-neutral-500">Matrícula:</span>{" "}
                           {funcionario.matricula}
                         </div>
-
                         <div>
                           <span className="text-neutral-500">Cargo:</span>{" "}
                           {funcionario.cargo}
                         </div>
                       </div>
-
                       <div className="text-xs text-neutral-500 mt-2">
                         Cadastrado em:{" "}
                         {new Date(funcionario.dataCadastro).toLocaleDateString(
@@ -321,7 +345,6 @@ export default function GerenciarFuncionariosPage() {
                         )}
                       </div>
                     </div>
-
                     <div className="flex gap-2">
                       <Button
                         onClick={() => handleOpenModal("editar", funcionario)}
@@ -329,7 +352,6 @@ export default function GerenciarFuncionariosPage() {
                       >
                         Editar
                       </Button>
-
                       <Button
                         onClick={() => handleDelete(funcionario.id)}
                         className="bg-red-700 hover:bg-red-600 text-white text-sm px-4 py-2"
@@ -345,7 +367,7 @@ export default function GerenciarFuncionariosPage() {
         </div>
       </div>
 
-      {/* MODAL */}
+      {/* Modal Criar/Editar */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -355,7 +377,6 @@ export default function GerenciarFuncionariosPage() {
                   ? "Cadastrar Novo Funcionário"
                   : "Editar Funcionário"}
               </h2>
-
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                   <Label htmlFor="nome" className="text-neutral-300">
@@ -448,7 +469,7 @@ export default function GerenciarFuncionariosPage() {
 
                 <div>
                   <Label htmlFor="status" className="text-neutral-300">
-                    Status *
+                    Status
                   </Label>
                   <select
                     id="status"
@@ -460,7 +481,6 @@ export default function GerenciarFuncionariosPage() {
                       })
                     }
                     className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-fuchsia-600 transition"
-                    required
                   >
                     <option value="ativo">Ativo</option>
                     <option value="inativo">Inativo</option>
@@ -487,7 +507,6 @@ export default function GerenciarFuncionariosPage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

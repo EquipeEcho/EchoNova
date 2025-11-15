@@ -125,40 +125,6 @@ export default function PosLoginPage() {
     router.push("/diagnostico-aprofundado");
   };
 
-  //isso aqui é pro botão da tela de funcionarios pra fazer funcionar
-  const handleTesteCreateFuncionario = async () => {
-    if (!authUser?.id) {
-      toast.error("Usuário não encontrado na sessão.");
-      return;
-    }
-
-    try {
-      const novoFuncionario = {
-        nome: "Funcionário de Teste",
-        email: `teste${Date.now()}@empresa.com`,
-        matricula: String(Math.floor(Math.random() * 90000 + 10000)),
-        cargo: "Cargo de Teste",
-        senha: "123456",
-        status: "ativo",
-        empresaId: authUser.id,
-      };
-
-      const res = await fetch("/api/funcionarios", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(novoFuncionario),
-      });
-
-      if (!res.ok) throw new Error("Falha ao criar funcionário");
-
-      toast.success("Funcionário de teste criado com sucesso!");
-      router.push("/gerenciar-funcionarios");
-
-    } catch (err: any) {
-      console.error(err);
-      toast.error("Erro ao criar funcionário de teste.");
-    }
-  };
 
   // --- NOVA FUNÇÃO ---
   // Navega para a página de resultados do último diagnóstico.
@@ -357,10 +323,10 @@ export default function PosLoginPage() {
               </Button>
 
               <Button
-                onClick={handleTesteCreateFuncionario}
+                onClick={() => router.push("/gerenciar-funcionarios")}
                 className="w-full bg-gradient-to-r from-fuchsia-700 to-fuchsia-800 hover:from-fuchsia-800 hover:to-fuchsia-900 text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
               >
-                essebotãoédeteste
+                Gerenciar Funcionários
               </Button>
 
               {/* --- NOVO BOTÃO CONDICIONAL --- */}

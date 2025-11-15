@@ -1,3 +1,5 @@
+"use client";
+
 import { Ondas, Header } from "./clientFuncs";
 import Link from "next/link";
 export default function Home() {
