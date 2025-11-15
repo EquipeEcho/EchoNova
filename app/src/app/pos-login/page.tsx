@@ -320,12 +320,25 @@ export default function PosLoginPage() {
                 Iniciar Novo Diagnóstico
               </Button>
 
+              {/* --- NOVO BOTÃO PARA O DASHBOARD CLIENTE --- */}
+              <Link href="/dashboard-cliente" className="w-full">
+                <Button 
+                  variant="outline"
+                  className="w-full border-cyan-500 text-cyan-500 hover:bg-cyan-500/10 hover:text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer mt-2"
+                >
+                  <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  Acessar Dashboard RH
+                </Button>
+              </Link>
+
               {/* --- NOVO BOTÃO CONDICIONAL --- */}
               {ultimoDiagnosticoId && (
                 <Button 
                   onClick={handleViewLastReport}
                   variant="outline" // Estilo diferente para ser secundário
-                  className="w-full border-fuchsia-500 text-fuchsia-500 hover:bg-fuchsia-500/10 hover:text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
+                  className="w-full border-fuchsia-500 text-fuchsia-500 hover:bg-fuchsia-500/10 hover:text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer mt-2"
                 >
                   <History className="mr-2 h-5 w-5" />
                   Ver Último Relatório Realizado
