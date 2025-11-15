@@ -3,20 +3,17 @@ import { connectDB } from "@/lib/mongodb";
 import Funcionario from "@/models/Funcionario";
 import bcrypt from "bcryptjs";
 
-type ParamsPromise = Promise<{ id: string }>;
-
 // =======================================
 // PUT /api/funcionarios/[id]
 // =======================================
 export async function PUT(
   req: Request,
-  { params }: { params: ParamsPromise }
+  { params }: { params: { id: string } }
 ) {
   try {
     await connectDB();
 
-    // Next no teu projeto está pedindo para awaitar params
-    const { id } = await params;
+    const id = params.id;
 
     const { searchParams } = new URL(req.url);
     const empresaId = searchParams.get("empresaId");
@@ -65,26 +62,50 @@ export async function PUT(
     }
 
     return NextResponse.json(funcionario);
+
   } catch (err: any) {
     console.error("Erro no PUT /funcionarios/[id]:", err);
+
+    if (err.code === 11000) {
+      if (err.keyPattern?.matricula) {
+        return NextResponse.json(
+          { error: "Já existe outro funcionário com esta matrícula." },
+          { status: 400 }
+        );
+      }
+      if (err.keyPattern?.email) {
+        return NextResponse.json(
+          { error: "Já existe outro funcionário com este e-mail." },
+          { status: 400 }
+        );
+      }
+
+      return NextResponse.json(
+        { error: "Valores duplicados não permitidos." },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "Erro ao atualizar funcionário" },
+      { error: "Erro ao atualizar funcionário." },
       { status: 500 }
     );
   }
+
 }
+
 
 // =======================================
 // DELETE /api/funcionarios/[id]
 // =======================================
 export async function DELETE(
   req: Request,
-  { params }: { params: ParamsPromise }
+  { params }: { params: { id: string } }
 ) {
   try {
     await connectDB();
 
-    const { id } = await params;
+    const id = params.id;
 
     const { searchParams } = new URL(req.url);
     const empresaId = searchParams.get("empresaId");
@@ -109,6 +130,7 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true });
+
   } catch (err: any) {
     console.error("Erro no DELETE /funcionarios/[id]:", err);
     return NextResponse.json(

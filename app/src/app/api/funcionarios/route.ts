@@ -34,6 +34,32 @@ export async function POST(req: Request) {
 
         const senhaHash = await bcrypt.hash(data.senha, 10);
 
+        // Verificar email duplicado dentro da mesma empresa
+        const existingEmail = await Funcionario.findOne({
+            email: data.email,
+            empresa: data.empresaId
+        });
+
+        if (existingEmail) {
+            return NextResponse.json(
+                { error: "Já existe um funcionário com este email nesta empresa." },
+                { status: 400 }
+            );
+        }
+
+        // Verificar matrícula duplicada dentro da mesma empresa
+        const existingMatricula = await Funcionario.findOne({
+            matricula: data.matricula,
+            empresa: data.empresaId
+        });
+
+        if (existingMatricula) {
+            return NextResponse.json(
+                { error: "Já existe um funcionário com esta matrícula nesta empresa." },
+                { status: 400 }
+            );
+        }
+
         const novo = await Funcionario.create({
             nome: data.nome,
             email: data.email,
@@ -47,6 +73,33 @@ export async function POST(req: Request) {
         return NextResponse.json(novo, { status: 201 });
 
     } catch (err: any) {
-        return NextResponse.json({ error: err.message }, { status: 400 });
+        console.error("Erro no POST /funcionarios:", err);
+
+        // Detecta duplicidade de índice (MongoDB code 11000)
+        if (err.code === 11000) {
+            if (err.keyPattern?.matricula) {
+                return NextResponse.json(
+                    { error: "Já existe um funcionário com esta matrícula." },
+                    { status: 400 }
+                );
+            }
+            if (err.keyPattern?.email) {
+                return NextResponse.json(
+                    { error: "Já existe um funcionário com este e-mail." },
+                    { status: 400 }
+                );
+            }
+
+            return NextResponse.json(
+                { error: "Valores duplicados não permitidos." },
+                { status: 400 }
+            );
+        }
+
+        return NextResponse.json(
+            { error: "Erro ao criar funcionário." },
+            { status: 500 }
+        );
     }
+
 }
