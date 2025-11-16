@@ -129,11 +129,17 @@ export default function Diagnostico() {
   // --- PASSO 3: MODIFIQUE A FUNÇÃO salvarDiagnostico ---
   const salvarDiagnostico = async (respostasFinais: DimensaoRespostas) => {
     setIsLoading(true);
+    console.log("[Form] Iniciando salvamento do diagnóstico...");
 
     try {
       const respostasFiltradas: Record<string, unknown> = {};
       dimensoesSelecionadas.forEach((dim) => {
         respostasFiltradas[dim as string] = respostasFinais[dim as Dimensao];
+      });
+
+      console.log("[Form] Enviando dados para API:", {
+        perfil: respostasPerfil,
+        dimensoesSelecionadas,
       });
 
       const response = await fetch("/api/diagnosticos", {
@@ -147,13 +153,18 @@ export default function Diagnostico() {
       });
 
       const data = await response.json();
+      console.log("[Form] Resposta da API:", data);
 
       if (response.ok) {
+        console.log("[Form] Diagnóstico salvo com sucesso! ID:", data.diagnostico._id);
         toast.success("Diagnóstico gerado com sucesso!");
 
         // ✅ Redireciona para a página de resultados
-        router.push(`/resultados?id=${data.diagnostico._id}`);
+        const redirectUrl = `/resultados?id=${data.diagnostico._id}`;
+        console.log("[Form] Redirecionando para:", redirectUrl);
+        router.push(redirectUrl);
       } else {
+        console.error("[Form] Erro na resposta da API:", data.error);
         throw new Error(data.error || "Erro ao salvar diagnóstico.");
       }
     } catch (error: unknown) {

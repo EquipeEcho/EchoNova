@@ -76,11 +76,13 @@ const enviarEmail = async (dados: DiagnosticoData) => {
 export default function Resultados() {
   const router = useRouter();
   // Avoid useSearchParams (prerender-time issues). Read search on client mount.
-  const [diagnosticoId, setDiagnosticoId] = useState<string | null>(null);
+  const [diagnosticoId, setDiagnosticoId] = useState<string | null | undefined>(undefined);
   useEffect(() => {
     if (typeof window !== "undefined") {
       const sp = new URLSearchParams(window.location.search);
-      setDiagnosticoId(sp.get("id"));
+      const id = sp.get("id");
+      console.log("[Resultados] ID capturado da URL:", id);
+      setDiagnosticoId(id);
     }
   }, []);
 
@@ -90,6 +92,7 @@ export default function Resultados() {
 
   // Lógica de carregamento de dados (idêntica e preservada).
   const carregarDoLocalStorage = useCallback(() => {
+    console.log("[Resultados] Tentando carregar do localStorage...");
     const dados = localStorage.getItem("diagnosticoCompleto");
     if (dados) {
       try {
@@ -100,30 +103,37 @@ export default function Resultados() {
           dimensoesSelecionadas: parsedData.dimensoesSelecionadas,
           dataFinalizacao: parsedData.dataFinalizacao,
         };
+        console.log("[Resultados] Dados carregados do localStorage com sucesso");
         setDiagnosticoData(diagnosticoMapeado);
       } catch (error) {
-        console.error("Erro ao carregar dados do localStorage:", error);
+        console.error("[Resultados] Erro ao carregar dados do localStorage:", error);
+        console.warn("[Resultados] Redirecionando para /form por erro no localStorage");
         router.push("/form");
       }
     } else {
+      console.warn("[Resultados] Nenhum dado no localStorage, redirecionando para /form");
       router.push("/form");
     }
     setIsLoading(false);
   }, [router]);
 
   const carregarDoBanco = useCallback(async (id: string) => {
+    console.log("[Resultados] Carregando diagnóstico do banco com ID:", id);
     try {
       const response = await fetch(`/api/diagnosticos/${id}`);
       const data = await response.json();
 
       if (response.ok) {
+        console.log("[Resultados] Diagnóstico carregado com sucesso:", data.diagnostico._id);
         setDiagnosticoData(data.diagnostico);
       } else {
-        console.error("Erro ao carregar diagnóstico:", data.error);
+        console.error("[Resultados] Erro ao carregar diagnóstico do banco:", data.error);
+        console.log("[Resultados] Tentando fallback para localStorage...");
         carregarDoLocalStorage();
       }
     } catch (error) {
-      console.error("Erro de conexão:", error);
+      console.error("[Resultados] Erro de conexão ao carregar do banco:", error);
+      console.log("[Resultados] Tentando fallback para localStorage...");
       carregarDoLocalStorage();
     } finally {
       setIsLoading(false);
@@ -131,15 +141,29 @@ export default function Resultados() {
   }, [carregarDoLocalStorage]);
 
   useEffect(() => {
-    const carregarDiagnostico = async () => {
-      if (diagnosticoId) {
-        await carregarDoBanco(diagnosticoId);
-      } else {
-        carregarDoLocalStorage();
-      }
-    };
-    void carregarDiagnostico();
-  }, [diagnosticoId, carregarDoBanco, carregarDoLocalStorage]);
+    console.log("[Resultados] useEffect disparado. diagnosticoId:", diagnosticoId);
+    
+    // undefined = ainda não capturou o ID da URL
+    // null = capturou e não há ID
+    // string = capturou e há ID válido
+    
+    if (diagnosticoId === undefined) {
+      // Ainda não capturou, aguarda próximo render
+      console.log("[Resultados] Estado inicial, aguardando captura do ID...");
+      return;
+    }
+    
+    if (diagnosticoId) {
+      // Tem ID válido, carrega do banco
+      console.log("[Resultados] ID válido detectado, carregando do banco...");
+      void carregarDoBanco(diagnosticoId);
+    } else {
+      // diagnosticoId é null, não há ID na URL
+      console.log("[Resultados] Nenhum ID na URL, tentando localStorage...");
+      carregarDoLocalStorage();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [diagnosticoId]);
 
   // Envia o e-mail apenas quando os dados do diagnóstico estiverem disponíveis
   useEffect(() => {
