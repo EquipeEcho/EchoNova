@@ -26,6 +26,7 @@ interface DiagnosticoData {
 }
 
 export function generateDiagnosticoPDF(diagnosticoData: DiagnosticoData): void {
+  (async () => {
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
@@ -37,6 +38,25 @@ export function generateDiagnosticoPDF(diagnosticoData: DiagnosticoData): void {
   const margin = 20;
   const maxWidth = pageWidth - margin * 2;
   let yPos = margin;
+
+  // Carregar logo EchoNova (public/img/img_logo.png) como DataURL
+  const loadImageAsDataUrl = async (src: string): Promise<string> => {
+    const res = await fetch(src);
+    if (!res.ok) throw new Error("Falha ao carregar o logo");
+    const blob = await res.blob();
+    return await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  let logoDataUrl: string | null = null;
+  try {
+    logoDataUrl = await loadImageAsDataUrl("/img/img_logo.png");
+  } catch (e) {
+    console.warn("Logo não carregado no PDF básico, usando fallback.", e);
+  }
 
   // Função auxiliar para adicionar nova página se necessário
   const checkNewPage = (requiredSpace: number) => {
@@ -257,15 +277,49 @@ export function generateDiagnosticoPDF(diagnosticoData: DiagnosticoData): void {
     });
   }
 
-  // Rodapé
+  // Rodapé com logo + EchoNova e textos adicionais
   const totalPages = doc.internal.pages.length - 1; // -1 porque pages[0] é undefined
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
+
+    const footerY = pageHeight - 10;
+    const centerX = pageWidth / 2;
+    const logoSize = 7.2; // mm (20% maior)
+    const logoX = centerX - 20; // ajustado por conta do novo tamanho
+    const logoY = footerY - logoSize;
+
+    if (logoDataUrl) {
+      try {
+        doc.addImage(logoDataUrl, 'PNG', logoX, logoY, logoSize, logoSize);
+      } catch {
+        // Fallback: círculo rosa com "E"
+        doc.setFillColor(236, 72, 153);
+        doc.circle(logoX + logoSize/2, footerY - 2, 3.6, 'F'); // 20% maior
+        doc.setFontSize(8);
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.text("E", logoX + logoSize/2, footerY - 0.5, { align: "center" });
+      }
+    } else {
+      doc.setFillColor(236, 72, 153);
+      doc.circle(logoX + logoSize/2, footerY - 2, 3.6, 'F'); // 20% maior
+      doc.setFontSize(8);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.text("E", logoX + logoSize/2, footerY - 0.5, { align: "center" });
+    }
+
+    // Texto EchoNova ao lado do logo
+    doc.setFontSize(10);
+    doc.setTextColor(236, 72, 153); // rosa
+    doc.setFont("helvetica", "bold");
+    doc.text("EchoNova", logoX + logoSize + 2, footerY, { align: "left" });
+
+    // Numeração de página e frase padrão
     doc.setFontSize(8);
     doc.setTextColor(156, 163, 175);
-    doc.text(`Página ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 10, {
-      align: "center",
-    });
+    doc.setFont("helvetica", "normal");
+    doc.text(`Página ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
     doc.text(
       "Este documento foi gerado automaticamente pela plataforma EchoNova",
       pageWidth / 2,
@@ -280,4 +334,5 @@ export function generateDiagnosticoPDF(diagnosticoData: DiagnosticoData): void {
     .replace(/\s+/g, "-")
     .toLowerCase()}-${new Date().toISOString().split("T")[0]}.pdf`;
   doc.save(fileName);
+  })();
 }

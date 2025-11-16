@@ -1,0 +1,269 @@
+{
+  "trilha": {
+    "nome": "Liderança Transformadora",
+    "descricao": "Desenvolva competências essenciais de liderança moderna, focando em gestão de equipes, comunicação efetiva e tomada de decisões estratégicas.",
+    "tags": [
+      "liderança",
+      "gestão",
+      "comunicação",
+      "tomada-de-decisão",
+      "desenvolvimento-gerencial"
+    ],
+    "areasAbordadas": [
+      "Liderança",
+      "Gestão de Pessoas",
+      "Comunicação"
+    ],
+    "objetivos": [
+      "Desenvolver habilidades de comunicação assertiva",
+      "Aprender técnicas de gestão de conflitos",
+      "Fortalecer a capacidade de tomada de decisão",
+      "Criar estratégias de motivação de equipes"
+    ],
+    "duracaoEstimada": 20,
+    "nivel": "Intermediário",
+    "modulos": [
+      {
+        "titulo": "Fundamentos da Liderança Moderna",
+        "descricao": "Introdução aos conceitos de liderança transformadora e situacional",
+        "tipo": "video",
+        "duracao": 45,
+        "url": "https://exemplo.com/modulo1",
+        "ordem": 1
+      },
+      {
+        "titulo": "Comunicação Efetiva para Líderes",
+        "descricao": "Técnicas de comunicação assertiva e feedback construtivo",
+        "tipo": "video",
+        "duracao": 60,
+        "url": "https://exemplo.com/modulo2",
+        "ordem": 2
+      },
+      {
+        "titulo": "Gestão de Conflitos",
+        "descricao": "Estratégias para mediação e resolução de conflitos",
+        "tipo": "podcast",
+        "duracao": 30,
+        "url": "https://exemplo.com/modulo3",
+        "ordem": 3
+      },
+      {
+        "titulo": "Estudo de Caso: Liderança em Crise",
+        "descricao": "Análise de situações reais de liderança em momentos críticos",
+        "tipo": "texto",
+        "duracao": 40,
+        "conteudo": "# Liderança em Crise\n\n## Introdução\n\nNeste módulo, vamos explorar...",
+        "ordem": 4
+      },
+      {
+        "titulo": "Atividade Prática: Plano de Ação de Liderança",
+        "descricao": "Desenvolva seu plano pessoal de desenvolvimento como líder",
+        "tipo": "atividade_pratica",
+        "duracao": 60,
+        "ordem": 5
+      },
+      {
+        "titulo": "Avaliação de Liderança",
+        "descricao": "Teste seus conhecimentos adquiridos",
+        "tipo": "avaliacao",
+        "duracao": 20,
+        "ordem": 6
+      }
+    ],
+    "status": "ativa",
+    "thumbnail": "/img/trilhas/lideranca-transformadora.jpg",
+    "metadados": {
+      "problemasRelacionados": [
+        "baixa-produtividade",
+        "falta-de-liderança",
+        "comunicação-ineficaz",
+        "conflitos-internos",
+        "baixo-engajamento",
+        "falta-de-direcionamento",
+        "decisões-lentas",
+        "desmotivação-equipe"
+      ],
+      "competenciasDesenvolvidas": [
+        "Liderança",
+        "Comunicação",
+        "Gestão de Conflitos",
+        "Tomada de Decisão",
+        "Inteligência Emocional",
+        "Motivação de Equipes"
+      ],
+      "resultadosEsperados": [
+        "Melhoria na comunicação interna",
+        "Redução de conflitos",
+        "Aumento do engajamento da equipe",
+        "Decisões mais assertivas",
+        "Clima organizacional positivo"
+      ]
+    },
+    "estatisticas": {
+      "totalAtribuicoes": 0,
+      "totalConclusoes": 0,
+      "avaliacaoMedia": 0
+    }
+  },
+  
+  "exemploDiagnosticoComTrilhas": {
+    "structuredData": {
+      "nomeEmpresa": "TechCorp Solutions",
+      "nomeRepresentante": "João Silva",
+      "setor": "Tecnologia",
+      "numFuncionarios": 150,
+      "numUnidades": 3,
+      
+      "areasAnalisadas": [
+        {
+          "area": "Liderança e Gestão",
+          "problemas": [
+            "Falta de alinhamento entre líderes e equipes",
+            "Comunicação verticalizada e pouco efetiva",
+            "Gestores sobrecarregados sem delegar"
+          ],
+          "pontuacao": 4.5,
+          "prioridade": "alta"
+        },
+        {
+          "area": "Cultura Organizacional",
+          "problemas": [
+            "Baixo sentimento de pertencimento",
+            "Valores corporativos não são vivenciados"
+          ],
+          "pontuacao": 5.2,
+          "prioridade": "média"
+        },
+        {
+          "area": "Comunicação Interna",
+          "problemas": [
+            "Ruídos na comunicação entre departamentos",
+            "Falta de transparência nas decisões"
+          ],
+          "pontuacao": 4.8,
+          "prioridade": "alta"
+        }
+      ],
+      
+      "trilhasRecomendadas": [
+        {
+          "trilhaId": "67890abc123def456",
+          "nomeTrilha": "Liderança Transformadora",
+          "prioridade": "alta",
+          "motivo": "A empresa apresenta problemas críticos de liderança, com gestores sobrecarregados e comunicação ineficaz. Esta trilha desenvolverá competências essenciais de liderança moderna, gestão de conflitos e comunicação assertiva, abordando diretamente os principais gaps identificados.",
+          "problemasQueResolve": [
+            "Falta de alinhamento entre líderes e equipes",
+            "Comunicação verticalizada e pouco efetiva",
+            "Gestores sobrecarregados sem delegar"
+          ],
+          "areasRelacionadas": [
+            "Liderança e Gestão",
+            "Comunicação Interna"
+          ]
+        },
+        {
+          "trilhaId": "12345xyz789abc012",
+          "nomeTrilha": "Comunicação Corporativa Efetiva",
+          "prioridade": "alta",
+          "motivo": "Os ruídos de comunicação entre departamentos e a falta de transparência nas decisões exigem uma abordagem focada em comunicação. Esta trilha fornecerá técnicas práticas para melhorar a clareza e efetividade da comunicação organizacional.",
+          "problemasQueResolve": [
+            "Ruídos na comunicação entre departamentos",
+            "Falta de transparência nas decisões",
+            "Comunicação verticalizada e pouco efetiva"
+          ],
+          "areasRelacionadas": [
+            "Comunicação Interna"
+          ]
+        },
+        {
+          "trilhaId": "54321fed456cba987",
+          "nomeTrilha": "Cultura Organizacional e Engajamento",
+          "prioridade": "média",
+          "motivo": "Para sustentar as melhorias de liderança e comunicação, é fundamental trabalhar a cultura organizacional. Esta trilha ajudará a alinhar valores corporativos com práticas diárias e aumentar o sentimento de pertencimento.",
+          "problemasQueResolve": [
+            "Baixo sentimento de pertencimento",
+            "Valores corporativos não são vivenciados"
+          ],
+          "areasRelacionadas": [
+            "Cultura Organizacional"
+          ]
+        },
+        {
+          "trilhaId": "98765ghi321jkl654",
+          "nomeTrilha": "Gestão de Performance e Resultados",
+          "prioridade": "baixa",
+          "motivo": "Como trilha complementar, ajudará gestores a estabelecerem metas claras e acompanharem resultados, facilitando a delegação e reduzindo sobrecarga.",
+          "problemasQueResolve": [
+            "Gestores sobrecarregados sem delegar"
+          ],
+          "areasRelacionadas": [
+            "Liderança e Gestão"
+          ]
+        }
+      ],
+      
+      "mapeamentoProblemasTrilhas": [
+        {
+          "problema": "Falta de alinhamento entre líderes e equipes",
+          "area": "Liderança e Gestão",
+          "trilhasSugeridas": [
+            "67890abc123def456"
+          ]
+        },
+        {
+          "problema": "Comunicação verticalizada e pouco efetiva",
+          "area": "Liderança e Gestão",
+          "trilhasSugeridas": [
+            "67890abc123def456",
+            "12345xyz789abc012"
+          ]
+        },
+        {
+          "problema": "Gestores sobrecarregados sem delegar",
+          "area": "Liderança e Gestão",
+          "trilhasSugeridas": [
+            "67890abc123def456",
+            "98765ghi321jkl654"
+          ]
+        },
+        {
+          "problema": "Baixo sentimento de pertencimento",
+          "area": "Cultura Organizacional",
+          "trilhasSugeridas": [
+            "54321fed456cba987"
+          ]
+        },
+        {
+          "problema": "Valores corporativos não são vivenciados",
+          "area": "Cultura Organizacional",
+          "trilhasSugeridas": [
+            "54321fed456cba987"
+          ]
+        },
+        {
+          "problema": "Ruídos na comunicação entre departamentos",
+          "area": "Comunicação Interna",
+          "trilhasSugeridas": [
+            "12345xyz789abc012"
+          ]
+        },
+        {
+          "problema": "Falta de transparência nas decisões",
+          "area": "Comunicação Interna",
+          "trilhasSugeridas": [
+            "12345xyz789abc012"
+          ]
+        }
+      ],
+      
+      "recomendacoesGerais": [
+        "Implementar as trilhas de forma escalonada, começando pela liderança",
+        "Criar grupos de estudo entre gestores para discutir os conteúdos",
+        "Estabelecer métricas de acompanhamento antes de iniciar as trilhas",
+        "Realizar reuniões de feedback quinzenais durante o processo"
+      ]
+    },
+    
+    "finalReport": "# Relatório de Diagnóstico Organizacional - TechCorp Solutions\n\n## Resumo Executivo\n\nApós análise profunda...\n\n## Trilhas de Aprendizagem Recomendadas\n\n### 1. Liderança Transformadora (Prioridade ALTA)\n\n**Por que esta trilha?**\nA TechCorp apresenta desafios críticos de liderança...\n\n**O que será desenvolvido:**\n- Comunicação assertiva\n- Gestão de conflitos\n- Tomada de decisão\n\n**Resultados esperados:**\n- Melhoria na comunicação interna\n- Redução de conflitos\n- Aumento do engajamento\n\n### 2. Comunicação Corporativa Efetiva (Prioridade ALTA)\n\n..."
+  }
+}

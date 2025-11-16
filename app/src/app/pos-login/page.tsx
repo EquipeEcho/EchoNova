@@ -16,6 +16,7 @@ export default function PosLoginPage() {
   const [userInfo, setUserInfo] = useState<UserInfo>(null);
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const { user: authUser, logout } = useAuthStore();
 
@@ -27,7 +28,7 @@ export default function PosLoginPage() {
     let redirected = false;
 
     const checkAuthState = async () => {
-      if (redirected) return;
+      if (redirected || isLoggingOut) return;
 
       await new Promise(resolve => setTimeout(resolve, 200));
       const currentState = useAuthStore.getState();
@@ -115,13 +116,15 @@ export default function PosLoginPage() {
       }
     };
 
-    if (authUser) {
-      checkAuthState();
-    } else {
-      const timer = setTimeout(checkAuthState, 400);
-      return () => clearTimeout(timer);
+    if (!isLoggingOut) {
+      if (authUser) {
+        checkAuthState();
+      } else {
+        const timer = setTimeout(checkAuthState, 400);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [authUser, router]);
+  }, [authUser, router, isLoggingOut]);
 
   const handleStartDiagnostico = () => {
     router.push("/diagnostico-aprofundado");
@@ -137,8 +140,9 @@ export default function PosLoginPage() {
   };
 
   const handleLogout = () => {
-    logout();
+    setIsLoggingOut(true);
     setIsMenuOpen(false);
+    logout();
     router.push("/");
   };
 

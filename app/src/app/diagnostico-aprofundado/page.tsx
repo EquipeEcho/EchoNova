@@ -9,6 +9,7 @@ import { useAuthStore } from "@/lib/stores/useAuthStore";
 // Componentes da UI
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Loader } from "@/components/ui/loader";
 import {
   Select,
@@ -28,6 +29,7 @@ interface SetupData {
   nomeEmpresa: string;
   nomeRepresentante: string;
   setor: string;
+  setorOutro: string;
   numFuncionarios: string;
   numUnidades: string;
   politicaLgpd: string;
@@ -92,6 +94,7 @@ export default function DiagnosticoAprofundadoPage() {
     nomeEmpresa: "",
     nomeRepresentante: "",
     setor: "",
+    setorOutro: "",
     numFuncionarios: "",
     numUnidades: "",
     politicaLgpd: "",
@@ -107,6 +110,72 @@ export default function DiagnosticoAprofundadoPage() {
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<ProgressState | null>(null);
   const [dadosColetados, setDadosColetados] = useState<Record<string, unknown> | null>(null); // Estado para o resumo
+  const [progressoRestaurado, setProgressoRestaurado] = useState(false); // Indica se o progresso foi restaurado
+
+  // Chave de armazenamento local
+  const STORAGE_KEY = 'diagnostico_aprofundado_state';
+
+  // Carregar dados salvos ao montar o componente
+  useEffect(() => {
+    if (!isClient) return;
+    
+    try {
+      const savedState = localStorage.getItem(STORAGE_KEY);
+      if (savedState) {
+        const parsed = JSON.parse(savedState);
+        
+        // Verificar se o estado não está muito antigo (mais de 24 horas)
+        const ageInHours = (Date.now() - (parsed.timestamp || 0)) / (1000 * 60 * 60);
+        if (ageInHours > 24) {
+          localStorage.removeItem(STORAGE_KEY);
+          console.log('⏰ Estado expirado removido');
+          return;
+        }
+        
+        // Restaurar estados
+        if (parsed.fase) setFase(parsed.fase);
+        if (parsed.setupStep !== undefined) setSetupStep(parsed.setupStep);
+        if (parsed.setupData) setSetupData(parsed.setupData);
+        if (parsed.sessionId) setSessionId(parsed.sessionId);
+        if (parsed.perguntaAtual) setPerguntaAtual(parsed.perguntaAtual);
+        if (parsed.progress) setProgress(parsed.progress);
+        if (parsed.dadosColetados) setDadosColetados(parsed.dadosColetados);
+        
+        setProgressoRestaurado(true);
+        console.log('📦 Estado do diagnóstico restaurado do localStorage');
+        toast.success('Progresso anterior restaurado! Você pode continuar de onde parou.');
+      }
+    } catch (error) {
+      console.error('Erro ao restaurar estado do diagnóstico:', error);
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [isClient]);
+
+  // Salvar dados automaticamente quando houver mudanças
+  useEffect(() => {
+    if (!isClient) return;
+    
+    // Não salvar se estiver no estado inicial
+    if (fase === 'setup' && setupStep === 0 && !sessionId) return;
+    
+    try {
+      const stateToSave = {
+        fase,
+        setupStep,
+        setupData,
+        sessionId,
+        perguntaAtual,
+        progress,
+        dadosColetados,
+        timestamp: Date.now(),
+      };
+      
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+      console.log('💾 Estado do diagnóstico salvo automaticamente');
+    } catch (error) {
+      console.error('Erro ao salvar estado do diagnóstico:', error);
+    }
+  }, [isClient, fase, setupStep, setupData, sessionId, perguntaAtual, progress, dadosColetados])
 
   useEffect(() => {
     if (isClient && user) {
@@ -124,6 +193,13 @@ export default function DiagnosticoAprofundadoPage() {
       toast.error("Por favor, preencha o campo para continuar.");
       return;
     }
+    
+    // Validação especial para setor "Outros"
+    if (currentField === "setor" && setupData.setor === "Outros" && !setupData.setorOutro.trim()) {
+      toast.error("Por favor, especifique qual é o setor de atuação.");
+      return;
+    }
+    
     if (setupStep < initialSetupQuestions.length - 1) {
       setSetupStep((prev) => prev + 1);
     } else {
@@ -134,11 +210,12 @@ export default function DiagnosticoAprofundadoPage() {
   const iniciarDiagnostico = async () => {
     setIsLoading(true);
     setProgress(null);
+    const setorFinal = setupData.setor === "Outros" ? setupData.setorOutro : setupData.setor;
     const setupResumo = `
             Os dados iniciais da empresa já foram coletados e CONFIRMADOS pelo usuário. São eles:
             - Nome da Empresa: ${setupData.nomeEmpresa}
             - Representante: ${setupData.nomeRepresentante}
-            - Setor: ${setupData.setor}
+            - Setor: ${setorFinal}
             - Nº de Funcionários: ${setupData.numFuncionarios}
             - Nº de Unidades: ${setupData.numUnidades}
             - Respeitar LGPD: ${setupData.politicaLgpd}
@@ -147,6 +224,106 @@ export default function DiagnosticoAprofundadoPage() {
         `;
     setFase("diagnostico");
     await processarResposta(setupResumo, true);
+  };
+
+  // Helper function para renderizar valores de forma mais amigável
+  const renderValue = (key: string, value: unknown): JSX.Element => {
+    const keyLower = key.toLowerCase();
+    
+    // Tratamento especial para problemas/desafios priorizados/identificados
+    if ((keyLower.includes('problema') || keyLower.includes('desafio')) && 
+        (keyLower.includes('priorizado') || keyLower.includes('identificado') || keyLower.includes('prioritario'))) {
+      
+      if (Array.isArray(value)) {
+        // Se for array de objetos (formato detalhado)
+        if (value.length > 0 && typeof value[0] === 'object') {
+          return (
+            <div className="space-y-3">
+              {value.map((problema, index) => {
+                const prob = problema as Record<string, unknown>;
+                const nome = prob.nome || prob.problema || `Problema ${index + 1}`;
+                
+                return (
+                  <div key={index} className="bg-slate-800/30 p-3 rounded border border-slate-700/30">
+                    <h4 className="font-bold text-pink-300 mb-2">📌 {String(nome)}</h4>
+                    <ul className="space-y-1 text-sm">
+                      {Object.entries(prob)
+                        .filter(([k]) => k !== 'nome' && k !== 'problema' && k !== 'priorizado')
+                        .map(([k, v]) => (
+                          <li key={k} className="flex gap-2">
+                            <span className="text-slate-400 capitalize min-w-[120px]">
+                              {k.replace(/_/g, ' ')}:
+                            </span>
+                            <span className="text-slate-200">{String(v)}</span>
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        }
+        
+        // Se for array de strings simples
+        return (
+          <ul className="list-disc list-inside space-y-1">
+            {value.map((item, index) => (
+              <li key={index} className="text-slate-200 font-medium">📌 {String(item)}</li>
+            ))}
+          </ul>
+        );
+      }
+    }
+
+    // Tratamento para arrays genéricos
+    if (Array.isArray(value)) {
+      // Se for array de objetos
+      if (value.length > 0 && typeof value[0] === 'object') {
+        return (
+          <div className="space-y-2">
+            {value.map((item, index) => (
+              <div key={index} className="bg-slate-800/20 p-2 rounded text-sm">
+                {Object.entries(item as Record<string, unknown>).map(([k, v]) => (
+                  <div key={k}>
+                    <span className="text-slate-400 capitalize">{k.replace(/_/g, ' ')}:</span>{' '}
+                    <span className="text-slate-200">{String(v)}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        );
+      }
+      
+      // Array de valores simples
+      return (
+        <ul className="list-disc list-inside space-y-1">
+          {value.map((item, index) => (
+            <li key={index} className="text-slate-200">{String(item)}</li>
+          ))}
+        </ul>
+      );
+    }
+
+    // Tratamento para objetos aninhados (como empresa:{nome, setor...})
+    if (typeof value === 'object' && value !== null) {
+      return (
+        <ul className="space-y-1">
+          {Object.entries(value).map(([subKey, subValue]) => (
+            <li key={subKey}>
+              <span className="font-semibold capitalize text-slate-400">
+                {subKey.replace(/_/g, ' ')}:
+              </span>{' '}
+              <span className="text-slate-200">{String(subValue)}</span>
+            </li>
+          ))}
+        </ul>
+      );
+    }
+
+    // Tratamento para strings e outros tipos
+    return <p className="text-slate-200">{String(value)}</p>;
   };
 
   const processarResposta = async (respostaUsuario: string, isInitial = false) => {
@@ -179,6 +356,7 @@ export default function DiagnosticoAprofundadoPage() {
 
       if (!sessionId) setSessionId(data.sessionId);
       
+      console.log("Dados coletados recebidos:", data.dados_coletados); // Debug
       setDadosColetados(data.dados_coletados); // Salva os dados para o resumo
 
       if (data.progress) {
@@ -190,6 +368,8 @@ export default function DiagnosticoAprofundadoPage() {
 
       if (data.status === "finalizado" && data.finalDiagnosticId) {
         toast.success("Diagnóstico concluído! Redirecionando para os resultados...");
+        // Limpar dados salvos quando finalizar
+        localStorage.removeItem(STORAGE_KEY);
         router.push(
           `/diagnostico-aprofundado/resultados/${data.finalDiagnosticId}`
         );
@@ -217,6 +397,7 @@ export default function DiagnosticoAprofundadoPage() {
       nomeEmpresa: user?.nome_empresa || "",
       nomeRepresentante: "",
       setor: "",
+      setorOutro: "",
       numFuncionarios: "",
       numUnidades: "",
       politicaLgpd: "",
@@ -230,6 +411,11 @@ export default function DiagnosticoAprofundadoPage() {
     setError(null);
     setProgress(null);
     setDadosColetados(null); // Limpa o resumo
+    
+    // Limpar dados salvos
+    setProgressoRestaurado(false);
+    localStorage.removeItem(STORAGE_KEY);
+    console.log('🗑️ Estado do diagnóstico limpo');
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -274,7 +460,7 @@ export default function DiagnosticoAprofundadoPage() {
           </div>
         );
       case "numero":
-        return <Input type="number" {...commonProps} />;
+        return <NumberInput {...commonProps} />;
       default:
         return <Input type="text" {...commonProps} />;
     }
@@ -304,21 +490,41 @@ export default function DiagnosticoAprofundadoPage() {
                 {currentQuestion.label}
               </h3>
               {currentQuestion.type === "selecao" || currentQuestion.type === "sim_nao" ? (
-                <Select
-                  value={setupData[currentQuestion.id as keyof SetupData]}
-                  onValueChange={(value) => handleSetupChange(currentQuestion.id as keyof SetupData, value)}
-                >
-                  <SelectTrigger className="w-full bg-slate-700 border-slate-600 text-white">
-                    <SelectValue placeholder="Selecione uma opção" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-800 text-white border-slate-700">
-                    {currentQuestion.opcoes?.map((opt) => (
-                      <SelectItem key={opt} value={opt} className="cursor-pointer hover:bg-slate-700">
-                        {opt}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <>
+                  <Select
+                    value={setupData[currentQuestion.id as keyof SetupData]}
+                    onValueChange={(value) => handleSetupChange(currentQuestion.id as keyof SetupData, value)}
+                  >
+                    <SelectTrigger className="w-full bg-slate-700 border-slate-600 text-white">
+                      <SelectValue placeholder="Selecione uma opção" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-800 text-white border-slate-700">
+                      {currentQuestion.opcoes?.map((opt) => (
+                        <SelectItem key={opt} value={opt} className="cursor-pointer hover:bg-slate-700">
+                          {opt}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  {/* Campo condicional para especificar setor quando "Outros" é selecionado */}
+                  {currentQuestion.id === "setor" && setupData.setor === "Outros" && (
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        Especifique o setor de atuação:
+                      </label>
+                      <Input
+                        type="text"
+                        value={setupData.setorOutro}
+                        onChange={(e) => handleSetupChange("setorOutro", e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        className="w-full bg-slate-700 border-slate-600 text-white rounded-lg p-3"
+                        placeholder="Ex: Agronegócio, Consultoria, etc."
+                        autoFocus={isClient}
+                      />
+                    </div>
+                  )}
+                </>
               ) : (
                 <Input
                   type={currentQuestion.type === "numero" ? "number" : "text"}
@@ -347,14 +553,19 @@ export default function DiagnosticoAprofundadoPage() {
               Por favor, revise as informações antes de iniciar o diagnóstico.
             </p>
             <div className="bg-slate-900/50 p-6 rounded-lg space-y-4">
-              {initialSetupQuestions.map(({ id, label }) => (
-                <div key={id} className="flex justify-between items-center">
-                  <span className="font-semibold text-slate-300">{label}:</span>
-                  <span className="text-white">
-                    {setupData[id as keyof SetupData]}
-                  </span>
-                </div>
-              ))}
+              {initialSetupQuestions.map(({ id, label }) => {
+                const value = setupData[id as keyof SetupData];
+                const displayValue = id === "setor" && value === "Outros" && setupData.setorOutro
+                  ? `${value} (${setupData.setorOutro})`
+                  : value;
+                
+                return (
+                  <div key={id} className="flex justify-between items-center">
+                    <span className="font-semibold text-slate-300">{label}:</span>
+                    <span className="text-white">{displayValue}</span>
+                  </div>
+                );
+              })}
             </div>
             <div className="grid grid-cols-2 gap-4 mt-8">
               <Button
@@ -388,23 +599,7 @@ export default function DiagnosticoAprofundadoPage() {
                   <div key={key} className="border-b border-slate-700/50 pb-2 last:border-b-0">
                     <h3 className="font-bold text-pink-400 capitalize mb-1">{key.replace(/_/g, ' ')}</h3>
                     <div className="pl-2 text-slate-300">
-                          {typeof value === 'string' ? (
-                        <p>{String(value)}</p>
-                      ) : Array.isArray(value) ? (
-                        <ul className="list-disc list-inside">
-                          {value.map((item) => <li key={String(item)}>{String(item)}</li>)}
-                        </ul>
-                      ) : typeof value === 'object' && value !== null ? (
-                        <ul className="space-y-1">
-                          {Object.entries(value).map(([subKey, subValue]) => (
-                             <li key={subKey}>
-                               <span className="font-semibold capitalize text-slate-400">{subKey.replace(/_/g, ' ')}:</span> {String(subValue)}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p>{String(value)}</p>
-                      )}
+                      {renderValue(key, value)}
                     </div>
                   </div>
                 ))}
@@ -456,6 +651,20 @@ export default function DiagnosticoAprofundadoPage() {
 
   return (
     <main className="min-h-screen text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Indicador de progresso restaurado */}
+      {progressoRestaurado && fase !== 'setup' && (
+        <div className="absolute top-4 right-4 z-20 bg-green-500/20 border border-green-500/50 rounded-lg px-4 py-2 flex items-center gap-2">
+          <span className="text-green-400 text-sm font-medium">✓ Progresso restaurado</span>
+          <button
+            onClick={handleRefazerDiagnostico}
+            className="text-xs text-green-300 hover:text-green-100 underline"
+            title="Começar do zero"
+          >
+            Recomeçar
+          </button>
+        </div>
+      )}
+      
       <div className="w-full max-w-3xl relative z-10 flex items-center justify-center">
         {renderContent()}
       </div>

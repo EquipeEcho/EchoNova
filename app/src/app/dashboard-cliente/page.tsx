@@ -277,6 +277,7 @@ export default function DashboardClientePage() {
   const [userInfo, setUserInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const { user: authUser, logout } = useAuthStore();
 
@@ -340,6 +341,8 @@ export default function DashboardClientePage() {
   ];
 
   useEffect(() => {
+    if (isLoggingOut) return;
+
     const fetchUserData = async () => {
       try {
         setLoading(true);
@@ -370,9 +373,10 @@ export default function DashboardClientePage() {
     };
 
     fetchUserData();
-  }, [authUser, router]);
+  }, [authUser, router, isLoggingOut]);
 
   const handleLogout = () => {
+    setIsLoggingOut(true);
     logout();
     router.push("/");
   };
