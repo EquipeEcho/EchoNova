@@ -49,3 +49,72 @@ export async function GET(
     );
   }
 }
+
+/**
+ * @route PUT /api/empresa/[id]
+ * @description Atualiza dados de uma empresa
+ */
+export async function PUT(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await connectDB();
+
+    const { id } = await params;
+    const body = await req.json();
+    const { nome_empresa, email } = body;
+
+    // Validações básicas
+    if (!nome_empresa || !email) {
+      return NextResponse.json(
+        { error: "Nome e email são obrigatórios" },
+        { status: 400 }
+      );
+    }
+
+    // Verificar se email já está em uso por outra empresa
+    const empresaExistente = await Empresa.findOne({
+      email,
+      _id: { $ne: id },
+    });
+
+    if (empresaExistente) {
+      return NextResponse.json(
+        { error: "Este email já está em uso por outra empresa" },
+        { status: 409 }
+      );
+    }
+
+    // Atualizar empresa (apenas nome e email)
+    const empresaAtualizada = await Empresa.findByIdAndUpdate(
+      id,
+      {
+        nome_empresa,
+        email,
+      },
+      { new: true, runValidators: true }
+    ).select("-senha");
+
+    if (!empresaAtualizada) {
+      return NextResponse.json(
+        { error: "Empresa não encontrada" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        message: "Empresa atualizada com sucesso",
+        empresa: empresaAtualizada,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Erro ao atualizar empresa:", error);
+    return NextResponse.json(
+      { error: "Erro interno do servidor" },
+      { status: 500 }
+    );
+  }
+}
