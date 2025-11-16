@@ -82,6 +82,8 @@ export default function Diagnostico() {
 
   // Função para lidar com o envio do perfil
   const handlePerfilSubmit = async (respostas: RespostasPerfil) => {
+    console.log("[Form] Submetendo perfil:", respostas);
+    
     try {
       const response = await fetch("/api/empresas", {
         method: "POST",
@@ -90,18 +92,24 @@ export default function Diagnostico() {
       });
 
       const data = await response.json();
+      console.log("[Form] Resposta da API empresas:", data);
 
       if (response.ok && data.empresa?._id) {
         localStorage.setItem("empresaId", data.empresa._id);
-        console.log("empresaId salvo:", data.empresa._id);
+        console.log("[Form] empresaId salvo:", data.empresa._id);
         setRespostasPerfil(respostas);
         setFase("selecionarDimensoes");
+        toast.success("Perfil cadastrado com sucesso!");
       } else {
+        console.error("[Form] Erro na resposta:", data.error);
+        if (data.details) {
+          console.error("[Form] Detalhes do erro:", data.details);
+        }
         toast.error(data.error || "Erro ao cadastrar empresa. Tente novamente.");
       }
     } catch (error) {
-      console.error("Erro de conexão ao cadastrar empresa:", error);
-      toast.error("Não foi possível se conectar ao servidor.");
+      console.error("[Form] Erro de conexão ao cadastrar empresa:", error);
+      toast.error("Não foi possível se conectar ao servidor. Verifique sua conexão.");
     }
   };
 

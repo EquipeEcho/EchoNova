@@ -314,18 +314,24 @@ aprofundado e um plano de ação detalhado, entre em contato.
         </div>
 
         {diagnosticoData.resultados ? (
-          <div className="flex flex-wrap gap-6 mb-8 justify-center">
+          <div className={`grid gap-6 mb-8 ${
+            diagnosticoData.dimensoesSelecionadas.length === 1 
+              ? 'grid-cols-1' 
+              : diagnosticoData.dimensoesSelecionadas.length === 2 
+                ? 'grid-cols-1 md:grid-cols-2' 
+                : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+          }`}>
             {diagnosticoData.dimensoesSelecionadas.map((dimensao) => {
               const resultado = diagnosticoData.resultados?.[dimensao];
               if (!resultado) return null;
 
               return (
-                <div key={dimensao} className="bg-white/5 w-sm p-6 rounded-lg border border-white/10 flex flex-col">
+                <div key={dimensao} className="bg-white/5 p-6 rounded-lg border border-white/10 flex flex-col h-full">
                   <div>
                     <h3 className="text-xl font-bold text-pink-400 mb-2">{dimensao}</h3>
                     <p className="mb-4 text-white/90">Sua empresa está no estágio <span className="font-bold">{resultado.estagio}</span>.</p>
                   </div>
-                  <div className="mt-4">
+                  <div className="mt-4 grow">
                     <h4 className="font-semibold text-white mb-2">Trilhas de Melhoria:</h4>
                     {resultado.trilhasDeMelhoria.length > 0 ? (
                       <ul className="list-disc list-inside space-y-2 text-sm text-white/80">

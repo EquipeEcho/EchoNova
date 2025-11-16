@@ -7,7 +7,59 @@ import Image from "next/image";
 import Link from "next/link";
 import validator from "validator";
 import { Ondas } from "../clientFuncs";
-import { validateField, formatCNPJ, equalCNPJ } from "./validator";
+import { validateField, formatCNPJ, validateCNPJ } from "./validator";
+import { toast } from "sonner";
+
+// ========================
+// Funções de validação assíncrona
+// ========================
+export async function verificarEmailDuplicado(email: string): Promise<{ duplicado: boolean; mensagem?: string }> {
+    try {
+        const response = await fetch("/api/empresas/check-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+        });
+
+        if (!response.ok) {
+            console.warn("Erro ao verificar email", response.status);
+            return { duplicado: false };
+        }
+
+        const data = await response.json();
+        if (data.exists) {
+            return { duplicado: true, mensagem: "Este email já foi cadastrado. Por favor, use outro email." };
+        }
+        return { duplicado: false };
+    } catch (error) {
+        console.error("Erro ao verificar email:", error);
+        return { duplicado: false };
+    }
+}
+
+export async function verificarCNPJDuplicado(cnpj: string): Promise<{ duplicado: boolean; mensagem?: string }> {
+    try {
+        const response = await fetch("/api/empresas/check-cnpj", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cnpj }),
+        });
+
+        if (!response.ok) {
+            console.warn("Erro ao verificar CNPJ", response.status);
+            return { duplicado: false };
+        }
+
+        const data = await response.json();
+        if (data.exists) {
+            return { duplicado: true, mensagem: "Este CNPJ já foi cadastrado. Por favor, use outro CNPJ." };
+        }
+        return { duplicado: false };
+    } catch (error) {
+        console.error("Erro ao verificar CNPJ:", error);
+        return { duplicado: false };
+    }
+}
 
 // ========================
 // Funções de transação (integração com o backend)
@@ -76,6 +128,7 @@ export function useDiagnostico<Respostas extends Record<string, string>>(
     const [respostas, setRespostas] = useState<Respostas>(respostasIniciais);
     const [showValidationError, setShowValidationError] = useState(false);
     const [erroCnpj, setErroCnpj] = useState("");
+    const [erroEmail, setErroEmail] = useState("");
 
     const handleInputChange = (campo: keyof Respostas, valor: string) => {
         setRespostas((prev) => ({ ...prev, [campo]: valor }));
@@ -119,6 +172,8 @@ export function useDiagnostico<Respostas extends Record<string, string>>(
         setShowValidationError,
         erroCnpj,
         setErroCnpj,
+        erroEmail,
+        setErroEmail,
     };
 }
 
@@ -155,6 +210,8 @@ function InputField<Respostas extends Record<string, string>>({
     showValidationError = false,
     erroCnpj,
     setErroCnpj,
+    erroEmail,
+    setErroEmail,
 }: {
     pergunta: Pergunta<Respostas>;
     valor: string;
@@ -163,10 +220,17 @@ function InputField<Respostas extends Record<string, string>>({
     showValidationError?: boolean;
     erroCnpj: string;
     setErroCnpj: React.Dispatch<React.SetStateAction<string>>;
+    erroEmail: string;
+    setErroEmail: React.Dispatch<React.SetStateAction<string>>;
 }) {
     const { valid, message } = validateField(pergunta.id as string, valor);
     const isCNPJ = pergunta.id.toString().toLowerCase().includes("cnpj");
-    const hasError = showValidationError && (isCNPJ ? !valid || erroCnpj !== "" : !valid);
+    const isEmail = pergunta.id.toString().toLowerCase().includes("email");
+    const hasError = showValidationError && (
+        isCNPJ ? (!valid || erroCnpj !== "") : 
+        isEmail ? (!valid || erroEmail !== "") : 
+        !valid
+    );
 
     const handleTextChange = async (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -174,15 +238,11 @@ function InputField<Respostas extends Record<string, string>>({
         const value = isCNPJ ? formatCNPJ(e.target.value) : e.target.value;
         onChange(pergunta.id, value);
 
-        if (isCNPJ && value.length === 18) {
-            try {
-                const jaExiste = await equalCNPJ(value);
-                setErroCnpj(jaExiste ? "CNPJ já cadastrado" : "");
-            } catch (error) {
-                console.error("Erro ao verificar CNPJ:", error);
-                setErroCnpj("Erro ao verificar CNPJ");
-            }
-        } else if (isCNPJ) {
+        // Limpa erros quando usuário edita o campo
+        if (isEmail && erroEmail) {
+            setErroEmail("");
+        }
+        if (isCNPJ && erroCnpj) {
             setErroCnpj("");
         }
     };
@@ -259,7 +319,7 @@ function InputField<Respostas extends Record<string, string>>({
             />
             {hasError && (
                 <p className="text-red-400 text-sm text-center">
-                    {erroCnpj || message}
+                    {isEmail && erroEmail ? erroEmail : isCNPJ && erroCnpj ? erroCnpj : message}
                 </p>
             )}
         </div>
@@ -280,7 +340,7 @@ function NavigationButtons({
     etapaAtual: number;
     totalEtapas: number;
     podeAvancar: boolean;
-    onProximo: () => void;
+    onProximo: () => void | Promise<void>;
     onAnterior: () => void;
     onSubmit: (e: React.FormEvent) => void;
     isUltimaDimensao?: boolean;
@@ -290,13 +350,13 @@ function NavigationButtons({
     const ehUltimaEtapa = etapaAtual === totalEtapas - 1;
     const ehFinalDiagnostico = ehUltimaEtapa && isUltimaDimensao;
 
-    const handleAdvanceClick = () => {
+    const handleAdvanceClick = async () => {
         onTryAdvance?.();
         if (podeAvancar) {
                 if (ehUltimaEtapa) {
                 onSubmit(new Event("submit") as unknown as React.FormEvent);
             } else {
-                onProximo();
+                await onProximo();
             }
         }
     };
@@ -353,6 +413,8 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
         setShowValidationError,
         erroCnpj,
         setErroCnpj,
+        erroEmail,
+        setErroEmail,
     } = useDiagnostico(perguntas, respostasIniciais, onSubmit);
 
     const perguntaAtual = perguntas[etapaAtual];
@@ -361,8 +423,9 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
     const { valid } = validateField(perguntaAtual.id as string, valorAtual);
     const isEmailValid = !(perguntaAtual.id === 'email' && valorAtual && !validator.isEmail(valorAtual));
     const isCNPJField = perguntaAtual.id.toString().toLowerCase().includes("cnpj");
+    const isEmailField = perguntaAtual.id.toString().toLowerCase().includes("email");
     
-    let podeAvancar = valid && isEmailValid && (!isCNPJField || erroCnpj === "");
+    let podeAvancar = valid && isEmailValid && (!isCNPJField || erroCnpj === "") && (!isEmailField || erroEmail === "");
     
     if (perguntaAtual.required) {
         podeAvancar = podeAvancar && valorAtual.trim() !== "";
@@ -372,6 +435,35 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
         const valorOutros = respostas[perguntaAtual.campoOutros] || "";
         podeAvancar = podeAvancar && valorOutros.trim() !== "";
     }
+
+    const handleProximaEtapaComValidacao = async () => {
+        // Limpa erros anteriores
+        setErroEmail("");
+        setErroCnpj("");
+        
+        // Valida email duplicado
+        if (isEmailField && valorAtual && validator.isEmail(valorAtual)) {
+            const { duplicado, mensagem } = await verificarEmailDuplicado(valorAtual);
+            if (duplicado) {
+                setErroEmail("Email já utilizado, tente outro!");
+                setShowValidationError(true);
+                return;
+            }
+        }
+        
+        // Valida CNPJ duplicado
+        if (isCNPJField && valorAtual && validateCNPJ(valorAtual)) {
+            const { duplicado, mensagem } = await verificarCNPJDuplicado(valorAtual);
+            if (duplicado) {
+                setErroCnpj("CNPJ já utilizado, tente outro!");
+                setShowValidationError(true);
+                return;
+            }
+        }
+        
+        // Se passou nas validações, avança
+        proximaEtapa();
+    };
 
     const handleTryAdvance = () => {
         if (!podeAvancar) {
@@ -413,6 +505,8 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
                         showValidationError={showValidationError}
                         erroCnpj={erroCnpj}
                         setErroCnpj={setErroCnpj}
+                        erroEmail={erroEmail}
+                        setErroEmail={setErroEmail}
                     />
                 </div>
 
@@ -420,7 +514,7 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
                     etapaAtual={etapaAtual}
                     totalEtapas={perguntas.length}
                     podeAvancar={podeAvancar}
-                    onProximo={proximaEtapa}
+                    onProximo={handleProximaEtapaComValidacao}
                     onAnterior={etapaAnterior}
                     onSubmit={handleSubmit}
                     isUltimaDimensao={isUltimaDimensao}

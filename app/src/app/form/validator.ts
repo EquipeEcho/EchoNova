@@ -38,7 +38,8 @@ export function validateEmail(email: string): boolean {
 
   const trimmed = email.trim();
 
-  const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  // Regex melhorado para aceitar domínios complexos como .gov.br, .sp.gov.br, etc
+  const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\.[a-zA-Z]{2,})?$/;
   return re.test(trimmed);
 }
 
@@ -221,9 +222,10 @@ export function validateField(
     return { valid: false, message: "CNPJ inválido" };
   }
 
-  if (id.includes("cnpj") && !equalCNPJ(value)) {
-    return { valid: false, message: "CNPJ já cadastrado" };
-  }
+  // REMOVIDO: Verificação de CNPJ duplicado - permitindo múltiplos diagnósticos
+  // if (id.includes("cnpj") && !equalCNPJ(value)) {
+  //   return { valid: false, message: "CNPJ já cadastrado" };
+  // }
 
   if (id.includes("data") && !validateDate(value)) {
     return { valid: false, message: "Data inválida" };

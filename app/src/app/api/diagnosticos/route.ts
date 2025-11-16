@@ -156,34 +156,32 @@ export async function POST(req: Request) {
     let empresa = await Empresa.findOne({ email: dados.perfil.email });
 
     if (!empresa) {
-      // Verifica se já existe uma empresa com o mesmo CNPJ (exatamente como foi digitado)
+      // Tenta buscar por CNPJ também
       const cnpjInformado = dados.perfil.cnpj;
       const empresaComMesmoCnpj = await Empresa.findOne({ cnpj: cnpjInformado });
 
       if (empresaComMesmoCnpj) {
-        return NextResponse.json(
-          { error: "Já existe uma empresa cadastrada com este CNPJ." },
-          { status: 400 }
-        );
+        // ALTERADO: Usar empresa existente ao invés de bloquear
+        console.log(`[API Diagnosticos] Empresa já existe com CNPJ ${cnpjInformado}, reutilizando...`);
+        empresa = empresaComMesmoCnpj;
+      } else {
+        // Cria nova empresa
+        console.log(`[API Diagnosticos] Empresa com email ${dados.perfil.email} não encontrada. Criando nova...`);
+        
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(`temp_${Date.now()}`, salt);
+
+        empresa = await Empresa.create({
+          nome_empresa: dados.perfil.empresa,
+          email: dados.perfil.email,
+          cnpj: cnpjInformado || `TEMP_${Date.now()}`,
+          senha: hashedPassword,
+        });
+
+        console.log(`[API Diagnosticos] Nova empresa criada com ID: ${empresa._id}`);
       }
-
-      console.log(`Empresa com email ${dados.perfil.email} não encontrada. Criando nova...`);
-      
-      // --- INÍCIO DA CORREÇÃO DE SEGURANÇA ---
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(`temp_${Date.now()}`, salt);
-
-      empresa = await Empresa.create({
-        nome_empresa: dados.perfil.empresa,
-        email: dados.perfil.email,
-        cnpj: cnpjInformado || `TEMP_${Date.now()}`,
-        senha: hashedPassword, // Salva a senha temporária criptografada
-      });
-      // --- FIM DA CORREÇÃO DE SEGURANÇA ---
-
-      console.log(`Nova empresa criada com ID: ${empresa._id}`);
     } else {
-      console.log(`Empresa encontrada com ID: ${empresa._id}`);
+      console.log(`[API Diagnosticos] Empresa encontrada com ID: ${empresa._id}`);
     }
 
     const resultadosProcessados = await processarResultados(
