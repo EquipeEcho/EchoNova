@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuthStore } from "@/lib/stores/useAuthStore";
 import { Button } from "@/components/ui/button";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Headernaofix, Ondas } from "@/app/clientFuncs";
 
 interface Trilha {
@@ -396,8 +397,7 @@ export default function FuncionarioPage() {
                   <label className="block text-sm font-medium text-neutral-300 mb-2">
                     Senha Atual
                   </label>
-                  <input
-                    type="password"
+                  <PasswordInput
                     value={editForm.senhaAtual}
                     onChange={(e) =>
                       setEditForm({ ...editForm, senhaAtual: e.target.value })
@@ -411,8 +411,7 @@ export default function FuncionarioPage() {
                   <label className="block text-sm font-medium text-neutral-300 mb-2">
                     Nova Senha
                   </label>
-                  <input
-                    type="password"
+                  <PasswordInput
                     value={editForm.novaSenha}
                     onChange={(e) =>
                       setEditForm({ ...editForm, novaSenha: e.target.value })
@@ -426,8 +425,7 @@ export default function FuncionarioPage() {
                   <label className="block text-sm font-medium text-neutral-300 mb-2">
                     Confirmar Nova Senha
                   </label>
-                  <input
-                    type="password"
+                  <PasswordInput
                     value={editForm.confirmarSenha}
                     onChange={(e) =>
                       setEditForm({

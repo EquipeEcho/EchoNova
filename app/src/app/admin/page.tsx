@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Tipagem para os dados que vamos manipular
@@ -23,6 +24,8 @@ interface Empresa {
   cnpj: string;
   planoAtivo?: string;
   senha?: string;
+  createdAt?: string; // timestamp automático do Mongoose (timestamps: true)
+  data_cadastro?: string; // campo explícito no schema
 }
 
 interface Diagnostico {
@@ -121,10 +124,9 @@ const EmpresaForm: FC<{
       <div>
         {/* --- CORREÇÃO DE ESTILO --- */}
         <Label htmlFor="senha" className="text-gray-300">Nova Senha (opcional)</Label>
-        <Input
+        <PasswordInput
           id="senha"
           name="senha"
-          type="password"
           placeholder="Deixe em branco para não alterar"
           onChange={handleChange}
           // --- CORREÇÃO DE ESTILO ---
@@ -186,6 +188,23 @@ export default function AdminPage() {
       setLoading(false);
     }
   }, []);
+
+  // Utilitário para formatar data com fallback
+  const formatEmpresaData = (empresa: Empresa) => {
+    const source = empresa.createdAt || empresa.data_cadastro || empresa._id;
+    let date: Date;
+    if (!source) return "-";
+    // Se for um ObjectId (24 chars hex), extrair timestamp
+    if (/^[0-9a-fA-F]{24}$/.test(source)) {
+      const ts = parseInt(source.substring(0, 8), 16) * 1000;
+      date = new Date(ts);
+    } else {
+      date = new Date(source);
+    }
+    if (isNaN(date.getTime())) return "-";
+    return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }) +
+      " " + date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  };
 
   useEffect(() => {
     fetchData();
@@ -322,6 +341,7 @@ export default function AdminPage() {
                   <th className="p-4">Nome da Empresa</th>
                   <th className="p-4">Email</th>
                   <th className="p-4">CNPJ</th>
+                  <th className="p-4">Cadastro</th>
                   <th className="p-4">Plano</th>
                   <th className="p-4">Ações</th>
                 </tr>
@@ -332,6 +352,7 @@ export default function AdminPage() {
                     <td className="p-4">{empresa.nome_empresa}</td>
                     <td className="p-4">{empresa.email}</td>
                     <td className="p-4">{empresa.cnpj}</td>
+                    <td className="p-4">{formatEmpresaData(empresa)}</td>
                     <td className="p-4">{empresa.planoAtivo || "N/A"}</td>
                     <td className="p-4 flex gap-2">
                       {/* --- CORREÇÃO DE ESTILO --- */}

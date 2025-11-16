@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/stores/useAuthStore";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -21,9 +22,24 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   const [senha, setSenha] = useState("");
   const [matricula, setMatricula] = useState(""); // opcional para funcionário
   const [loading, setLoading] = useState(false);
+  const [isReady, setIsReady] = useState(false); // Novo estado
 
   const router = useRouter();
   const loginAction = useAuthStore((state) => state.login);
+
+  // Prevenir autocomplete ao montar
+  useEffect(() => {
+    const timer = setTimeout(() => setIsReady(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Limpar campos ao trocar de aba
+  useEffect(() => {
+    setEmail("");
+    setCnpj("");
+    setMatricula("");
+    setSenha("");
+  }, [loginType]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,7 +123,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         </Button>
       </div>
 
-      <form onSubmit={handleLogin} className="grid gap-4 py-4">
+      <form onSubmit={handleLogin} className="grid gap-4 py-4" autoComplete="off">
         {loginType === "empresa" && (
           <>
             <div>
@@ -116,11 +132,17 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
               </Label>
               <Input
                 id="cnpj-login"
+                name="cnpj"
                 type="text"
                 placeholder="00.000.000/0001-00"
                 className="bg-gray-800 border-gray-700 text-white"
                 value={cnpj}
                 onChange={(e) => setCnpj(e.target.value)}
+                autoComplete="off"
+                data-form-type="other"
+                data-lpignore="true"
+                readOnly={!isReady}
+                onFocus={(e) => { if (isReady) e.target.removeAttribute('readonly'); }}
               />
             </div>
             <div className="text-center text-neutral-400 text-sm">ou</div>
@@ -130,11 +152,16 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
               </Label>
               <Input
                 id="email-login"
+                name="email"
                 type="email"
                 placeholder="email@exemplo.com"
                 className="bg-gray-800 border-gray-700 text-white"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="username"
+                data-lpignore="true"
+                readOnly={!isReady}
+                onFocus={(e) => { if (isReady) e.target.removeAttribute('readonly'); }}
               />
             </div>
           </>
@@ -148,11 +175,17 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
               </Label>
               <Input
                 id="email-func-login"
+                name="email-funcionario"
                 type="email"
                 placeholder="email@empresa.com"
                 className="bg-gray-800 border-gray-700 text-white"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="off"
+                data-form-type="other"
+                data-lpignore="true"
+                readOnly={!isReady}
+                onFocus={(e) => { if (isReady) e.target.removeAttribute('readonly'); }}
               />
             </div>
             <div>
@@ -161,11 +194,17 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
               </Label>
               <Input
                 id="matricula-login"
+                name="matricula"
                 type="text"
                 placeholder="EX: 12345"
                 className="bg-gray-800 border-gray-700 text-white"
                 value={matricula}
                 onChange={(e) => setMatricula(e.target.value)}
+                autoComplete="off"
+                data-form-type="other"
+                data-lpignore="true"
+                readOnly={!isReady}
+                onFocus={(e) => { if (isReady) e.target.removeAttribute('readonly'); }}
               />
             </div>
           </>
@@ -175,13 +214,14 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           <Label htmlFor="senha-login" className="text-neutral-400">
             Senha
           </Label>
-          <Input
+          <PasswordInput
             id="senha-login"
-            type="password"
+            name="password"
             placeholder="••••••••"
             className="bg-gray-800 border-gray-700 text-white"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
+            autoComplete="current-password"
           />
         </div>
         <Button

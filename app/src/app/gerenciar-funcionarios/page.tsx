@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Headernaofix, Ondas } from "@/app/clientFuncs";
 
 interface Funcionario {
@@ -453,9 +454,8 @@ export default function GerenciarFuncionariosPage() {
                     <Label htmlFor="senha" className="text-neutral-300">
                       Senha *
                     </Label>
-                    <Input
+                    <PasswordInput
                       id="senha"
-                      type="password"
                       value={formData.senha}
                       onChange={(e) =>
                         setFormData({ ...formData, senha: e.target.value })
