@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Ondas } from "../clientFuncs";
 import { toast } from "sonner";
+import { generateDiagnosticoPDF } from "@/lib/pdfGenerator";
 
 // Interface mesclada que suporta todos os campos de ambos os arquivos.
 interface DiagnosticoData {
@@ -238,17 +239,7 @@ aprofundado e um plano de ação detalhado, entre em contato.
 
   const handleDownloadReport = () => {
     if (!diagnosticoData) return;
-    const reportContent = generateReportContent(diagnosticoData);
-    const blob = new Blob([reportContent], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    const nomeEmpresa = diagnosticoData.perfil.empresa;
-    link.download = `diagnostico-${nomeEmpresa.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().split("T")[0]}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    generateDiagnosticoPDF(diagnosticoData);
   };
 
   const handleNewDiagnostic = () => {
