@@ -132,8 +132,6 @@ export default function PlanosPage() {
           {planos.map((plano, index) => (
             <div
               key={index}
-              onMouseEnter={() => setPlanoSelecionado(plano.nome)}
-              onMouseLeave={() => setPlanoSelecionado(null)}
               className={`relative bg-slate-900/95 backdrop-blur-sm rounded-3xl p-8 border-2 border-slate-700/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl group flex flex-col h-full cursor-pointer ${
                 plano.nome === "Essencial"
                   ? "hover:border-indigo-400/80 hover:shadow-indigo-400/50"

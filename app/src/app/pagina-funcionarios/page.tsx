@@ -72,6 +72,10 @@ export default function FuncionarioPage() {
   const [funcionario, setFuncionario] = useState<FuncionarioData | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabKey>("Perfil");
+  const [profileForm, setProfileForm] = useState({
+    nome: "",
+    email: "",
+  });
   const [editForm, setEditForm] = useState({
     senhaAtual: "",
     novaSenha: "",
@@ -201,8 +205,19 @@ export default function FuncionarioPage() {
         setLoading(false);
       }
     };
-    fetchFuncionario();
+        if (user) {
+      fetchFuncionario();
+    }
   }, [user]);
+
+  useEffect(() => {
+    if (funcionario) {
+      setProfileForm({
+        nome: funcionario.nome,
+        email: funcionario.email,
+      });
+    }
+  }, [funcionario]);
 
   const handleLogout = () => {
     logout();
@@ -250,8 +265,8 @@ export default function FuncionarioPage() {
       if (funcionario) {
         setFuncionario({
           ...funcionario,
-          nome: editForm.nome,
-          email: editForm.email,
+                    nome: profileForm.nome,
+          email: profileForm.email,
         });
       }
     } catch (e: any) {

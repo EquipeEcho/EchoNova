@@ -327,7 +327,7 @@ export default function PosLoginPage() {
 
               <Button
                 onClick={() => router.push("/gerenciar-funcionarios")}
-                className="w-full bg-gradient-to-r from-fuchsia-700 to-fuchsia-800 hover:from-fuchsia-800 hover:to-fuchsia-900 text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
+                className="w-full bg-linear-to-r from-fuchsia-700 to-fuchsia-800 hover:from-fuchsia-800 hover:to-fuchsia-900 text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
               >
                 Gerenciar Funcionários
               </Button>

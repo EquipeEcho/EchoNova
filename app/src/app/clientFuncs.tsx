@@ -17,13 +17,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/lib/stores/useAuthStore";
-// ADICIONADO: importa o componente com abas
 import { LoginForm } from "@/components/ui/LoginForm";
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import Link from "next/link";
-import { useAuthStore } from "@/lib/stores/useAuthStore"; // Importa o store de autenticação
-import { useRouter } from "next/navigation"; // Correção: usar next/navigation em vez de next/router
 import { toast } from "sonner";
 
 
