@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -70,7 +71,7 @@ export function useDiagnostico<Respostas extends Record<string, string>>(
     respostasIniciais: Respostas,
     onsubmit?: (respostas: Respostas) => void,
 ) {
-    const router = useRouter();
+    const _router = useRouter();
     const [etapaAtual, setEtapaAtual] = useState(0);
     const [respostas, setRespostas] = useState<Respostas>(respostasIniciais);
     const [showValidationError, setShowValidationError] = useState(false);
@@ -138,7 +139,7 @@ function ProgressBar({ etapaAtual, totalEtapas }: { etapaAtual: number; totalEta
             </div>
             <div className="w-full bg-white/20 rounded-full h-2">
                 <div
-                    className="bg-gradient-to-r from-pink-500 to-pink-600 h-2 rounded-full transition-all duration-500"
+                    className="bg-linear-to-r from-pink-500 to-pink-600 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${porcentagem}%` }}
                 ></div>
             </div>
@@ -216,15 +217,15 @@ function InputField<Respostas extends Record<string, string>>({
                 </select>
                 {mostraTextAreaOutros && pergunta.campoOutros && (
                     <div className="animate-fade-in-up">
-                        <label className="block text-white text-sm font-medium mb-2">Por favor, especifique:</label>
+                        <label htmlFor={`outros-${String(pergunta.id)}`} className="block text-white text-sm font-medium mb-2">Por favor, especifique:</label>
                         <textarea
-                            value={respostas[pergunta.campoOutros]}
-                            onChange={(e) => onChange(pergunta.campoOutros!, e.target.value)}
+                            id={`outros-${String(pergunta.id)}`}
+                            value={respostas[pergunta.campoOutros as keyof Respostas]}
+                            onChange={(e) => onChange(pergunta.campoOutros as keyof Respostas, e.target.value)}
                             onKeyDown={handleKeyDown}
                             className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
                             placeholder="Descreva..."
                             rows={3}
-                            autoFocus
                         />
                     </div>
                 )}
@@ -292,8 +293,8 @@ function NavigationButtons({
     const handleAdvanceClick = () => {
         onTryAdvance?.();
         if (podeAvancar) {
-            if (ehUltimaEtapa) {
-                onSubmit(new Event("submit") as any);
+                if (ehUltimaEtapa) {
+                onSubmit(new Event("submit") as unknown as React.FormEvent);
             } else {
                 onProximo();
             }
@@ -317,7 +318,7 @@ function NavigationButtons({
                 type="button"
                 onClick={handleAdvanceClick}
                 disabled={!podeAvancar && showValidationError}
-                className={`cursor-pointer px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar ? "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white transform hover:scale-105 shadow-lg" : "bg-gray-500/50 text-gray-400 cursor-not-allowed"}`}
+                className={`cursor-pointer px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar ? "bg-linear-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white transform hover:scale-105 shadow-lg" : "bg-gray-500/50 text-gray-400 cursor-not-allowed"}`}
             >
                 {buttonText}
             </button>
@@ -384,7 +385,7 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
                 href="/"
                 className="absolute top-6 left-6 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg border border-white/30 flex items-center gap-2"
             >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg aria-hidden="true" focusable="false" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2 7-7 7 7M5 10v10h4v-4h6v4h4V10" />
                 </svg>
                 <span className="hidden sm:inline">Home</span>

@@ -22,15 +22,18 @@ export async function GET() {
       return NextResponse.json({ error: "Não autorizado: token não encontrado." }, { status: 401 });
     }
 
-    let payload: any;
+    let payload: { id?: string } | undefined;
     try {
       const { payload: verifiedPayload } = await jwtVerify(token, secret);
-      payload = verifiedPayload;
-    } catch (err) {
+      payload = verifiedPayload as { id?: string };
+    } catch (_err) {
       return NextResponse.json({ error: "Não autorizado: token inválido." }, { status: 401 });
     }
 
-    const empresaId = payload.id;
+    const empresaId = payload?.id;
+    if (!empresaId) {
+      return NextResponse.json({ error: "Não autorizado: token inválido." }, { status: 401 });
+    }
 
     // --- 2. Lógica de Busca no Banco de Dados ---
     await connectDB();

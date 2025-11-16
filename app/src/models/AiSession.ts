@@ -1,7 +1,7 @@
 import mongoose, { Schema, model, models } from "mongoose";
 
 // Tipagem do histórico de mensagens da conversa
-interface HistoryMessage {
+export interface HistoryMessage {
   role: "user" | "model";
   parts: [{ text: string }];
 }

@@ -49,7 +49,7 @@ function calcularEstagio(media: number): string {
 
 async function processarResultados(
   dimensoesSelecionadas: string[],
-  respostasDimensoes: any,
+  respostasDimensoes: Record<string, Record<string, string>>,
 ) {
   const provider = getChatProvider();
   const message = `Dimensões selecionadas: ${JSON.stringify(dimensoesSelecionadas)}\nRespostas das dimensões: ${JSON.stringify(respostasDimensoes)}`;
@@ -67,7 +67,7 @@ async function processarResultados(
     console.error('Erro ao processar resultados com IA:', error);
     // Fallback to fixed logic if AI fails
     console.log('Usando lógica de fallback');
-    const resultadosFinais: Record<string, any> = {};
+  const resultadosFinais: Record<string, unknown> = {};
     for (const nomeDimensao of dimensoesSelecionadas) {
       const respostasDaDimensao = respostasDimensoes[nomeDimensao];
       if (!respostasDaDimensao) continue;
@@ -212,12 +212,13 @@ export async function POST(req: Request) {
       },
       { status: 201 },
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("ERRO DETALHADO NO BACKEND (/api/diagnosticos):", err);
+    const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
       {
         error: "Ocorreu uma falha interna ao processar o diagnóstico.",
-        details: err.message,
+        details: message,
       },
       { status: 500 },
     );
@@ -239,7 +240,8 @@ export async function GET(req: Request) {
       .sort({ createdAt: -1 })
       .populate("empresa", "nome_empresa email");
     return NextResponse.json({ diagnosticos });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

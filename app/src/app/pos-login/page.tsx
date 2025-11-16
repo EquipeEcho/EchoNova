@@ -10,8 +10,10 @@ import { useAuthStore } from "@/lib/stores/useAuthStore";
 import { History } from "lucide-react"; // Importando ícone
 import { toast } from "sonner";
 
+type UserInfo = { nome?: string; email?: string; plano?: string } | null;
+
 export default function PosLoginPage() {
-  const [userInfo, setUserInfo] = useState<any>(null);
+  const [userInfo, setUserInfo] = useState<UserInfo>(null);
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
@@ -227,10 +229,10 @@ export default function PosLoginPage() {
             {userInfo && (
               <div className="hidden md:flex items-center gap-2 bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700/50 cursor-pointer hover:bg-slate-700/50 transition-colors">
                 <span className="text-gray-300 text-sm">Plano:</span>
-                <div className={`px-3 py-1 rounded-full bg-gradient-to-r ${getPlanoColor(userInfo.plano)} text-white text-xs font-bold flex items-center gap-1`}>
-                  <span>{getPlanoIcon(userInfo.plano)}</span>
-                  <span>{userInfo.plano}</span>
-                </div>
+                <div className={`px-3 py-1 rounded-full bg-linear-to-r ${getPlanoColor(userInfo?.plano || "")} text-white text-xs font-bold flex items-center gap-1`}>
+                      <span>{getPlanoIcon(userInfo?.plano || "")}</span>
+                      <span>{userInfo?.plano || "Nenhum"}</span>
+                    </div>
               </div>
             )}
 
@@ -258,20 +260,21 @@ export default function PosLoginPage() {
                   <div className="px-4 py-2 border-b border-slate-700">
                     <div className="flex items-center gap-2">
                       <span className="text-gray-300 text-sm">Plano:</span>
-                      <div className={`px-2 py-0.5 rounded-full bg-gradient-to-r ${getPlanoColor(userInfo?.plano)} text-white text-xs font-bold flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity`}>
-                        <span>{getPlanoIcon(userInfo?.plano)}</span>
+                      <div className={`px-2 py-0.5 rounded-full bg-linear-to-r ${getPlanoColor(userInfo?.plano || "")} text-white text-xs font-bold flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity`}>
+                        <span>{getPlanoIcon(userInfo?.plano || "")}</span>
                         <span>{userInfo?.plano || "Nenhum"}</span>
                       </div>
                     </div>
                   </div>
                   <button
+                    type="button"
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
                   >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
-                    Sair
+                      Sair
                   </button>
                 </div>
               )}
@@ -317,7 +320,7 @@ export default function PosLoginPage() {
             <div className="flex flex-col gap-4">
               <Button
                 onClick={handleStartDiagnostico}
-                className="w-full bg-gradient-to-r from-fuchsia-700 to-fuchsia-800 hover:from-fuchsia-800 hover:to-fuchsia-900 text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
+                className="w-full bg-linear-to-r from-fuchsia-700 to-fuchsia-800 hover:from-fuchsia-800 hover:to-fuchsia-900 text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
               >
                 Iniciar Novo Diagnóstico
               </Button>

@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
 import { connectDB } from "@/lib/mongodb";
 import DiagnosticoAprofundado from "@/models/DiagnosticoAprofundado";
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 
@@ -12,7 +12,7 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET);
  * garantindo que ele pertença ao usuário autenticado.
  * Usada pela página de visualização de resultados.
  */
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // --- 1. Autenticação ---
     // --- CORREÇÃO APLICADA AQUI ---
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     // --- 2. Lógica de Busca ---
     await connectDB();
-    const { id } = params; // Acesso direto ao ID
+  const { id } = await params; // Acesso direto ao ID
 
     const diagnostico = await DiagnosticoAprofundado.findById(id);
 

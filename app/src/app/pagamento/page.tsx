@@ -1,10 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Header, Headernaofix, Ondas } from "../clientFuncs";
+import { Headernaofix, Ondas } from "../clientFuncs";
 import { Button } from "@/components/ui/button";
-import { CheckIcon, ArrowLeftIcon, CreditCardIcon, UserIcon, BuildingIcon } from "lucide-react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { CheckIcon, CreditCardIcon, UserIcon, BuildingIcon } from "lucide-react";
+import { toast } from "sonner";
+// NOTE: Avoid useSearchParams() here because it triggers prerender-time warnings
+// (it expects a browser environment). Instead we read window.location.search on mount.
 import {
   formatCPF,
   validateConfirmPassword,
@@ -27,18 +28,53 @@ import {
 } from "../form/validator";
 
 export default function PagamentoPage() {
-  const searchParams = useSearchParams();
+  // We'll read search params on the client to avoid prerender issues
+  const [searchTransacaoId, setSearchTransacaoId] = useState<string | null>(null);
+  const [planoSelecionado, setPlanoSelecionado] = useState<string>("Essencial");
+  const [preco, setPreco] = useState<string>("590");
 
-  // Captura o ID da transação da URL
-  const transacaoId = searchParams.get("transacaoId");
-
-  // Mantém o comportamento anterior
-  const planoSelecionado = searchParams.get("plano") || "Essencial";
-  const preco = searchParams.get("preco") || "590";
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      setSearchTransacaoId(sp.get("transacaoId"));
+      setPlanoSelecionado(sp.get("plano") || "Essencial");
+      setPreco(sp.get("preco") || "590");
+    }
+  }, []);
 
   const [etapaPagamento, setEtapaPagamento] = useState<'dados' | 'pagamento' | 'confirmacao'>('dados');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [formData, setFormData] = useState({
+  type PaymentFormData = {
+    // Dados pessoais
+    nome: string;
+    email: string;
+    telefone: string;
+    cpf: string;
+    senha: string;
+    confirmar: string;
+
+    // Dados da empresa
+    nomeEmpresa: string;
+    cnpj: string;
+    endereco: string;
+    cidade: string;
+    estado: string;
+    cep: string;
+
+    // Dados do cartão
+    numeroCartao: string;
+    nomeCartao: string;
+    validadeCartao: string;
+    cvv: string;
+
+    // Endereço de cobrança
+    enderecoCobranca: string;
+    cidadeCobranca: string;
+    estadoCobranca: string;
+    cepCobranca: string;
+  };
+
+  const [formData, setFormData] = useState<PaymentFormData>({
     // Dados pessoais
     nome: '',
     email: '',
@@ -109,15 +145,15 @@ export default function PagamentoPage() {
 
   // Exemplo de uso do ID da transação (para debug e validação futura)
   useEffect(() => {
-    if (transacaoId) {
-      console.log("Transação carregada:", transacaoId);
+    if (searchTransacaoId) {
+      console.log("🔗 Transação carregada:", searchTransacaoId);
       // No futuro: buscar detalhes da transação via fetch(`/api/transacoes/${transacaoId}`)
     } else {
       console.warn(" Nenhum ID de transação encontrado na URL.");
     }
-  }, [transacaoId]);
+  }, [searchTransacaoId]);
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: keyof PaymentFormData, value: string) => {
     let formattedValue = value;
 
     // Aplicar formatação específica para cada campo
@@ -156,7 +192,7 @@ export default function PagamentoPage() {
   };
 
 
-  const validateField = (field: string, value: string) => {
+  const validateField = (field: keyof PaymentFormData, value: string) => {
     let error = '';
 
     switch (field) {
@@ -172,22 +208,24 @@ export default function PagamentoPage() {
         if (!value.trim()) error = 'Telefone é obrigatório';
         else if (!validatePhone(value)) error = 'Telefone inválido';
         break;
-      case 'senha':
+      case 'senha': {
         const passwordValidation = validatePassword(value);
         if (!passwordValidation.valid) {
           error = passwordValidation.message ?? 'Senha inválida'; // valor padrão caso seja undefined
         } else {
-          (globalThis as any).currentPasswordValue = value;
+          (globalThis as unknown as { currentPasswordValue?: string }).currentPasswordValue = value;
         }
         break;
+      }
 
-      case 'confirmar':
-        const password = (globalThis as any).currentPasswordValue ?? '';
+      case 'confirmar': {
+        const password = (globalThis as unknown as { currentPasswordValue?: string }).currentPasswordValue ?? '';
         const confirmValidation = validateConfirmPassword(password, value);
         if (!confirmValidation.valid) {
           error = confirmValidation.message ?? 'As senhas não coincidem'; // valor padrão
         }
         break;
+      }
       case 'cpf':
         if (!value.trim()) error = 'CPF é obrigatório';
         else if (!validateCPF(value)) {
@@ -266,12 +304,12 @@ export default function PagamentoPage() {
   };
 
   const validateEtapaDados = () => {
-    const requiredFields = ['nome', 'email', 'telefone', 'senha', 'confirmar', 'nomeEmpresa', 'cnpj', 'endereco', 'cidade', 'estado', 'cep'];
+    const requiredFields: Array<keyof PaymentFormData> = ['nome', 'email', 'telefone', 'senha', 'confirmar', 'nomeEmpresa', 'cnpj', 'endereco', 'cidade', 'estado', 'cep'];
     let hasErrors = false;
 
     requiredFields.forEach(field => {
-      validateField(field, formData[field as keyof typeof formData]);
-      if (!formData[field as keyof typeof formData] || errors[field]) {
+      validateField(field, formData[field]);
+      if (!formData[field] || errors[field as string]) {
         hasErrors = true;
       }
     });
@@ -292,20 +330,19 @@ export default function PagamentoPage() {
     ];
 
     // --- START: fallback para endereço de cobrança usando o endereço principal ---
-    const billingFallback = {
+    const billingFallback: Partial<PaymentFormData> = {
       enderecoCobranca: formData.endereco || "",
       cidadeCobranca: formData.cidade || "",
       estadoCobranca: formData.estado || "",
       cepCobranca: formData.cep || "",
     };
     // Função para obter o valor real (campo especifico ou fallback)
-    const getFieldValue = (field: string) => {
+    const getFieldValue = (field: keyof PaymentFormData) => {
       if (field in billingFallback) {
-        return (formData as any)[field] && (formData as any)[field].trim()
-          ? (formData as any)[field]
-          : (billingFallback as any)[field];
+        const v = formData[field] as string | undefined;
+        return v?.trim() ? v : (billingFallback[field] as string | undefined);
       }
-      return (formData as any)[field];
+      return formData[field] as string | undefined;
     };
     // --- END: fallback ---
 
@@ -313,7 +350,8 @@ export default function PagamentoPage() {
     let hasErrors = false;
 
     for (const field of requiredFields) {
-      const value = getFieldValue(field) ?? "";
+      const f = field as keyof PaymentFormData;
+      const value = getFieldValue(f) ?? "";
 
       if (!value || !value.trim()) {
         newErrors[field] = "Campo obrigatório";
@@ -368,8 +406,7 @@ export default function PagamentoPage() {
   const teste = async () => {
     if (validateEtapaPagamento()) {
       try {
-        const transacaoId =
-          searchParams.get("transacaoId") || searchParams.get("id");
+        const transacaoId = searchTransacaoId || new URLSearchParams(window.location.search).get("id");
         console.log("🚀 Enviando para finalizar:", { transacaoId, email: formData.email, cnpj: formData.cnpj, senha: formData.senha });
 
         const response = await fetch("/api/transacoes/finalizar", {
@@ -411,7 +448,7 @@ export default function PagamentoPage() {
         setEtapaPagamento("confirmacao");
       } catch (error) {
         console.error("Erro ao finalizar transação:", error);
-        alert("Erro ao processar pagamento. Tente novamente.");
+        toast.error("Erro ao processar pagamento. Tente novamente.");
       }
     }
   }
@@ -471,8 +508,8 @@ export default function PagamentoPage() {
   };
 
   // === Finalização da transação ===
-  const finalizarTransacao = async () => {
-    const transacaoId = searchParams.get("transacaoId");
+  const _finalizarTransacao = async () => {
+  const transacaoId = searchTransacaoId;
 
     if (!transacaoId) {
       console.error("Transação não encontrada");
@@ -508,7 +545,7 @@ export default function PagamentoPage() {
       setEtapaPagamento("confirmacao");
     } catch (error) {
       console.error("Erro ao finalizar transação:", error);
-      alert("Erro ao processar pagamento. Tente novamente.");
+      toast.error("Erro ao processar pagamento. Tente novamente.");
     }
   };
 
@@ -524,7 +561,7 @@ export default function PagamentoPage() {
           </h1>
 
           {/* Resumo do plano selecionado */}
-          <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 backdrop-blur-lg rounded-2xl p-6 max-w-md mx-auto border border-green-400/30 animate-fade-in-up-delay shadow-lg mb-8">
+          <div className="bg-linear-to-r from-green-500/10 to-emerald-500/10 backdrop-blur-lg rounded-2xl p-6 max-w-md mx-auto border border-green-400/30 animate-fade-in-up-delay shadow-lg mb-8">
             <h2 className="text-2xl font-bold text-white mb-2">Plano {planoSelecionado}</h2>
             {preco !== 'Sob Consulta' && (
               <p className="text-3xl font-bold text-emerald-400">R$ {preco}/mês</p>
@@ -578,8 +615,9 @@ export default function PagamentoPage() {
                   <h3 className="text-lg font-semibold text-white mb-4">📋 Dados Pessoais</h3>
 
                   <div>
-                    <label className="block text-gray-300 mb-2">Nome Completo</label>
+                    <label htmlFor="nome" className="block text-gray-300 mb-2">Nome Completo</label>
                     <input
+                      id="nome"
                       type="text"
                       value={formData.nome}
                       onChange={(e) => handleInputChange('nome', e.target.value)}
@@ -591,8 +629,9 @@ export default function PagamentoPage() {
                   </div>
 
                   <div>
-                    <label className="block text-gray-300 mb-2">Email</label>
+                    <label htmlFor="email" className="block text-gray-300 mb-2">Email</label>
                     <input
+                      id="email"
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
@@ -604,8 +643,9 @@ export default function PagamentoPage() {
                   </div>
 
                   <div>
-                    <label className="block text-gray-300 mb-2">Telefone</label>
+                    <label htmlFor="telefone" className="block text-gray-300 mb-2">Telefone</label>
                     <input
+                      id="telefone"
                       type="tel"
                       value={formData.telefone}
                       onChange={(e) => handleInputChange('telefone', e.target.value)}
@@ -618,8 +658,9 @@ export default function PagamentoPage() {
                   </div>
 
                   <div>
-                    <label className="block text-gray-300 mb-2">Senha</label>
+                    <label htmlFor="senha" className="block text-gray-300 mb-2">Senha</label>
                     <input
+                      id="senha"
                       type="password"
                       name="senha"
                       onChange={(e) => handleInputChange('senha', e.target.value)}
@@ -631,8 +672,9 @@ export default function PagamentoPage() {
                   </div>
 
                   <div>
-                    <label className="block text-gray-300 mb-2">Confirmar Senha</label>
+                    <label htmlFor="confirmar" className="block text-gray-300 mb-2">Confirmar Senha</label>
                     <input
+                      id="confirmar"
                       type="password"
                       name="confirmar"
                       onChange={(e) => handleInputChange('confirmar', e.target.value)}
@@ -652,8 +694,9 @@ export default function PagamentoPage() {
                   </h3>
 
                   <div>
-                    <label className="block text-gray-300 mb-2">Nome da Empresa</label>
+                    <label htmlFor="nomeEmpresa" className="block text-gray-300 mb-2">Nome da Empresa</label>
                     <input
+                      id="nomeEmpresa"
                       type="text"
                       value={formData.nomeEmpresa}
                       onChange={(e) => handleInputChange('nomeEmpresa', e.target.value)}
@@ -665,8 +708,9 @@ export default function PagamentoPage() {
                   </div>
 
                   <div>
-                    <label className="block text-gray-300 mb-2">CNPJ</label>
+                    <label htmlFor="cnpj" className="block text-gray-300 mb-2">CNPJ</label>
                     <input
+                      id="cnpj"
                       type="text"
                       value={formData.cnpj}
                       onChange={(e) => handleInputChange('cnpj', e.target.value)}
@@ -679,8 +723,9 @@ export default function PagamentoPage() {
                   </div>
 
                   <div>
-                    <label className="block text-gray-300 mb-2">Endereço</label>
+                    <label htmlFor="endereco" className="block text-gray-300 mb-2">Endereço</label>
                     <input
+                      id="endereco"
                       type="text"
                       value={formData.endereco}
                       onChange={(e) => handleInputChange('endereco', e.target.value)}
@@ -692,9 +737,10 @@ export default function PagamentoPage() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-gray-300 mb-2">Cidade</label>
+                      <div>
+                      <label htmlFor="cidade" className="block text-gray-300 mb-2">Cidade</label>
                       <input
+                        id="cidade"
                         type="text"
                         value={formData.cidade}
                         onChange={(e) => handleInputChange('cidade', e.target.value)}
@@ -705,8 +751,9 @@ export default function PagamentoPage() {
                       {errors.cidade && <p className="text-red-400 text-sm mt-1">{errors.cidade}</p>}
                     </div>
                     <div>
-                      <label className="block text-gray-300 mb-2">Estado</label>
+                      <label htmlFor="estado" className="block text-gray-300 mb-2">Estado</label>
                       <input
+                        id="estado"
                         type="text"
                         value={formData.estado}
                         onChange={(e) => handleInputChange('estado', e.target.value.toUpperCase())}
@@ -720,8 +767,9 @@ export default function PagamentoPage() {
                   </div>
 
                   <div>
-                    <label className="block text-gray-300 mb-2">CEP</label>
+                    <label htmlFor="cep" className="block text-gray-300 mb-2">CEP</label>
                     <input
+                      id="cep"
                       type="text"
                       value={formData.cep}
                       onChange={(e) => handleInputChange('cep', e.target.value)}
@@ -738,7 +786,7 @@ export default function PagamentoPage() {
               <div className="flex justify-end">
                 <Button
                   onClick={avancarEtapa}
-                  className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105"
+                  className="px-8 py-3 bg-linear-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105"
                 >
                   Continuar para Pagamento →
                 </Button>
@@ -757,64 +805,68 @@ export default function PagamentoPage() {
               <div className="">
                 {/* Dados do Cartão */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-white mb-4">💳 Cartão de Crédito</h3>
+                    <h3 className="text-lg font-semibold text-white mb-4">💳 Cartão de Crédito</h3>
 
-                  <div>
-                    <label className="block text-gray-300 mb-2">Número do Cartão</label>
-                    <input
-                      type="text"
-                      value={formData.numeroCartao}
-                      onChange={(e) => handleInputChange('numeroCartao', e.target.value)}
-                      className={`w-full p-3 bg-slate-800 border rounded-lg text-white focus:outline-none transition-colors ${errors.numeroCartao ? 'border-red-500 focus:border-red-400' : 'border-slate-600 focus:border-emerald-400'
-                        }`}
-                      placeholder="0000 0000 0000 0000"
-                      maxLength={19}
-                    />
-                    {errors.numeroCartao && <p className="text-red-400 text-sm mt-1">{errors.numeroCartao}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-300 mb-2">Nome no Cartão</label>
-                    <input
-                      type="text"
-                      value={formData.nomeCartao}
-                      onChange={(e) => handleInputChange('nomeCartao', e.target.value)}
-                      className={`w-full p-3 bg-slate-800 border rounded-lg text-white focus:outline-none transition-colors ${errors.nomeCartao ? 'border-red-500 focus:border-red-400' : 'border-slate-600 focus:border-emerald-400'
-                        }`}
-                      placeholder="Nome como está no cartão"
-                    />
-                    {errors.nomeCartao && <p className="text-red-400 text-sm mt-1">{errors.nomeCartao}</p>}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-gray-300 mb-2">Validade</label>
+                      <label htmlFor="numeroCartao" className="block text-gray-300 mb-2">Número do Cartão</label>
                       <input
+                        id="numeroCartao"
                         type="text"
-                        value={formData.validadeCartao}
-                        onChange={(e) => handleInputChange('validadeCartao', e.target.value)}
-                        className={`w-full p-3 bg-slate-800 border rounded-lg text-white focus:outline-none transition-colors ${errors.validadeCartao ? 'border-red-500 focus:border-red-400' : 'border-slate-600 focus:border-emerald-400'
+                        value={formData.numeroCartao}
+                        onChange={(e) => handleInputChange('numeroCartao', e.target.value)}
+                        className={`w-full p-3 bg-slate-800 border rounded-lg text-white focus:outline-none transition-colors ${errors.numeroCartao ? 'border-red-500 focus:border-red-400' : 'border-slate-600 focus:border-emerald-400'
                           }`}
-                        placeholder="MM/AA"
-                        maxLength={5}
+                        placeholder="0000 0000 0000 0000"
+                        maxLength={19}
                       />
-                      {errors.validadeCartao && <p className="text-red-400 text-sm mt-1">{errors.validadeCartao}</p>}
+                      {errors.numeroCartao && <p className="text-red-400 text-sm mt-1">{errors.numeroCartao}</p>}
                     </div>
+
                     <div>
-                      <label className="block text-gray-300 mb-2">CVV</label>
+                      <label htmlFor="nomeCartao" className="block text-gray-300 mb-2">Nome no Cartão</label>
                       <input
+                        id="nomeCartao"
                         type="text"
-                        value={formData.cvv}
-                        onChange={(e) => handleInputChange('cvv', e.target.value)}
-                        className={`w-full p-3 bg-slate-800 border rounded-lg text-white focus:outline-none transition-colors ${errors.cvv ? 'border-red-500 focus:border-red-400' : 'border-slate-600 focus:border-emerald-400'
+                        value={formData.nomeCartao}
+                        onChange={(e) => handleInputChange('nomeCartao', e.target.value)}
+                        className={`w-full p-3 bg-slate-800 border rounded-lg text-white focus:outline-none transition-colors ${errors.nomeCartao ? 'border-red-500 focus:border-red-400' : 'border-slate-600 focus:border-emerald-400'
                           }`}
-                        placeholder="000"
-                        maxLength={3}
+                        placeholder="Nome como está no cartão"
                       />
-                      {errors.cvv && <p className="text-red-400 text-sm mt-1">{errors.cvv}</p>}
+                      {errors.nomeCartao && <p className="text-red-400 text-sm mt-1">{errors.nomeCartao}</p>}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label htmlFor="validadeCartao" className="block text-gray-300 mb-2">Validade</label>
+                        <input
+                          id="validadeCartao"
+                          type="text"
+                          value={formData.validadeCartao}
+                          onChange={(e) => handleInputChange('validadeCartao', e.target.value)}
+                          className={`w-full p-3 bg-slate-800 border rounded-lg text-white focus:outline-none transition-colors ${errors.validadeCartao ? 'border-red-500 focus:border-red-400' : 'border-slate-600 focus:border-emerald-400'
+                            }`}
+                          placeholder="MM/AA"
+                          maxLength={5}
+                        />
+                        {errors.validadeCartao && <p className="text-red-400 text-sm mt-1">{errors.validadeCartao}</p>}
+                      </div>
+                      <div>
+                        <label htmlFor="cvv" className="block text-gray-300 mb-2">CVV</label>
+                        <input
+                          id="cvv"
+                          type="text"
+                          value={formData.cvv}
+                          onChange={(e) => handleInputChange('cvv', e.target.value)}
+                          className={`w-full p-3 bg-slate-800 border rounded-lg text-white focus:outline-none transition-colors ${errors.cvv ? 'border-red-500 focus:border-red-400' : 'border-slate-600 focus:border-emerald-400'
+                            }`}
+                          placeholder="000"
+                          maxLength={3}
+                        />
+                        {errors.cvv && <p className="text-red-400 text-sm mt-1">{errors.cvv}</p>}
+                      </div>
                     </div>
                   </div>
-                </div>
 
 
               </div>
@@ -829,7 +881,7 @@ export default function PagamentoPage() {
 
                 <Button
                   onClick={teste}
-                  className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105"
+                  className="px-8 py-3 bg-linear-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105"
                 >
                   Finalizar Compra →
                 </Button>
@@ -857,10 +909,10 @@ export default function PagamentoPage() {
                 <p className="text-sm text-emerald-400 mt-4">Redirecionando para o diagnóstico aprofundado em 5 segundos...</p>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button
-                  onClick={() => window.location.href = "/pos-login"}
-                  className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105"
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button 
+                  onClick={() => { window.location.href = "/pos-login"; }}
+                  className="px-8 py-3 bg-linear-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105"
                 >
                   Acessar o diagnostico aprofundado agora
                 </Button>

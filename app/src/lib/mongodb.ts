@@ -1,7 +1,6 @@
 import mongoose from "mongoose"; // Importa o Mongoose para conectar ao MongoDB
 
-// Mostra no console a URI que está sendo usada (útil para debug)
-console.log("MONGODB_URI =", process.env.MONGODB_URI);
+// NOTE: Do not log MONGODB_URI here to avoid leaking secrets in logs.
 
 // Pega a variável de ambiente MONGODB_URI
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -19,15 +18,15 @@ interface Cached {
 
 // Declara uma variável global para cache da conexão (evita reconectar em hot reload do Next.js)
 declare global {
-  var mongoose: Cached;
+  var __echonova_mongoose: Cached | undefined;
 }
 
 // Inicializa o cache global
-let cached: Cached = global.mongoose;
+const cached: Cached = global.__echonova_mongoose || { conn: null, promise: null };
 
 // Se não existir cache ainda, cria um objeto vazio
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+if (!global.__echonova_mongoose) {
+  global.__echonova_mongoose = cached;
 }
 
 // Função para conectar ao banco de dados

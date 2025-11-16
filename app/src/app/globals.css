@@ -30,7 +30,6 @@ body {
 .logo-container img {
   @apply transition-all duration-300 ease-in-out;
   /* Melhor qualidade de renderização em tamanhos pequenos */
-  image-rendering: high-quality;
   image-rendering: -webkit-optimize-contrast;
 }
 
@@ -65,7 +64,7 @@ body {
 /* ===== BOTÃO COM GRADIENTE ===== */
 .btn-gradient {
   /* Gradiente rosa que muda no hover */
-  @apply bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700;
+  @apply bg-linear-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700;
   /* Efeito de escala e transição suave */
   @apply transform hover:scale-105 transition-all duration-300;
   /* Sombras para profundidade */
@@ -106,8 +105,8 @@ body {
 /* Logo extra pequena para dispositivos muito pequenos */
 @media (max-width: 320px) {
   .logo-container img {
-    height: 1.25rem !important; /* 20px */
-    width: auto !important;
+    height: 1.25rem; /* 20px */
+    width: auto;
   }
 }
 /* ===== BOTÕES DE REDES SOCIAIS ===== */

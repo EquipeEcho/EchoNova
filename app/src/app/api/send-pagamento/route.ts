@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import { jsPDF } from "jspdf";
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 import { connectDB } from "@/lib/mongodb";
 import Transacao from "@/models/Transacao";
 
@@ -113,8 +113,9 @@ export async function POST(request: Request) {
 
     transporter.sendMail(mailOptions);
     return Response.json({ success: true, message: "E-mail enviado com sucesso!" });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Erro ao enviar o e-mail:", error);
-    return Response.json({ success: false, error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    return Response.json({ success: false, error: message }, { status: 500 });
   }
 }

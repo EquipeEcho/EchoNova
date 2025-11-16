@@ -7,8 +7,8 @@ import Empresa from "@/models/Empresa";
  * É usada, por exemplo, na página /pos-login para carregar informações atualizadas do usuário.
  */
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
@@ -40,10 +40,11 @@ export async function GET(
     // Retorna os dados da empresa em caso de sucesso.
     return NextResponse.json({ empresa });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Erro ao buscar dados da empresa:", error);
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido.";
     return NextResponse.json(
-      { error: "Erro interno ao buscar dados da empresa." },
+      { error: "Erro interno ao buscar dados da empresa.", details: errorMessage },
       { status: 500 }
     );
   }
