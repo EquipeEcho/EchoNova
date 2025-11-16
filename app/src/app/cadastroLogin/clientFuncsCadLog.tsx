@@ -4,11 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 
 export function CadastroLoginPag() {
-  {
-    /* States para o login*/
-  }
   const [loginEmail, setLoginEmail] = useState("");
   const [loginSenha, setLoginSenha] = useState("");
   const [loginCNPJ, setloginCNPJ] = useState("");
@@ -17,10 +15,7 @@ export function CadastroLoginPag() {
   // Estado da aba para evitar reset dos campos
   const [tabValue, setTabValue] = useState("login");
 
-  {
-    /*Função de login corrigida*/
-  }
-  async function handleLogin(e: React.FormEvent) {
+  async function handleLogin(_e: React.FormEvent) {
   
   // Captura o estado atual dos campos
   const emailValue = loginEmail
@@ -34,12 +29,12 @@ export function CadastroLoginPag() {
   });
 
   if (!emailValue && !cnpjValue) {
-    alert("Informe o e-mail ou CNPJ para continuar.");
+    toast.error("Informe o e-mail ou CNPJ para continuar.");
     return;
   }
 
   if (!senhaValue) {
-    alert("Informe a senha.");
+    toast.error("Informe a senha.");
     return;
   }
 
@@ -57,30 +52,28 @@ export function CadastroLoginPag() {
     const text = await res.text();
     console.log("📥 Resposta bruta:", text);
 
-    let data;
+    let data: { error?: string; user?: { nome_empresa?: string } } | null = null;
     try {
-      data = JSON.parse(text);
+      data = JSON.parse(text) as { error?: string; user?: { nome_empresa?: string } };
     } catch {
-      alert("Resposta inválida do servidor");
+      toast.error("Resposta inválida do servidor");
       return;
     }
 
     if (!res.ok) {
-      alert("Erro no login: " + data.error);
+      toast.error(`Erro no login: ${data.error}`);
       return;
     }
 
-    alert(`✅ Login bem-sucedido! Bem-vindo(a), ${data.user?.nome_empresa}`);
+    toast.success(`✅ Login bem-sucedido! Bem-vindo(a), ${data.user?.nome_empresa}`);
   } catch (err) {
     console.error("❌ Erro ao logar:", err);
-    alert("Erro inesperado no login.");
+    toast.error("Erro inesperado no login.");
   }
 }
 
 
-  {
-    /*inicio do frontend*/
-  }
+  
   return (
     <div className="w-full max-w-md bg-neutral-900 border border-neutral-700 rounded-2xl shadow-lg p-6">
       <Tabs value={tabValue} onValueChange={setTabValue} className="w-full">
@@ -98,7 +91,7 @@ export function CadastroLoginPag() {
           <form className="grid gap-4 py-6" onSubmit={handleLogin}>
             <Cnpj
               value={loginCNPJ}
-              onChange={(e: any) => setloginCNPJ(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setloginCNPJ(e.target.value)}
             />
             <div className="grid grid-cols-4 text-left gap-2">
               <Label className="text-neutral-400">Ou</Label>
@@ -154,7 +147,7 @@ function Cnpj({
   onChange,
 }: {
   value: string;
-  onChange: (e: any) => void;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   return (
     <div className="grid grid-cols-4 text-left gap-2">

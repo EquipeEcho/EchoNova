@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Diagnostico from "@/models/Diagnostico";
-import { NextRequest } from "next/server"; // Importar NextRequest
+import type { NextRequest } from "next/server"; // Importar como tipo
 
 /**
  * @description Rota para deletar um diagnóstico específico.
@@ -9,10 +9,10 @@ import { NextRequest } from "next/server"; // Importar NextRequest
  * @param params Contém os parâmetros da rota, como o ID do diagnóstico.
  */
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectDB();
-    const { id } = params; // Acesso direto ao ID, sem 'await'
+    const { id } = await params; // Acesso direto ao ID
 
     const diagnosticoDeletado = await Diagnostico.findByIdAndDelete(id);
 
@@ -21,7 +21,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     }
 
     return NextResponse.json({ success: true, message: "Diagnóstico deletado com sucesso." });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido.";
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }

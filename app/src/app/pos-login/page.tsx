@@ -7,10 +7,13 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAuthStore } from "@/lib/stores/useAuthStore";
-import { History } from "lucide-react"; // NOVO: Importando ícone
+import { History } from "lucide-react"; // Importando ícone
+import { toast } from "sonner";
+
+type UserInfo = { nome?: string; email?: string; plano?: string } | null;
 
 export default function PosLoginPage() {
-  const [userInfo, setUserInfo] = useState<any>(null);
+  const [userInfo, setUserInfo] = useState<UserInfo>(null);
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
@@ -22,13 +25,13 @@ export default function PosLoginPage() {
 
   useEffect(() => {
     let redirected = false;
-    
+
     const checkAuthState = async () => {
       if (redirected) return;
-      
+
       await new Promise(resolve => setTimeout(resolve, 200));
       const currentState = useAuthStore.getState();
-      
+
       if (!authUser && !currentState.user) {
         const localStorageData = localStorage.getItem('auth-storage');
         if (localStorageData) {
@@ -61,7 +64,7 @@ export default function PosLoginPage() {
       }
 
       const user = authUser || useAuthStore.getState().user;
-      
+
       if (!user) {
         redirected = true;
         router.push("/");
@@ -96,7 +99,7 @@ export default function PosLoginPage() {
           console.log("Nenhum diagnóstico aprofundado anterior encontrado.");
           setUltimoDiagnosticoId(null); // Garante que o estado é nulo
         }
-        
+
       } catch (error) {
         console.error("Erro ao carregar informações da página:", error);
         if (!redirected) {
@@ -123,6 +126,7 @@ export default function PosLoginPage() {
   const handleStartDiagnostico = () => {
     router.push("/diagnostico-aprofundado");
   };
+
 
   // --- NOVA FUNÇÃO ---
   // Navega para a página de resultados do último diagnóstico.
@@ -210,31 +214,31 @@ export default function PosLoginPage() {
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="logo-container hover:scale-100">
             <Link href="/pos-login">
-              <Image 
-                src="/img/logo.png" 
-                alt="EchoNova - Diagnóstico Inteligente de Treinamentos" 
-                width={120} 
+              <Image
+                src="/img/logo.png"
+                alt="EchoNova - Diagnóstico Inteligente de Treinamentos"
+                width={120}
                 height={40}
                 className="h-8 w-auto object-contain sm:h-10 md:h-12 lg:h-14"
                 priority
               />
             </Link>
           </div>
-          
+
           <div className="flex items-center gap-4">
             {userInfo && (
               <div className="hidden md:flex items-center gap-2 bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700/50 cursor-pointer hover:bg-slate-700/50 transition-colors">
                 <span className="text-gray-300 text-sm">Plano:</span>
-                <div className={`px-3 py-1 rounded-full bg-gradient-to-r ${getPlanoColor(userInfo.plano)} text-white text-xs font-bold flex items-center gap-1`}>
-                  <span>{getPlanoIcon(userInfo.plano)}</span>
-                  <span>{userInfo.plano}</span>
-                </div>
+                <div className={`px-3 py-1 rounded-full bg-linear-to-r ${getPlanoColor(userInfo?.plano || "")} text-white text-xs font-bold flex items-center gap-1`}>
+                      <span>{getPlanoIcon(userInfo?.plano || "")}</span>
+                      <span>{userInfo?.plano || "Nenhum"}</span>
+                    </div>
               </div>
             )}
-            
+
             <div className="relative">
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 className="relative h-10 w-10 rounded-full hover:bg-slate-800 p-0 cursor-pointer"
                 onClick={toggleMenu}
               >
@@ -242,7 +246,7 @@ export default function PosLoginPage() {
                   {userInfo?.nome?.charAt(0) || "U"}
                 </div>
               </Button>
-              
+
               {isMenuOpen && (
                 <div className="absolute right-0 mt-2 w-64 bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-2 z-50">
                   <div className="px-4 py-2 border-b border-slate-700">
@@ -256,20 +260,21 @@ export default function PosLoginPage() {
                   <div className="px-4 py-2 border-b border-slate-700">
                     <div className="flex items-center gap-2">
                       <span className="text-gray-300 text-sm">Plano:</span>
-                      <div className={`px-2 py-0.5 rounded-full bg-gradient-to-r ${getPlanoColor(userInfo?.plano)} text-white text-xs font-bold flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity`}>
-                        <span>{getPlanoIcon(userInfo?.plano)}</span>
+                      <div className={`px-2 py-0.5 rounded-full bg-linear-to-r ${getPlanoColor(userInfo?.plano || "")} text-white text-xs font-bold flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity`}>
+                        <span>{getPlanoIcon(userInfo?.plano || "")}</span>
                         <span>{userInfo?.plano || "Nenhum"}</span>
                       </div>
                     </div>
                   </div>
                   <button
+                    type="button"
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
                   >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
-                    Sair
+                      Sair
                   </button>
                 </div>
               )}
@@ -285,8 +290,8 @@ export default function PosLoginPage() {
           </h1>
 
           <p className="relative z-20 text-sm xs:text-base sm:text-lg md:text-xl text-gray-200 max-w-xs xs:max-w-sm sm:max-w-2xl md:max-w-3xl mb-8 sm:mb-10 md:mb-12 leading-relaxed animate-fade-in-up-delay poetic-text text-center mx-auto">
-            Com base no seu plano {userInfo?.plano}, você tem acesso ao diagnóstico aprofundado. 
-            Este processo irá analisar detalhadamente os pontos críticos da sua empresa para 
+            Com base no seu plano {userInfo?.plano}, você tem acesso ao diagnóstico aprofundado.
+            Este processo irá analisar detalhadamente os pontos críticos da sua empresa para
             oferecer recomendações personalizadas.
           </p>
 
@@ -310,21 +315,21 @@ export default function PosLoginPage() {
                 <span>Relatório completo com plano de ação</span>
               </li>
             </ul>
-            
+
             {/* --- CONTAINER PARA OS BOTÕES DE AÇÃO --- */}
             <div className="flex flex-col gap-4">
-              <Button 
+              <Button
                 onClick={handleStartDiagnostico}
-                className="w-full bg-gradient-to-r from-fuchsia-700 to-fuchsia-800 hover:from-fuchsia-800 hover:to-fuchsia-900 text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
+                className="w-full bg-linear-to-r from-fuchsia-700 to-fuchsia-800 hover:from-fuchsia-800 hover:to-fuchsia-900 text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
               >
                 Iniciar Novo Diagnóstico
               </Button>
 
-              {/* --- NOVO BOTÃO PARA O DASHBOARD CLIENTE --- */}
+              {/* Botão Dashboard RH */}
               <Link href="/dashboard-cliente" className="w-full">
                 <Button 
                   variant="outline"
-                  className="w-full border-cyan-500 text-cyan-500 hover:bg-cyan-500/10 hover:text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer mt-2"
+                  className="w-full border-cyan-500 text-cyan-500 hover:bg-cyan-500/10 hover:text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
                 >
                   <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -333,12 +338,20 @@ export default function PosLoginPage() {
                 </Button>
               </Link>
 
-              {/* --- NOVO BOTÃO CONDICIONAL --- */}
+              {/* Botão Gerenciar Funcionários */}
+              <Button
+                onClick={() => router.push("/gerenciar-funcionarios")}
+                className="w-full bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
+              >
+                Gerenciar Funcionários
+              </Button>
+
+              {/* Botão Ver Último Relatório - Condicional */}
               {ultimoDiagnosticoId && (
-                <Button 
+                <Button
                   onClick={handleViewLastReport}
-                  variant="outline" // Estilo diferente para ser secundário
-                  className="w-full border-fuchsia-500 text-fuchsia-500 hover:bg-fuchsia-500/10 hover:text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer mt-2"
+                  variant="outline"
+                  className="w-full border-fuchsia-500 text-fuchsia-500 hover:bg-fuchsia-500/10 hover:text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
                 >
                   <History className="mr-2 h-5 w-5" />
                   Ver Último Relatório Realizado
@@ -350,7 +363,7 @@ export default function PosLoginPage() {
 
           <div className="text-gray-400 text-sm max-w-2xl mx-auto">
             <p>
-              O diagnóstico aprofundado leva em média 15-20 minutos para ser concluído. 
+              O diagnóstico aprofundado leva em média 15-20 minutos para ser concluído.
               Recomendamos que você reserve um tempo tranquilo para responder com atenção.
             </p>
           </div>
@@ -360,6 +373,6 @@ export default function PosLoginPage() {
           <Ondas />
         </div>
       </section>
-    </main>
+    </main >
   );
 }

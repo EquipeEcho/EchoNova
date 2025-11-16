@@ -1,43 +1,36 @@
 "use client";
 import { useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import DiagnosticoPage from "./utils";
-import { perguntasPerfil, RespostasPerfil } from "./Perfil";
-import { perguntasPC, RespostasPC } from "./PessoasCultura";
-import { perguntasEO, RespostasEO } from "./EstruturaOperacoes";
-import { perguntasMC, RespostasMC } from "./MercadoClientes";
-import { perguntasDF, RespostasDF } from "./DirecaoFuturo";
+import type { Pergunta } from "./utils";
+import { perguntasPerfil, type RespostasPerfil } from "./Perfil";
+import { perguntasPC, type RespostasPC } from "./PessoasCultura";
+import { perguntasEO, type RespostasEO } from "./EstruturaOperacoes";
+import { perguntasMC, type RespostasMC } from "./MercadoClientes";
+import { perguntasDF, type RespostasDF } from "./DirecaoFuturo";
 
-// --- PASSO 1: IMPORTE O LOADER E O SONNER (PARA NOTIFICAÇÕES) ---
+// Importado loader e sonner para notificaçõess
 import { Loader } from "@/components/ui/loader";
 import { toast } from "sonner";
 
 
 type DimensaoRespostas = {
-    "Pessoas e Cultura": RespostasPC;
-    "Estrutura e Operações": RespostasEO;
-    "Direção e Futuro": RespostasDF;
-    "Mercado e Clientes": RespostasMC;
+  "Pessoas e Cultura": RespostasPC;
+  "Estrutura e Operações": RespostasEO;
+  "Direção e Futuro": RespostasDF;
+  "Mercado e Clientes": RespostasMC;
 };
 
 type Dimensao = keyof DimensaoRespostas;
 
 export default function Diagnostico() {
-    const searchParams = useSearchParams();
-    const router = useRouter();
+  const router = useRouter();
 
-    // --- PASSO 2: ADICIONE O ESTADO DE LOADING ---
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-
-    // Fase do diagnóstico
-    const [fase, setFase] = useState<"perfil" | "selecionarDimensoes" | "dimensao">("perfil");
-
-    // Dimensões selecionadas pelo usuário
-    const [dimensoesSelecionadas, setDimensoesSelecionadas] = useState<Dimensao[]>([]);
-
-    // Dimensão atual que está sendo preenchida
-    const [indiceDimensaoAtual, setIndiceDimensaoAtual] = useState(0);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [fase, setFase] = useState<"perfil" | "selecionarDimensoes" | "dimensao">("perfil");
+  const [dimensoesSelecionadas, setDimensoesSelecionadas] = useState<Dimensao[]>([]);
+  const [indiceDimensaoAtual, setIndiceDimensaoAtual] = useState(0);
 
   // Estado das respostas
   const [respostasPerfil, setRespostasPerfil] = useState<RespostasPerfil>({
@@ -89,6 +82,8 @@ export default function Diagnostico() {
 
   // Função para lidar com o envio do perfil
   const handlePerfilSubmit = async (respostas: RespostasPerfil) => {
+    console.log("[Form] Submetendo perfil:", respostas);
+    
     try {
       const response = await fetch("/api/empresas", {
         method: "POST",
@@ -97,119 +92,137 @@ export default function Diagnostico() {
       });
 
       const data = await response.json();
+      console.log("[Form] Resposta da API empresas:", data);
 
       if (response.ok && data.empresa?._id) {
         localStorage.setItem("empresaId", data.empresa._id);
-        console.log("empresaId salvo:", data.empresa._id);
+        console.log("[Form] empresaId salvo:", data.empresa._id);
         setRespostasPerfil(respostas);
         setFase("selecionarDimensoes");
+        toast.success("Perfil cadastrado com sucesso!");
       } else {
+        console.error("[Form] Erro na resposta:", data.error);
+        if (data.details) {
+          console.error("[Form] Detalhes do erro:", data.details);
+        }
         toast.error(data.error || "Erro ao cadastrar empresa. Tente novamente.");
       }
     } catch (error) {
-      console.error("Erro de conexão ao cadastrar empresa:", error);
-      toast.error("Não foi possível se conectar ao servidor.");
+      console.error("[Form] Erro de conexão ao cadastrar empresa:", error);
+      toast.error("Não foi possível se conectar ao servidor. Verifique sua conexão.");
     }
   };
 
 
-    const handleDimensaoSubmit = (respostas: DimensaoRespostas[Dimensao]) => {
-        const dimAtual = dimensoesSelecionadas[indiceDimensaoAtual];
-        const novasRespostasDimensoes = {
-            ...respostasDimensoes,
-            [dimAtual]: respostas
-        } as DimensaoRespostas;
-        setRespostasDimensoes(novasRespostasDimensoes);
-        proximaDimensao(novasRespostasDimensoes);
-    };
+  const handleDimensaoSubmit = (respostas: DimensaoRespostas[Dimensao]) => {
+    const dimAtual = dimensoesSelecionadas[indiceDimensaoAtual];
+    const novasRespostasDimensoes = {
+      ...respostasDimensoes,
+      [dimAtual]: respostas
+    } as DimensaoRespostas;
+    setRespostasDimensoes(novasRespostasDimensoes);
+    proximaDimensao(novasRespostasDimensoes);
+  };
 
-    const proximaDimensao = async (respostasAtualizadas?: DimensaoRespostas) => {
-        if (indiceDimensaoAtual < dimensoesSelecionadas.length - 1) {
-            setIndiceDimensaoAtual(indiceDimensaoAtual + 1);
-        } else {
-            const respostasFinais = respostasAtualizadas || respostasDimensoes;
-            console.log("Finalizado. Enviando para salvar:", { respostasPerfil, respostasDimensoes: respostasFinais });
-            await salvarDiagnostico(respostasFinais);
-        }
-    };
-
-    // --- PASSO 3: MODIFIQUE A FUNÇÃO salvarDiagnostico ---
-      const salvarDiagnostico = async (respostasFinais: DimensaoRespostas) => {
-        setIsLoading(true);
-
-        try {
-          const respostasFiltradas: any = {};
-          dimensoesSelecionadas.forEach(dim => {
-            respostasFiltradas[dim] = respostasFinais[dim];
-          });
-
-          const response = await fetch("/api/diagnosticos", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              perfil: respostasPerfil,
-              dimensoesSelecionadas,
-              respostasDimensoes: respostasFiltradas,
-            }),
-          });
-
-          const data = await response.json();
-
-          if (response.ok) {
-            toast.success("Diagnóstico gerado com sucesso!");
-
-            // ✅ Redireciona para a página de resultados
-            router.push(`/resultados?id=${data.diagnostico._id}`);
-          } else {
-            throw new Error(data.error || "Erro ao salvar diagnóstico.");
-          }
-        } catch (error: any) {
-          console.error("Erro de conexão ou API:", error);
-          toast.error(error.message);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-    const salvarLocalStorage = (respostasFinais: DimensaoRespostas) => {
-        const diagnosticoCompleto = {
-            perfil: respostasPerfil,
-            dimensoes: respostasFinais,
-            dimensoesSelecionadas,
-            dataFinalizacao: new Date().toISOString()
-        };
-        localStorage.setItem('diagnosticoCompleto', JSON.stringify(diagnosticoCompleto));
-        router.push('/resultados'); // Redireciona mesmo com fallback
-    };
-
-    const toggleDimensao = (d: Dimensao) => {
-        if (dimensoesSelecionadas.includes(d)) {
-            setDimensoesSelecionadas(dimensoesSelecionadas.filter(x => x !== d));
-        } else if (dimensoesSelecionadas.length < 3) {
-            setDimensoesSelecionadas([...dimensoesSelecionadas, d]);
-        }
-    };
-
-    // --- PASSO 4: ADICIONE A RENDERIZAÇÃO CONDICIONAL PARA O LOADING ---
-    if (isLoading) {
-        return (
-            <main className="min-h-screen flex flex-col items-center justify-center bg-slate-900 p-8">
-                <Loader text="Gerando relatório..." />
-            </main>
-        );
+  const proximaDimensao = async (respostasAtualizadas?: DimensaoRespostas) => {
+    if (indiceDimensaoAtual < dimensoesSelecionadas.length - 1) {
+      setIndiceDimensaoAtual(indiceDimensaoAtual + 1);
+    } else {
+      const respostasFinais = respostasAtualizadas || respostasDimensoes;
+      console.log("Finalizado. Enviando para salvar:", { respostasPerfil, respostasDimensoes: respostasFinais });
+      await salvarDiagnostico(respostasFinais);
     }
+  };
 
-    // O resto da sua lógica de renderização permanece a mesma
-    if (fase === "perfil") {
-        return (
-            <DiagnosticoPage
-                perguntas={perguntasPerfil}
-                respostasIniciais={respostasPerfil}
-                titulo="Perfil"
-                onSubmit={handlePerfilSubmit}
-            />
-        );
+  // --- PASSO 3: MODIFIQUE A FUNÇÃO salvarDiagnostico ---
+  const salvarDiagnostico = async (respostasFinais: DimensaoRespostas) => {
+    setIsLoading(true);
+    console.log("[Form] Iniciando salvamento do diagnóstico...");
+
+    try {
+      const respostasFiltradas: Record<string, unknown> = {};
+      dimensoesSelecionadas.forEach((dim) => {
+        respostasFiltradas[dim as string] = respostasFinais[dim as Dimensao];
+      });
+
+      console.log("[Form] Enviando dados para API:", {
+        perfil: respostasPerfil,
+        dimensoesSelecionadas,
+      });
+
+      const response = await fetch("/api/diagnosticos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          perfil: respostasPerfil,
+          dimensoesSelecionadas,
+          respostasDimensoes: respostasFiltradas,
+        }),
+      });
+
+      const data = await response.json();
+      console.log("[Form] Resposta da API:", data);
+
+      if (response.ok) {
+        console.log("[Form] Diagnóstico salvo com sucesso! ID:", data.diagnostico._id);
+        toast.success("Diagnóstico gerado com sucesso!");
+
+        // ✅ Redireciona para a página de resultados
+        const redirectUrl = `/resultados?id=${data.diagnostico._id}`;
+        console.log("[Form] Redirecionando para:", redirectUrl);
+        router.push(redirectUrl);
+      } else {
+        console.error("[Form] Erro na resposta da API:", data.error);
+        throw new Error(data.error || "Erro ao salvar diagnóstico.");
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("Erro de conexão ou API:", error);
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const _salvarLocalStorage = (respostasFinais: DimensaoRespostas) => {
+    const diagnosticoCompleto = {
+      perfil: respostasPerfil,
+      dimensoes: respostasFinais,
+      dimensoesSelecionadas,
+      dataFinalizacao: new Date().toISOString()
+    };
+    localStorage.setItem('diagnosticoCompleto', JSON.stringify(diagnosticoCompleto));
+    router.push('/resultados'); // Redireciona mesmo com fallback
+  };
+
+  const toggleDimensao = (d: Dimensao) => {
+    if (dimensoesSelecionadas.includes(d)) {
+      setDimensoesSelecionadas(dimensoesSelecionadas.filter(x => x !== d));
+    } else if (dimensoesSelecionadas.length < 3) {
+      setDimensoesSelecionadas([...dimensoesSelecionadas, d]);
+    }
+  };
+
+  // Renderização condicional baseada na fase e estado de loading
+  if (isLoading) {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center bg-slate-900 p-8">
+        <Loader text="Gerando relatório..." />
+      </main>
+    );
+  }
+
+  // O resto da sua lógica de renderização permanece a mesma
+  if (fase === "perfil") {
+    return (
+      <DiagnosticoPage
+        perguntas={perguntasPerfil}
+        respostasIniciais={respostasPerfil}
+        titulo="Perfil"
+        onSubmit={handlePerfilSubmit}
+      />
+    );
+  }
 
   if (fase === "selecionarDimensoes") {
     return (
@@ -223,6 +236,7 @@ export default function Diagnostico() {
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <path
               strokeLinecap="round"
@@ -261,6 +275,7 @@ export default function Diagnostico() {
           ).map((dimensao) => (
             <button
               key={dimensao.id}
+              type="button"
               onClick={() => toggleDimensao(dimensao.id)}
               className={`px-6 py-4 rounded-lg font-semibold border transition-all duration-300 text-center ${dimensoesSelecionadas.includes(dimensao.id)
                 ? "bg-pink-600 border-pink-500 text-white transform scale-105 shadow-lg"
@@ -276,9 +291,10 @@ export default function Diagnostico() {
           Dimensões selecionadas: {dimensoesSelecionadas.length}/3
         </p>
         <button
+          type="button"
           onClick={() => setFase("dimensao")}
           disabled={dimensoesSelecionadas.length === 0}
-          className="cursor-pointer px-8 py-3 rounded-lg bg-gradient-to-r from-pink-500 to-pink-600 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:from-pink-600 hover:to-pink-700 transition-all duration-300 transform hover:scale-105"
+          className="cursor-pointer px-8 py-3 rounded-lg bg-linear-to-r from-pink-500 to-pink-600 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:from-pink-600 hover:to-pink-700 transition-all duration-300 transform hover:scale-105"
         >
           Começar Diagnóstico
         </button>
@@ -286,43 +302,43 @@ export default function Diagnostico() {
     );
   }
 
-    if (fase === "dimensao") {
-        const dimAtual = dimensoesSelecionadas[indiceDimensaoAtual];
-        const isUltimaDimensao = indiceDimensaoAtual === dimensoesSelecionadas.length - 1;
-        let perguntas: any[] = [];
-        let respostasIniciais = respostasDimensoes[dimAtual];
-        let titulo = "";
+  if (fase === "dimensao") {
+    const dimAtual = dimensoesSelecionadas[indiceDimensaoAtual];
+    const isUltimaDimensao = indiceDimensaoAtual === dimensoesSelecionadas.length - 1;
+    let perguntas: Pergunta<RespostasPC | RespostasEO | RespostasDF | RespostasMC>[] = [];
+    const respostasIniciais = respostasDimensoes[dimAtual];
+    let titulo = "";
 
-        switch (dimAtual) {
-            case "Pessoas e Cultura":
-                perguntas = perguntasPC;
-                titulo = "Pessoas & Cultura";
-                break;
-            case "Estrutura e Operações":
-                perguntas = perguntasEO;
-                titulo = "Estrutura e Operações";
-                break;
-            case "Mercado e Clientes":
-                perguntas = perguntasMC;
-                titulo = "Mercado e Clientes";
-                break;
-            case "Direção e Futuro":
-                perguntas = perguntasDF;
-                titulo = "Direção e Futuro";
-                break;
-        }
-
-        return (
-            <DiagnosticoPage
-                key={`dimensao-${indiceDimensaoAtual}-${dimAtual}`}
-                perguntas={perguntas}
-                respostasIniciais={respostasIniciais}
-                titulo={titulo}
-                onSubmit={handleDimensaoSubmit}
-                isUltimaDimensao={isUltimaDimensao}
-            />
-        );
+    switch (dimAtual) {
+      case "Pessoas e Cultura":
+        perguntas = perguntasPC;
+        titulo = "Pessoas & Cultura";
+        break;
+      case "Estrutura e Operações":
+        perguntas = perguntasEO;
+        titulo = "Estrutura e Operações";
+        break;
+      case "Mercado e Clientes":
+        perguntas = perguntasMC;
+        titulo = "Mercado e Clientes";
+        break;
+      case "Direção e Futuro":
+        perguntas = perguntasDF;
+        titulo = "Direção e Futuro";
+        break;
     }
 
-    return null;
+    return (
+      <DiagnosticoPage
+        key={`dimensao-${indiceDimensaoAtual}-${dimAtual}`}
+        perguntas={perguntas}
+        respostasIniciais={respostasIniciais}
+        titulo={titulo}
+        onSubmit={handleDimensaoSubmit}
+        isUltimaDimensao={isUltimaDimensao}
+      />
+    );
+  }
+
+  return null;
 }

@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import { jsPDF } from "jspdf";
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 
 interface Trilha {
   meta: string;
@@ -15,11 +15,11 @@ interface DiagnosticoDimensao {
 }
 
 function gerarPDFRelatorio(diagnosticos: DiagnosticoDimensao[]) {
-  let hoje = new Date();
-  let dia  = hoje.getDate().toString();
-  let mes  = (hoje.getMonth() + 1).toString();
-  let ano  = hoje.getFullYear().toString();
-  let data = dia + "/" + mes + "/" + ano;
+  const hoje = new Date();
+  const dia  = hoje.getDate().toString();
+  const mes  = (hoje.getMonth() + 1).toString();
+  const ano  = hoje.getFullYear().toString();
+  const _data = `${dia}/${mes}/${ano}`;
 
   const doc = new jsPDF({
     orientation: "portrait",
@@ -77,7 +77,7 @@ function gerarPDFRelatorio(diagnosticos: DiagnosticoDimensao[]) {
   }
 
   // Processar cada dimensão
-  diagnosticos.forEach((dimensao, index) => {
+  diagnosticos.forEach((dimensao, _index) => {
     // Título da dimensão
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
@@ -133,7 +133,7 @@ function gerarPDFRelatorio(diagnosticos: DiagnosticoDimensao[]) {
 
 export async function POST(request: Request) {
   try {
-    const { nome, email, diagnostico } = await request.json();
+  const { nome: _nome, email, diagnostico } = await request.json();
 
     //console.log('Email Recebido na rota', email)
 
@@ -164,8 +164,9 @@ export async function POST(request: Request) {
     transporter.sendMail(mailOptions);
 
     return Response.json({ success: true, message: "E-mail enviado com sucesso!" });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Erro ao enviar o e-mail:", error);
-    return Response.json({ success: false, error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    return Response.json({ success: false, error: message }, { status: 500 });
   }
 }

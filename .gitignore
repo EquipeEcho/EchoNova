@@ -65,3 +65,5 @@ pnpm-lock.yaml # Para pnpm
 # yarn.lock
 
 todo.md
+
+.continue/

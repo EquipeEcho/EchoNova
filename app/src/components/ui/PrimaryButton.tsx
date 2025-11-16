@@ -21,7 +21,7 @@ export function PrimaryButton({ className, ...props }: PrimaryButtonProps) {
     <Button
       className={cn(
         // Estilos padrão do botão rosa com gradiente.
-        "bg-gradient-to-r from-pink-500 to-pink-600 text-white font-bold",
+        "bg-linear-to-r from-pink-500 to-pink-600 text-white font-bold",
         // Estilos de hover e foco para dar feedback ao usuário.
         "hover:from-pink-600 hover:to-pink-700 transform hover:scale-105 transition-all duration-300",
         // Estilos para quando o botão está desativado (disabled={true}).

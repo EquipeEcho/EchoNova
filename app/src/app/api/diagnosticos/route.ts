@@ -49,7 +49,7 @@ function calcularEstagio(media: number): string {
 
 async function processarResultados(
   dimensoesSelecionadas: string[],
-  respostasDimensoes: any,
+  respostasDimensoes: Record<string, Record<string, string>>,
 ) {
   const provider = getChatProvider();
   const message = `Dimensões selecionadas: ${JSON.stringify(dimensoesSelecionadas)}\nRespostas das dimensões: ${JSON.stringify(respostasDimensoes)}`;
@@ -67,7 +67,7 @@ async function processarResultados(
     console.error('Erro ao processar resultados com IA:', error);
     // Fallback to fixed logic if AI fails
     console.log('Usando lógica de fallback');
-    const resultadosFinais: Record<string, any> = {};
+  const resultadosFinais: Record<string, unknown> = {};
     for (const nomeDimensao of dimensoesSelecionadas) {
       const respostasDaDimensao = respostasDimensoes[nomeDimensao];
       if (!respostasDaDimensao) continue;
@@ -156,34 +156,32 @@ export async function POST(req: Request) {
     let empresa = await Empresa.findOne({ email: dados.perfil.email });
 
     if (!empresa) {
-      // Verifica se já existe uma empresa com o mesmo CNPJ (exatamente como foi digitado)
+      // Tenta buscar por CNPJ também
       const cnpjInformado = dados.perfil.cnpj;
       const empresaComMesmoCnpj = await Empresa.findOne({ cnpj: cnpjInformado });
 
       if (empresaComMesmoCnpj) {
-        return NextResponse.json(
-          { error: "Já existe uma empresa cadastrada com este CNPJ." },
-          { status: 400 }
-        );
+        // ALTERADO: Usar empresa existente ao invés de bloquear
+        console.log(`[API Diagnosticos] Empresa já existe com CNPJ ${cnpjInformado}, reutilizando...`);
+        empresa = empresaComMesmoCnpj;
+      } else {
+        // Cria nova empresa
+        console.log(`[API Diagnosticos] Empresa com email ${dados.perfil.email} não encontrada. Criando nova...`);
+        
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(`temp_${Date.now()}`, salt);
+
+        empresa = await Empresa.create({
+          nome_empresa: dados.perfil.empresa,
+          email: dados.perfil.email,
+          cnpj: cnpjInformado || `TEMP_${Date.now()}`,
+          senha: hashedPassword,
+        });
+
+        console.log(`[API Diagnosticos] Nova empresa criada com ID: ${empresa._id}`);
       }
-
-      console.log(`Empresa com email ${dados.perfil.email} não encontrada. Criando nova...`);
-      
-      // --- INÍCIO DA CORREÇÃO DE SEGURANÇA ---
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(`temp_${Date.now()}`, salt);
-
-      empresa = await Empresa.create({
-        nome_empresa: dados.perfil.empresa,
-        email: dados.perfil.email,
-        cnpj: cnpjInformado || `TEMP_${Date.now()}`,
-        senha: hashedPassword, // Salva a senha temporária criptografada
-      });
-      // --- FIM DA CORREÇÃO DE SEGURANÇA ---
-
-      console.log(`Nova empresa criada com ID: ${empresa._id}`);
     } else {
-      console.log(`Empresa encontrada com ID: ${empresa._id}`);
+      console.log(`[API Diagnosticos] Empresa encontrada com ID: ${empresa._id}`);
     }
 
     const resultadosProcessados = await processarResultados(
@@ -212,12 +210,13 @@ export async function POST(req: Request) {
       },
       { status: 201 },
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("ERRO DETALHADO NO BACKEND (/api/diagnosticos):", err);
+    const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
       {
         error: "Ocorreu uma falha interna ao processar o diagnóstico.",
-        details: err.message,
+        details: message,
       },
       { status: 500 },
     );
@@ -239,7 +238,8 @@ export async function GET(req: Request) {
       .sort({ createdAt: -1 })
       .populate("empresa", "nome_empresa email");
     return NextResponse.json({ diagnosticos });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

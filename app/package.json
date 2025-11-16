@@ -9,7 +9,8 @@
     "lint": "biome lint ./src",
     "format": "biome format --write ./src",
     "check": "biome check --apply ./src",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "debug": "next dev --inspect"
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.17",

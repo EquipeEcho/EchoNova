@@ -1,4 +1,5 @@
-import { NextResponse, NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
 import mongoose from "mongoose"; // --- NOVO IMPORTE ---
@@ -33,21 +34,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Não autorizado: token não encontrado." }, { status: 401 });
     }
 
-    let payload: any;
+    let payload: { id?: string } | undefined;
     try {
       const { payload: verifiedPayload } = await jwtVerify(token, secret);
-      payload = verifiedPayload;
-    } catch (err) {
+      payload = verifiedPayload as { id?: string };
+    } catch (_err) {
       return NextResponse.json({ error: "Não autorizado: token inválido." }, { status: 401 });
     }
 
-    const empresaId = payload.id;
+    const empresaId = payload?.id;
+    if (!empresaId) {
+      return NextResponse.json({ error: "Não autorizado: token inválido." }, { status: 401 });
+    }
     await connectDB();
     const { sessionId, resposta_usuario } = await req.json();
     const provider = getChatProvider();
 
-    let session;
-    let historico: HistoryMessage[];
+  let session: InstanceType<typeof AiSession> | null = null;
+  let historico: HistoryMessage[] = [];
 
     if (!sessionId) {
       console.log(`MCP: Iniciando nova sessão para a empresa ${empresaId}`);

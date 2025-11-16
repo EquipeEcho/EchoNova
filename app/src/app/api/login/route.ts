@@ -82,10 +82,11 @@ export async function POST(req: Request) {
 
     return response;
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Erro no Login:", err);
+    const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { error: "Erro interno no servidor" },
+      { error: message || "Erro interno no servidor" },
       { status: 500 },
     );
   }

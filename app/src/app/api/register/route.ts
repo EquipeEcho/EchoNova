@@ -42,11 +42,12 @@ export async function POST(req: Request) {
       },
       { status: 201 }, // Código HTTP 201 = criado com sucesso
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Em caso de erro, loga no console e retorna erro 500
     console.error("Erro no cadastro:", err);
+    const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { error: err.message || "Erro interno do servidor" },
+      { error: message || "Erro interno do servidor" },
       { status: 500 },
     );
   }

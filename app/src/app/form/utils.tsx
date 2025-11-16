@@ -1,12 +1,65 @@
 "use client";
 
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import validator from "validator";
 import { Ondas } from "../clientFuncs";
-import { validateField, formatCNPJ, equalCNPJ } from "./validator";
+import { validateField, formatCNPJ, validateCNPJ } from "./validator";
+import { toast } from "sonner";
+
+// ========================
+// Funções de validação assíncrona
+// ========================
+export async function verificarEmailDuplicado(email: string): Promise<{ duplicado: boolean; mensagem?: string }> {
+    try {
+        const response = await fetch("/api/empresas/check-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+        });
+
+        if (!response.ok) {
+            console.warn("Erro ao verificar email", response.status);
+            return { duplicado: false };
+        }
+
+        const data = await response.json();
+        if (data.exists) {
+            return { duplicado: true, mensagem: "Este email já foi cadastrado. Por favor, use outro email." };
+        }
+        return { duplicado: false };
+    } catch (error) {
+        console.error("Erro ao verificar email:", error);
+        return { duplicado: false };
+    }
+}
+
+export async function verificarCNPJDuplicado(cnpj: string): Promise<{ duplicado: boolean; mensagem?: string }> {
+    try {
+        const response = await fetch("/api/empresas/check-cnpj", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cnpj }),
+        });
+
+        if (!response.ok) {
+            console.warn("Erro ao verificar CNPJ", response.status);
+            return { duplicado: false };
+        }
+
+        const data = await response.json();
+        if (data.exists) {
+            return { duplicado: true, mensagem: "Este CNPJ já foi cadastrado. Por favor, use outro CNPJ." };
+        }
+        return { duplicado: false };
+    } catch (error) {
+        console.error("Erro ao verificar CNPJ:", error);
+        return { duplicado: false };
+    }
+}
 
 // ========================
 // Funções de transação (integração com o backend)
@@ -70,11 +123,12 @@ export function useDiagnostico<Respostas extends Record<string, string>>(
     respostasIniciais: Respostas,
     onsubmit?: (respostas: Respostas) => void,
 ) {
-    const router = useRouter();
+    const _router = useRouter();
     const [etapaAtual, setEtapaAtual] = useState(0);
     const [respostas, setRespostas] = useState<Respostas>(respostasIniciais);
     const [showValidationError, setShowValidationError] = useState(false);
     const [erroCnpj, setErroCnpj] = useState("");
+    const [erroEmail, setErroEmail] = useState("");
 
     const handleInputChange = (campo: keyof Respostas, valor: string) => {
         setRespostas((prev) => ({ ...prev, [campo]: valor }));
@@ -118,6 +172,8 @@ export function useDiagnostico<Respostas extends Record<string, string>>(
         setShowValidationError,
         erroCnpj,
         setErroCnpj,
+        erroEmail,
+        setErroEmail,
     };
 }
 
@@ -138,7 +194,7 @@ function ProgressBar({ etapaAtual, totalEtapas }: { etapaAtual: number; totalEta
             </div>
             <div className="w-full bg-white/20 rounded-full h-2">
                 <div
-                    className="bg-gradient-to-r from-pink-500 to-pink-600 h-2 rounded-full transition-all duration-500"
+                    className="bg-linear-to-r from-pink-500 to-pink-600 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${porcentagem}%` }}
                 ></div>
             </div>
@@ -154,6 +210,8 @@ function InputField<Respostas extends Record<string, string>>({
     showValidationError = false,
     erroCnpj,
     setErroCnpj,
+    erroEmail,
+    setErroEmail,
 }: {
     pergunta: Pergunta<Respostas>;
     valor: string;
@@ -162,10 +220,17 @@ function InputField<Respostas extends Record<string, string>>({
     showValidationError?: boolean;
     erroCnpj: string;
     setErroCnpj: React.Dispatch<React.SetStateAction<string>>;
+    erroEmail: string;
+    setErroEmail: React.Dispatch<React.SetStateAction<string>>;
 }) {
     const { valid, message } = validateField(pergunta.id as string, valor);
     const isCNPJ = pergunta.id.toString().toLowerCase().includes("cnpj");
-    const hasError = showValidationError && (isCNPJ ? !valid || erroCnpj !== "" : !valid);
+    const isEmail = pergunta.id.toString().toLowerCase().includes("email");
+    const hasError = showValidationError && (
+        isCNPJ ? (!valid || erroCnpj !== "") : 
+        isEmail ? (!valid || erroEmail !== "") : 
+        !valid
+    );
 
     const handleTextChange = async (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -173,15 +238,11 @@ function InputField<Respostas extends Record<string, string>>({
         const value = isCNPJ ? formatCNPJ(e.target.value) : e.target.value;
         onChange(pergunta.id, value);
 
-        if (isCNPJ && value.length === 18) {
-            try {
-                const jaExiste = await equalCNPJ(value);
-                setErroCnpj(jaExiste ? "CNPJ já cadastrado" : "");
-            } catch (error) {
-                console.error("Erro ao verificar CNPJ:", error);
-                setErroCnpj("Erro ao verificar CNPJ");
-            }
-        } else if (isCNPJ) {
+        // Limpa erros quando usuário edita o campo
+        if (isEmail && erroEmail) {
+            setErroEmail("");
+        }
+        if (isCNPJ && erroCnpj) {
             setErroCnpj("");
         }
     };
@@ -216,15 +277,15 @@ function InputField<Respostas extends Record<string, string>>({
                 </select>
                 {mostraTextAreaOutros && pergunta.campoOutros && (
                     <div className="animate-fade-in-up">
-                        <label className="block text-white text-sm font-medium mb-2">Por favor, especifique:</label>
+                        <label htmlFor={`outros-${String(pergunta.id)}`} className="block text-white text-sm font-medium mb-2">Por favor, especifique:</label>
                         <textarea
-                            value={respostas[pergunta.campoOutros]}
-                            onChange={(e) => onChange(pergunta.campoOutros!, e.target.value)}
+                            id={`outros-${String(pergunta.id)}`}
+                            value={respostas[pergunta.campoOutros as keyof Respostas]}
+                            onChange={(e) => onChange(pergunta.campoOutros as keyof Respostas, e.target.value)}
                             onKeyDown={handleKeyDown}
                             className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
                             placeholder="Descreva..."
                             rows={3}
-                            autoFocus
                         />
                     </div>
                 )}
@@ -258,7 +319,7 @@ function InputField<Respostas extends Record<string, string>>({
             />
             {hasError && (
                 <p className="text-red-400 text-sm text-center">
-                    {erroCnpj || message}
+                    {isEmail && erroEmail ? erroEmail : isCNPJ && erroCnpj ? erroCnpj : message}
                 </p>
             )}
         </div>
@@ -279,7 +340,7 @@ function NavigationButtons({
     etapaAtual: number;
     totalEtapas: number;
     podeAvancar: boolean;
-    onProximo: () => void;
+    onProximo: () => void | Promise<void>;
     onAnterior: () => void;
     onSubmit: (e: React.FormEvent) => void;
     isUltimaDimensao?: boolean;
@@ -289,13 +350,13 @@ function NavigationButtons({
     const ehUltimaEtapa = etapaAtual === totalEtapas - 1;
     const ehFinalDiagnostico = ehUltimaEtapa && isUltimaDimensao;
 
-    const handleAdvanceClick = () => {
+    const handleAdvanceClick = async () => {
         onTryAdvance?.();
         if (podeAvancar) {
-            if (ehUltimaEtapa) {
-                onSubmit(new Event("submit") as any);
+                if (ehUltimaEtapa) {
+                onSubmit(new Event("submit") as unknown as React.FormEvent);
             } else {
-                onProximo();
+                await onProximo();
             }
         }
     };
@@ -317,7 +378,7 @@ function NavigationButtons({
                 type="button"
                 onClick={handleAdvanceClick}
                 disabled={!podeAvancar && showValidationError}
-                className={`cursor-pointer px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar ? "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white transform hover:scale-105 shadow-lg" : "bg-gray-500/50 text-gray-400 cursor-not-allowed"}`}
+                className={`cursor-pointer px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${podeAvancar ? "bg-linear-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white transform hover:scale-105 shadow-lg" : "bg-gray-500/50 text-gray-400 cursor-not-allowed"}`}
             >
                 {buttonText}
             </button>
@@ -352,6 +413,8 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
         setShowValidationError,
         erroCnpj,
         setErroCnpj,
+        erroEmail,
+        setErroEmail,
     } = useDiagnostico(perguntas, respostasIniciais, onSubmit);
 
     const perguntaAtual = perguntas[etapaAtual];
@@ -360,8 +423,9 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
     const { valid } = validateField(perguntaAtual.id as string, valorAtual);
     const isEmailValid = !(perguntaAtual.id === 'email' && valorAtual && !validator.isEmail(valorAtual));
     const isCNPJField = perguntaAtual.id.toString().toLowerCase().includes("cnpj");
+    const isEmailField = perguntaAtual.id.toString().toLowerCase().includes("email");
     
-    let podeAvancar = valid && isEmailValid && (!isCNPJField || erroCnpj === "");
+    let podeAvancar = valid && isEmailValid && (!isCNPJField || erroCnpj === "") && (!isEmailField || erroEmail === "");
     
     if (perguntaAtual.required) {
         podeAvancar = podeAvancar && valorAtual.trim() !== "";
@@ -371,6 +435,35 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
         const valorOutros = respostas[perguntaAtual.campoOutros] || "";
         podeAvancar = podeAvancar && valorOutros.trim() !== "";
     }
+
+    const handleProximaEtapaComValidacao = async () => {
+        // Limpa erros anteriores
+        setErroEmail("");
+        setErroCnpj("");
+        
+        // Valida email duplicado
+        if (isEmailField && valorAtual && validator.isEmail(valorAtual)) {
+            const { duplicado, mensagem } = await verificarEmailDuplicado(valorAtual);
+            if (duplicado) {
+                setErroEmail("Email já utilizado, tente outro!");
+                setShowValidationError(true);
+                return;
+            }
+        }
+        
+        // Valida CNPJ duplicado
+        if (isCNPJField && valorAtual && validateCNPJ(valorAtual)) {
+            const { duplicado, mensagem } = await verificarCNPJDuplicado(valorAtual);
+            if (duplicado) {
+                setErroCnpj("CNPJ já utilizado, tente outro!");
+                setShowValidationError(true);
+                return;
+            }
+        }
+        
+        // Se passou nas validações, avança
+        proximaEtapa();
+    };
 
     const handleTryAdvance = () => {
         if (!podeAvancar) {
@@ -384,7 +477,7 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
                 href="/"
                 className="absolute top-6 left-6 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg border border-white/30 flex items-center gap-2"
             >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg aria-hidden="true" focusable="false" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2 7-7 7 7M5 10v10h4v-4h6v4h4V10" />
                 </svg>
                 <span className="hidden sm:inline">Home</span>
@@ -412,6 +505,8 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
                         showValidationError={showValidationError}
                         erroCnpj={erroCnpj}
                         setErroCnpj={setErroCnpj}
+                        erroEmail={erroEmail}
+                        setErroEmail={setErroEmail}
                     />
                 </div>
 
@@ -419,7 +514,7 @@ export default function DiagnosticoPage<Respostas extends Record<string, string>
                     etapaAtual={etapaAtual}
                     totalEtapas={perguntas.length}
                     podeAvancar={podeAvancar}
-                    onProximo={proximaEtapa}
+                    onProximo={handleProximaEtapaComValidacao}
                     onAnterior={etapaAnterior}
                     onSubmit={handleSubmit}
                     isUltimaDimensao={isUltimaDimensao}

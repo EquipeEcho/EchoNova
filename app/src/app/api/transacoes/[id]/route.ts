@@ -5,11 +5,11 @@ import Empresa from "@/models/Empresa";
 import mongoose from "mongoose";
 
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params; // Acesso direto ao ID
+    const { id } = await params; // Acesso direto ao ID
     await connectDB();
 
     // valida o formato do ID

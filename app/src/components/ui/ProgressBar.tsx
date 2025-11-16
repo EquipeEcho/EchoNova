@@ -30,7 +30,7 @@ export function ProgressBar({ currentStep, totalSteps }: ProgressBarProps) {
       <div className="w-full bg-slate-700 rounded-full h-2.5">
         {/* A parte preenchida da barra, que cresce com base na porcentagem */}
         <div
-          className="bg-gradient-to-r from-pink-500 to-pink-600 h-2.5 rounded-full transition-all duration-500 ease-out"
+          className="bg-linear-to-r from-pink-500 to-pink-600 h-2.5 rounded-full transition-all duration-500 ease-out"
           style={{ width: `${percentage}%` }}
         />
       </div>
