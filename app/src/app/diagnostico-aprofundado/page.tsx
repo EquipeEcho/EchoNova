@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { useAuthStore } from "@/lib/stores/useAuthStore";
+import Link from "next/link";
+import Image from "next/image";
 
 // Componentes da UI
 import { Button } from "@/components/ui/button";
@@ -82,11 +84,20 @@ const initialSetupQuestions = [
 export default function DiagnosticoAprofundadoPage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
   const [isClient, setIsClient] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+
+  const handleLogout = () => {
+    logout();
+    router.push("/");
+  };
 
   const [fase, setFase] = useState<FaseDiagnostico>("setup");
   const [setupStep, setSetupStep] = useState(0);
@@ -650,9 +661,96 @@ export default function DiagnosticoAprofundadoPage() {
   };
 
   return (
-    <main className="min-h-screen text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Indicador de progresso restaurado */}
-      {progressoRestaurado && fase !== 'setup' && (
+    <main className="min-h-screen text-white flex flex-col relative overflow-hidden">
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-sm border-b border-slate-800">
+        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+          <div className="logo-container hover:scale-100">
+            <Link href="/pos-login">
+              <Image
+                src="/img/logo.png"
+                alt="EchoNova"
+                width={120}
+                height={40}
+                className="h-8 w-auto object-contain sm:h-10 md:h-12 lg:h-14"
+                priority
+              />
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {user && (
+              <div className="hidden md:flex items-center gap-2 bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700/50">
+                <span className="text-gray-300 text-sm">{user.nome_empresa}</span>
+              </div>
+            )}
+
+            <div className="relative">
+              <Button
+                variant="ghost"
+                className="relative h-10 w-10 rounded-full hover:bg-slate-800 p-0 cursor-pointer"
+                onClick={toggleMenu}
+              >
+                <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-medium">
+                  {user?.nome_empresa?.charAt(0) || "U"}
+                </div>
+              </Button>
+
+              {isMenuOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-2 z-50">
+                  <div className="px-4 py-2 border-b border-slate-700">
+                    <p className="text-sm font-medium text-white truncate">
+                      {user?.nome_empresa || "Empresa"}
+                    </p>
+                    <p className="text-xs text-gray-400 truncate">
+                      {user?.email || "email@exemplo.com"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => router.push("/perfil")}
+                    className="w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Meu Perfil
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm("Tem certeza que deseja cancelar o diagnóstico e voltar à página inicial?")) {
+                        router.push("/pos-login");
+                      }
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Voltar ao Início
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Sair
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Content com padding-top para compensar navbar fixa */}
+      <div className="flex-1 flex flex-col items-center justify-center p-4 pt-28 md:pt-32">
+        {/* Indicador de progresso restaurado */}
+        {progressoRestaurado && fase !== 'setup' && (
         <div className="absolute top-4 right-4 z-20 bg-green-500/20 border border-green-500/50 rounded-lg px-4 py-2 flex items-center gap-2">
           <span className="text-green-400 text-sm font-medium">✓ Progresso restaurado</span>
           <button
@@ -665,10 +763,12 @@ export default function DiagnosticoAprofundadoPage() {
         </div>
       )}
       
-      <div className="w-full max-w-3xl relative z-10 flex items-center justify-center">
-        {renderContent()}
+        <div className="w-full max-w-3xl relative z-10 flex items-center justify-center">
+          {renderContent()}
+        </div>
       </div>
-      <div className="-z-10">
+      
+      <div className="-z-10 fixed inset-0">
         <Ondas />
       </div>
     </main>
