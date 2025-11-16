@@ -36,7 +36,7 @@ interface MetricCardProps {
 
 // Componente para os cards de métricas
 const MetricCard = ({ title, value, icon, color, change, changeType }: MetricCardProps) => (
-  <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 hover:border-gray-600 transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-1">
+  <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 hover:border-gray-600 transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-1">
     <div className="flex items-center justify-between">
         
       <div>
@@ -77,7 +77,7 @@ const EmpresasPorPlanoBarChart = ({ data }: { data: EmpresasPorPlano[] }) => {
   
   return (
     
-    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700">
+    <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-white">Distribuição de Empresas por Plano</h3>
         <div className="flex space-x-2">
@@ -147,7 +147,7 @@ const EmpresasPorPlanoPieChart = ({ data }: { data: EmpresasPorPlano[] }) => {
   };
   
   return (
-    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700">
+    <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-white">Participação de Planos</h3>
         <div className="flex space-x-2">
@@ -250,7 +250,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 p-4 sm:p-8 relative overflow-hidden">
+      <div className="min-h-screen bg-linear-to-br from-gray-900 to-gray-950 p-4 sm:p-8 relative overflow-hidden">
         <div className="max-w-7xl mx-auto relative z-10">
           {/* Header */}
           <div className="mb-8">
@@ -261,7 +261,7 @@ export default function DashboardPage() {
           {/* Skeleton loading for metric cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {Array(4).fill(0).map((_, index) => (
-              <div key={index} className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 animate-pulse">
+              <div key={index} className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 animate-pulse">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="h-4 bg-gray-700 rounded w-32 mb-4"></div>
@@ -275,11 +275,11 @@ export default function DashboardPage() {
 
           {/* Skeleton loading for charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 h-96 animate-pulse">
+            <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 h-96 animate-pulse">
               <div className="h-6 bg-gray-700 rounded w-1/3 mb-6"></div>
               <div className="h-full bg-gray-700 rounded"></div>
             </div>
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 h-96 animate-pulse">
+            <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 h-96 animate-pulse">
               <div className="h-6 bg-gray-700 rounded w-1/3 mb-6"></div>
               <div className="h-full bg-gray-700 rounded"></div>
             </div>
@@ -294,8 +294,8 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 p-8 flex items-center justify-center relative overflow-hidden">
-        <div className="text-center bg-gradient-to-br from-gray-800 to-gray-900 p-8 rounded-2xl border border-gray-700 max-w-md relative z-10">
+      <div className="min-h-screen bg-linear-to-br from-gray-900 to-gray-950 p-8 flex items-center justify-center relative overflow-hidden">
+        <div className="text-center bg-linear-to-br from-gray-800 to-gray-900 p-8 rounded-2xl border border-gray-700 max-w-md relative z-10">
           <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -305,7 +305,7 @@ export default function DashboardPage() {
           <p className="text-red-400 mb-6">{error}</p>
           <button 
             onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            className="px-6 py-3 bg-linear-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
           >
             Tentar novamente
           </button>
@@ -318,7 +318,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 p-4 sm:p-8 relative overflow-hidden">
+    <div className="min-h-screen bg-linear-to-br from-gray-900 to-gray-950 p-4 sm:p-8 relative overflow-hidden">
       <div className="max-w-7xl mx-auto relative z-10">
         {/* Header */}
         <div className="mb-8">
@@ -357,7 +357,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Seção adicional de métricas */}
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700">
+        <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700">
           <h2 className="text-2xl font-bold text-white mb-6">Resumo de Métricas</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-gray-700/30 p-5 rounded-xl border border-gray-600">

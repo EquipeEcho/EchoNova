@@ -62,7 +62,7 @@ interface MetricCardProps {
 
 // Componente para os cards de métricas
 const MetricCard = ({ title, value, icon, color, description }: MetricCardProps) => (
-  <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 hover:border-gray-600 transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-1">
+  <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 hover:border-gray-600 transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-1">
     <div className="flex items-center justify-between">
       <div>
         <p className="text-gray-400 text-sm font-medium">{title}</p>
@@ -97,7 +97,7 @@ const ProgressoTrilhasChart = ({ data }: { data: ProgressoTrilha[] }) => {
   };
   
   return (
-    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700">
+    <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-white">Progresso das Trilhas</h3>
         <div className="flex space-x-2">
@@ -169,7 +169,7 @@ const DistribuicaoTrilhasChart = ({ data }: { data: ProgressoTrilha[] }) => {
   };
   
   return (
-    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700">
+    <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-white">Distribuição de Trilhas</h3>
         <div className="flex space-x-2">
@@ -223,7 +223,7 @@ const ProgressoMedioChart = ({ data }: { data: ProgressoMedio[] }) => {
   };
   
   return (
-    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700">
+    <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-white">Progresso Médio das Trilhas</h3>
         <div className="flex space-x-2">
@@ -405,7 +405,7 @@ export default function DashboardClientePage() {
 
   if (loading) {
     return (
-      <main className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 relative overflow-hidden">
+      <main className="flex flex-col min-h-screen bg-linear-to-br from-gray-900 to-gray-950 relative overflow-hidden">
         <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-sm border-b border-slate-800">
           <div className="container mx-auto px-4 py-3 flex justify-between items-center">
             <div className="logo-container hover:scale-100">
@@ -426,7 +426,7 @@ export default function DashboardClientePage() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {Array(4).fill(0).map((_, index) => (
-                <div key={index} className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 animate-pulse">
+                <div key={index} className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 animate-pulse">
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="h-4 bg-slate-700 rounded w-32 mb-4"></div>
@@ -439,11 +439,11 @@ export default function DashboardClientePage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 h-96 animate-pulse">
+              <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 h-96 animate-pulse">
                 <div className="h-6 bg-slate-700 rounded w-1/3 mb-6"></div>
                 <div className="h-full bg-slate-700 rounded"></div>
               </div>
-              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 h-96 animate-pulse">
+              <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 h-96 animate-pulse">
                 <div className="h-6 bg-slate-700 rounded w-1/3 mb-6"></div>
                 <div className="h-full bg-slate-700 rounded"></div>
               </div>
@@ -451,7 +451,7 @@ export default function DashboardClientePage() {
 
             {/* Loading state for average progress chart */}
             <div className="grid grid-cols-1 gap-6">
-              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 h-96 animate-pulse">
+              <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 h-96 animate-pulse">
                 <div className="h-6 bg-slate-700 rounded w-1/3 mb-6"></div>
                 <div className="h-full bg-slate-700 rounded"></div>
               </div>
@@ -468,7 +468,7 @@ export default function DashboardClientePage() {
 
   if (error) {
     return (
-      <main className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 relative overflow-hidden">
+      <main className="flex flex-col min-h-screen bg-linear-to-br from-gray-900 to-gray-950 relative overflow-hidden">
         <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-sm border-b border-slate-800">
           <div className="container mx-auto px-4 py-3 flex justify-between items-center">
             <div className="logo-container hover:scale-100">
@@ -480,7 +480,7 @@ export default function DashboardClientePage() {
         </header>
 
         <div className="flex items-center justify-center min-h-screen pt-16 relative z-10 px-4">
-          <div className="text-center bg-gradient-to-br from-gray-800 to-gray-900 p-8 rounded-2xl border border-gray-700 max-w-md">
+          <div className="text-center bg-linear-to-br from-gray-800 to-gray-900 p-8 rounded-2xl border border-gray-700 max-w-md">
             <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -490,7 +490,7 @@ export default function DashboardClientePage() {
             <p className="text-red-400 mb-6">{error}</p>
             <button 
               onClick={() => window.location.reload()}
-              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 cursor-pointer"
+              className="px-6 py-3 bg-linear-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 cursor-pointer"
             >
               Tentar novamente
             </button>
@@ -505,12 +505,12 @@ export default function DashboardClientePage() {
   }
 
   return (
-    <main className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 relative overflow-hidden">
+    <main className="flex flex-col min-h-screen bg-linear-to-br from-gray-900 to-gray-950 relative overflow-hidden">
       <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-sm border-b border-slate-800">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="logo-container hover:scale-100">
             <Link href="/dashboard-cliente">
-              <div className="h-10 w-32 bg-gradient-to-r from-fuchsia-600 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold">
+              <div className="h-10 w-32 bg-linear-to-r from-fuchsia-600 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold">
                 EchoNova
               </div>
             </Link>
@@ -522,7 +522,7 @@ export default function DashboardClientePage() {
                 <span className="text-gray-300 text-sm">Olá, {userInfo.nome?.split(' ')[0] || "Usuário"}</span>
                 <span className="text-gray-400 mx-2">•</span>
                 <span className="text-gray-300 text-sm">Plano:</span>
-                <div className={`px-3 py-1 rounded-full bg-gradient-to-r ${getPlanoColor(userInfo.plano)} text-white text-xs font-bold flex items-center gap-1`}>
+                <div className={`px-3 py-1 rounded-full bg-linear-to-r ${getPlanoColor(userInfo.plano)} text-white text-xs font-bold flex items-center gap-1`}>
                   <span>{getPlanoIcon(userInfo.plano)}</span>
                   <span>{userInfo.plano}</span>
                 </div>
@@ -589,7 +589,7 @@ export default function DashboardClientePage() {
           </div>
 
           {/* Seção adicional de métricas */}
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 mb-8">
+          <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 mb-8">
             <h2 className="text-2xl font-bold text-white mb-6">Resumo de Desempenho</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-gray-700/30 p-5 rounded-xl border border-gray-600">
@@ -620,11 +620,11 @@ export default function DashboardClientePage() {
           </div>
 
           {/* Ações rápidas */}
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700">
+          <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700">
             <h2 className="text-2xl font-bold text-white mb-6">Ações Rápidas</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Button 
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
+                className="bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
                 onClick={() => router.push("/diagnostico-aprofundado")}
               >
                 <BookOpen className="mr-2 h-5 w-5" />
