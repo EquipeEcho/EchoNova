@@ -12,6 +12,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -67,23 +74,20 @@ const EmpresaForm: FC<{
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        {/* --- CORREÇÃO DE ESTILO --- */}
-        <Label htmlFor="nome_empresa" className="text-gray-300">Nome da Empresa</Label>
+        <Label htmlFor="nome_empresa" className="text-pink-300">Nome da Empresa</Label>
         <Input
           id="nome_empresa"
           name="nome_empresa"
           value={formData.nome_empresa || ""}
           onChange={handleChange}
           required
-          // --- CORREÇÃO DE ESTILO ---
-          className="bg-gray-800 border-gray-600 text-white"
+          className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
         />
       </div>
       <div>
-        {/* --- CORREÇÃO DE ESTILO --- */}
-        <Label htmlFor="email" className="text-gray-300">Email</Label>
+        <Label htmlFor="email" className="text-pink-300">Email</Label>
         <Input
           id="email"
           name="email"
@@ -91,56 +95,63 @@ const EmpresaForm: FC<{
           value={formData.email || ""}
           onChange={handleChange}
           required
-          // --- CORREÇÃO DE ESTILO ---
-          className="bg-gray-800 border-gray-600 text-white"
+          className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
         />
       </div>
       <div>
-        {/* --- CORREÇÃO DE ESTILO --- */}
-        <Label htmlFor="cnpj" className="text-gray-300">CNPJ</Label>
+        <Label htmlFor="cnpj" className="text-pink-300">CNPJ</Label>
         <Input
           id="cnpj"
           name="cnpj"
           value={formData.cnpj || ""}
           onChange={handleChange}
           required
-          // --- CORREÇÃO DE ESTILO ---
-          className="bg-gray-800 border-gray-600 text-white"
+          className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
         />
       </div>
       <div>
-        {/* --- CORREÇÃO DE ESTILO --- */}
-        <Label htmlFor="planoAtivo" className="text-gray-300">Plano Ativo</Label>
-        <Input
-          id="planoAtivo"
-          name="planoAtivo"
-          placeholder="essencial, avancado, escalado"
+        <Label htmlFor="planoAtivo" className="text-pink-300">Plano Ativo</Label>
+        <Select
           value={formData.planoAtivo || ""}
-          onChange={handleChange}
-          // --- CORREÇÃO DE ESTILO ---
-          className="bg-gray-800 border-gray-600 text-white"
-        />
+          onValueChange={(val) => setFormData((prev) => ({ ...prev, planoAtivo: val }))}
+        >
+          <SelectTrigger id="planoAtivo" className="mt-1 bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500">
+            <SelectValue placeholder="Selecione o plano" />
+          </SelectTrigger>
+          <SelectContent className="bg-slate-800 border border-pink-500/30">
+            <SelectItem value="essencial">Essencial</SelectItem>
+            <SelectItem value="avancado">Avançado</SelectItem>
+            <SelectItem value="escalado">Escalado</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div>
-        {/* --- CORREÇÃO DE ESTILO --- */}
-        <Label htmlFor="senha" className="text-gray-300">Nova Senha (opcional)</Label>
+        <Label htmlFor="senha" className="text-pink-300">Nova Senha (opcional)</Label>
         <PasswordInput
           id="senha"
           name="senha"
           placeholder="Deixe em branco para não alterar"
           onChange={handleChange}
-          // --- CORREÇÃO DE ESTILO ---
-          className="bg-gray-800 border-gray-600 text-white"
+          className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
         />
       </div>
       <DialogFooter>
         <DialogClose asChild>
-          {/* --- CORREÇÃO DE ESTILO --- */}
-          <Button type="button" variant="outline" onClick={onCancel} className="text-white border-gray-600 hover:bg-gray-700 hover:text-white">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            className="border-pink-500 text-pink-400 hover:bg-pink-500/10 hover:text-white"
+          >
             Cancelar
           </Button>
         </DialogClose>
-        <Button type="submit">Salvar</Button>
+        <Button
+          type="submit"
+          className="bg-pink-600 hover:bg-pink-700 text-white shadow-md shadow-pink-600/30"
+        >
+          Salvar
+        </Button>
       </DialogFooter>
     </form>
   );
@@ -278,31 +289,32 @@ export default function AdminPage() {
   if (error) return <div className="p-8 text-red-500">Erro: {error}</div>;
 
   return (
-    <div className="p-4 sm:p-8 bg-gray-900 text-white min-h-screen font-sans">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold">Painel de Administração</h1>
-        <p className="text-gray-400">Gerenciamento de dados da aplicação.</p>
+    <div className="min-h-screen bg-slate-900 text-white font-sans p-4 sm:p-8">
+      <header className="mb-10 pb-6 border-b border-pink-500/30 sticky top-0 bg-slate-900/90 backdrop-blur z-10 -mx-4 px-4">
+        <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-linear-to-r from-pink-400 to-purple-400 tracking-tight">
+          Painel de Administração
+        </h1>
+        <p className="text-slate-400 mt-2 text-sm max-w-2xl leading-relaxed">Gerencie empresas, diagnósticos e dados essenciais do sistema em um ambiente unificado com a identidade visual padrão.</p>
       </header>
 
       <Tabs defaultValue="empresas" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 max-w-md bg-gray-800">
-          {/* --- CORREÇÃO DE ESTILO --- */}
-          <TabsTrigger value="empresas" className="data-[state=active]:bg-gray-700 data-[state=active]:text-white text-gray-300">
+        <TabsList className="grid w-full grid-cols-2 max-w-md bg-slate-800/60 border border-slate-700/60 rounded-lg">
+          <TabsTrigger value="empresas" className="data-[state=active]:bg-pink-600 data-[state=active]:text-white text-slate-300 rounded-md transition-colors">
             Empresas ({empresas.length})
           </TabsTrigger>
-          <TabsTrigger value="diagnosticos" className="data-[state=active]:bg-gray-700 data-[state=active]:text-white text-gray-300">
+          <TabsTrigger value="diagnosticos" className="data-[state=active]:bg-pink-600 data-[state=active]:text-white text-slate-300 rounded-md transition-colors">
             Diagnósticos ({diagnosticos.length})
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="empresas">
-          <div className="mb-4 flex items-center gap-3">
-            <Button onClick={handleAddNewEmpresa}>Adicionar Nova Empresa</Button>
+          <div className="mb-6 flex items-center gap-3 flex-wrap">
+            <Button onClick={handleAddNewEmpresa} className="bg-pink-600 hover:bg-pink-700 text-white shadow-md shadow-pink-600/30">Adicionar Nova Empresa</Button>
             <Button onClick={async () => {
               // Quick-create: open modal prefilled
               setEditingEmpresa({ nome_empresa: "", email: "", cnpj: "" });
               setIsDialogOpen(true);
-            }} variant="secondary">Criar Empresa (form)</Button>
+            }} variant="outline" className="border-pink-500 text-pink-400 hover:bg-pink-500/10 hover:text-white">Criar Empresa (form)</Button>
             <Button
               onClick={async () => {
                 // Quick-create automatic company with minimal info
@@ -330,34 +342,34 @@ export default function AdminPage() {
                   setCreatingEmpresa(false);
                 }
               }}
+              className="bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-600/30"
             >
               {creatingEmpresa ? 'Criando...' : 'Criar Empresa de Teste'}
             </Button>
           </div>
-          <div className="overflow-x-auto bg-gray-800 rounded-lg">
+          <div className="overflow-x-auto bg-slate-800/60 border border-slate-700/60 rounded-lg shadow-sm">
             <table className="w-full text-sm text-left">
-              <thead className="text-xs text-gray-300 uppercase bg-gray-700">
+              <thead className="text-xs text-slate-300 uppercase bg-slate-900/60 border-b border-pink-500/30">
                 <tr>
-                  <th className="p-4">Nome da Empresa</th>
-                  <th className="p-4">Email</th>
-                  <th className="p-4">CNPJ</th>
-                  <th className="p-4">Cadastro</th>
-                  <th className="p-4">Plano</th>
-                  <th className="p-4">Ações</th>
+                  <th className="p-4 font-semibold">Nome da Empresa</th>
+                  <th className="p-4 font-semibold">Email</th>
+                  <th className="p-4 font-semibold">CNPJ</th>
+                  <th className="p-4 font-semibold">Cadastro</th>
+                  <th className="p-4 font-semibold">Plano</th>
+                  <th className="p-4 font-semibold">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {empresas.map((empresa) => (
-                  <tr key={empresa._id} className="border-b border-gray-700 hover:bg-gray-700">
-                    <td className="p-4">{empresa.nome_empresa}</td>
-                    <td className="p-4">{empresa.email}</td>
-                    <td className="p-4">{empresa.cnpj}</td>
-                    <td className="p-4">{formatEmpresaData(empresa)}</td>
-                    <td className="p-4">{empresa.planoAtivo || "N/A"}</td>
+                  <tr key={empresa._id} className="border-b border-slate-700/60 hover:bg-slate-900/70 transition-colors">
+                    <td className="p-4 text-slate-200">{empresa.nome_empresa}</td>
+                    <td className="p-4 text-slate-400">{empresa.email}</td>
+                    <td className="p-4 text-slate-400">{empresa.cnpj}</td>
+                    <td className="p-4 text-slate-400">{formatEmpresaData(empresa)}</td>
+                    <td className="p-4 text-slate-300">{empresa.planoAtivo || "N/A"}</td>
                     <td className="p-4 flex gap-2">
-                      {/* --- CORREÇÃO DE ESTILO --- */}
-                      <Button size="sm" onClick={() => handleEditEmpresa(empresa)} className="bg-pink-600 hover:bg-pink-700 text-white border-pink-600">Editar</Button>
-                      <Button variant="destructive" size="sm" onClick={() => handleDeleteEmpresa(empresa._id)}>Excluir</Button>
+                      <Button size="sm" onClick={() => handleEditEmpresa(empresa)} className="border-pink-500 text-pink-400 hover:bg-pink-500/10 hover:text-white" variant="outline">Editar</Button>
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteEmpresa(empresa._id)} className="bg-red-600 hover:bg-red-700 text-white">Excluir</Button>
                     </td>
                   </tr>
                 ))}
@@ -367,7 +379,7 @@ export default function AdminPage() {
         </TabsContent>
 
         <TabsContent value="diagnosticos">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-6">
             <div>
               <Button
                 variant="destructive"
@@ -381,21 +393,21 @@ export default function AdminPage() {
                 {bulkDeleting ? 'Excluindo...' : 'Excluir selecionados'}
               </Button>
             </div>
-            <div className="text-sm text-gray-300">Selecionados: {selectedDiagnosticos.size}</div>
+            <div className="text-sm text-slate-400">Selecionados: {selectedDiagnosticos.size}</div>
           </div>
 
           {/* Bulk delete confirmation dialog */}
           <Dialog open={showBulkConfirm} onOpenChange={setShowBulkConfirm}>
-            <DialogContent className="bg-gray-900 border-gray-700 text-white">
+            <DialogContent className="bg-slate-900/95 border border-pink-500/30 text-white backdrop-blur">
               <DialogHeader>
-                <DialogTitle>Confirmar exclusão em lote</DialogTitle>
+                <DialogTitle className="text-transparent bg-clip-text bg-linear-to-r from-pink-400 to-purple-400">Confirmar exclusão em lote</DialogTitle>
               </DialogHeader>
               <div className="py-2">
-                <p>Deseja excluir {selectedDiagnosticos.size} diagnósticos selecionados? Esta ação é irreversível.</p>
+                <p className="text-slate-300">Deseja excluir {selectedDiagnosticos.size} diagnósticos selecionados? Esta ação é irreversível.</p>
               </div>
               <DialogFooter>
                 <DialogClose asChild>
-                  <Button variant="outline" onClick={() => setShowBulkConfirm(false)}>Cancelar</Button>
+                  <Button variant="outline" onClick={() => setShowBulkConfirm(false)} className="border-pink-500/40 text-pink-300 hover:bg-pink-500/10 hover:text-white">Cancelar</Button>
                 </DialogClose>
                 <Button
                   variant="destructive"
@@ -427,9 +439,9 @@ export default function AdminPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <div className="overflow-x-auto bg-gray-800 rounded-lg">
+          <div className="overflow-x-auto bg-slate-800/60 border border-slate-700/60 rounded-lg shadow-sm">
             <table className="w-full text-sm text-left">
-              <thead className="text-xs text-gray-300 uppercase bg-gray-700">
+              <thead className="text-xs text-slate-300 uppercase bg-slate-900/60 border-b border-pink-500/30">
                 <tr>
                   <th className="p-4">
                     <input
@@ -444,16 +456,16 @@ export default function AdminPage() {
                       }}
                     />
                   </th>
-                  <th className="p-4">Empresa</th>
-                  <th className="p-4">Dimensões</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4">Data</th>
-                  <th className="p-4">Ações</th>
+                  <th className="p-4 font-semibold">Empresa</th>
+                  <th className="p-4 font-semibold">Dimensões</th>
+                  <th className="p-4 font-semibold">Status</th>
+                  <th className="p-4 font-semibold">Data</th>
+                  <th className="p-4 font-semibold">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {diagnosticos.map((diag) => (
-                  <tr key={diag._id} className="border-b border-gray-700 hover:bg-gray-700">
+                  <tr key={diag._id} className="border-b border-slate-700/60 hover:bg-slate-900/70 transition-colors">
                     <td className="p-4">
                       <input
                         type="checkbox"
@@ -466,12 +478,12 @@ export default function AdminPage() {
                         }}
                       />
                     </td>
-                    <td className="p-4">{diag.empresa?.nome_empresa || diag.perfil.empresa}</td>
-                    <td className="p-4">{diag.dimensoesSelecionadas.join(", ")}</td>
-                    <td className="p-4">{diag.status}</td>
-                    <td className="p-4">{new Date(diag.createdAt).toLocaleDateString()}</td>
+                    <td className="p-4 text-slate-200">{diag.empresa?.nome_empresa || diag.perfil.empresa}</td>
+                    <td className="p-4 text-slate-400">{diag.dimensoesSelecionadas.join(", ")}</td>
+                    <td className="p-4 text-slate-300">{diag.status}</td>
+                    <td className="p-4 text-slate-400">{new Date(diag.createdAt).toLocaleDateString()}</td>
                     <td className="p-4">
-                      <Button variant="destructive" size="sm" onClick={() => handleDeleteDiagnostico(diag._id)}>Excluir</Button>
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteDiagnostico(diag._id)} className="bg-red-600 hover:bg-red-700 text-white">Excluir</Button>
                     </td>
                   </tr>
                 ))}
@@ -482,10 +494,9 @@ export default function AdminPage() {
       </Tabs>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        {/* --- CORREÇÃO DE ESTILO --- */}
-        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+        <DialogContent className="bg-slate-900/95 border border-pink-500/30 text-white backdrop-blur">
           <DialogHeader>
-            <DialogTitle>{editingEmpresa?._id ? "Editar Empresa" : "Criar Nova Empresa"}</DialogTitle>
+            <DialogTitle className="text-transparent bg-clip-text bg-linear-to-r from-pink-400 to-purple-400">{editingEmpresa?._id ? "Editar Empresa" : "Criar Nova Empresa"}</DialogTitle>
           </DialogHeader>
           {editingEmpresa && (
             <EmpresaForm
