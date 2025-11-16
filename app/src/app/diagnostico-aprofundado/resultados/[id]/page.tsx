@@ -253,23 +253,7 @@ export default function ResultadoDiagnosticoPage() {
     y += 10; 
 
     // --- 4. EXTRAIR MAPEAMENTO (JSON) PARA TABELA ---
-    type TrilhasMap = {
-      desafio?: string;
-      problema?: string; // suporte retrocompatível
-      trilhas: { nome: string; nivel?: string; duracaoHoras?: number; prioridade?: string; justificativa?: string; conteudosChave?: string[] }[];
-    };
-    const extractTrilhasMap = (report: string): TrilhasMap[] | null => {
-      const jsonBlocks = Array.from(report.matchAll(/```json([\s\S]*?)```/gi));
-      for (const m of jsonBlocks) {
-        try {
-          const obj = JSON.parse(m[1]);
-          if (obj?.trilhasMapeadas && Array.isArray(obj.trilhasMapeadas)) {
-            return obj.trilhasMapeadas as TrilhasMap[];
-          }
-        } catch {}
-      }
-      return null;
-    };
+    // (Removido) Lógica de extração e renderização de tabela de trilhas
 
     // --- 4. PROCESSAMENTO DO MARKDOWN ---
     // Pré-processa o relatório: remove o título padrão e substitui "Sua Empresa" pelo nome real
@@ -282,131 +266,46 @@ export default function ResultadoDiagnosticoPage() {
     };
 
     const stripJsonBlocks = (txt: string) => txt.replace(/```json[\s\S]*?```/gi, "");
+    const stripHtmlTables = (txt: string) => txt.replace(/<table[\s\S]*?<\/table>/gi, "");
+    const stripResumoDasTrilhasHeading = (txt: string) => txt.replace(/^\s{0,3}#{1,6}.*Resumo\s+das\s+Trilhas.*$/gim, "");
+    const stripMappingTableArtifacts = (txt: string) => {
+      const lines = txt.split('\n');
+      const result: string[] = [];
+      let skipping = false;
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmed = line.trim();
+        const isHeading = /tabela\s+de\s+correspond[êe]ncia/i.test(trimmed) || /resumo\s+das\s+trilhas/i.test(trimmed);
+        const isPipeHeader = /^\|/.test(trimmed) && /(Problema|Desafio)/i.test(trimmed) && /Trilha/i.test(trimmed);
+        if (!skipping && (isHeading || isPipeHeader)) {
+          skipping = true;
+          continue;
+        }
+        if (skipping) {
+          if (/^\|/.test(trimmed)) {
+            continue; // ainda dentro da tabela markdown
+          } else if (trimmed === '') {
+            skipping = false; // fim da tabela após linha em branco
+            continue;
+          } else {
+            // próxima seção normal
+            skipping = false;
+          }
+        }
+        if (!skipping) result.push(line);
+      }
+      return result.join('\n');
+    };
     const stripJsonHeading = (txt: string) => txt
       .replace(/^\s{0,3}#{1,6}.*Saída\s+Estruturada[\s\S]*?\(\s*JSON\s*\)\s*$/gim, "")
       .replace(/^\s{0,3}#{1,6}.*JSON.*Saída\s+Estruturada.*$/gim, "")
       .replace(/Saída\s+Estruturada\s*–?\s*Trilhas\s+Mapeadas\s*\(\s*JSON\s*\)/gi, "");
     const preprocessed = preprocessReport(diagnostico.finalReport, nomeEmpresa);
-    const processedReport = stripJsonBlocks(stripJsonHeading(preprocessed));
+    const processedReport = stripMappingTableArtifacts(stripResumoDasTrilhasHeading(stripHtmlTables(stripJsonBlocks(stripJsonHeading(preprocessed)))));
     const lines = processedReport.split('\n');
-    const trilhasMapeadas = extractTrilhasMap(preprocessed);
+    // (Removido) Extração de trilhas mapeadas
 
-    // Fallback: extrair mapeamento a partir de uma tabela HTML no relatório
-    const extractFromHtmlTable = (report: string) => {
-      const tableMatch = report.match(/<table[\s\S]*?<\/table>/i);
-      if (!tableMatch) return null;
-      const table = tableMatch[0];
-      const rowRegex = /<tr[\s\S]*?<\/tr>/gi;
-      const cellRegex = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
-      const rows = table.match(rowRegex) || [];
-      if (rows.length < 2) return null;
-      const headerCells = Array.from(rows[0].matchAll(cellRegex)).map(m => m[1].replace(/<[^>]*>/g, '').trim().toLowerCase());
-      const idxDesafio = headerCells.findIndex(h => h.includes('desafio') || h.includes('problema'));
-      const idxTrilha = headerCells.findIndex(h => h.includes('trilha'));
-      const idxNivel = headerCells.findIndex(h => h.includes('nível') || h.includes('nivel'));
-      const idxDur = headerCells.findIndex(h => h.includes('duração') || h.includes('duracao'));
-      const idxConteudos = headerCells.findIndex(h => h.includes('conteúdos') || h.includes('conteudos'));
-      if (idxDesafio === -1 || idxTrilha === -1) return null;
-      const maps: { desafio: string; trilhas: { nome: string; nivel?: string; duracaoHoras?: number; conteudosChave?: string[] }[] }[] = [];
-      rows.slice(1).forEach(r => {
-        const cells = Array.from(r.matchAll(cellRegex)).map(m => m[1].replace(/<[^>]*>/g, '').trim());
-        if (cells.length === 0) return;
-        const desafio = cells[idxDesafio] || '-';
-        const nome = cells[idxTrilha] || '-';
-        const nivel = idxNivel !== -1 ? (cells[idxNivel] || undefined) : undefined;
-        const duracaoStr = idxDur !== -1 ? (cells[idxDur] || '') : '';
-        const duracaoHoras = /([0-9]+)\s*h/i.test(duracaoStr) ? parseInt(/([0-9]+)\s*h/i.exec(duracaoStr)![1], 10) : undefined;
-        const conteudosStr = idxConteudos !== -1 ? (cells[idxConteudos] || '') : '';
-        const conteudosChave = conteudosStr ? conteudosStr.split(/[;,]/).map(s => s.trim()).filter(Boolean) : undefined;
-        if (!desafio && !nome) return;
-        maps.push({ desafio, trilhas: [{ nome, nivel, duracaoHoras, conteudosChave }] });
-      });
-      return maps.length ? maps : null;
-    };
-
-    // Seção de tabela no final do documento
-    const drawMappingTable = (maps: TrilhasMap[]) => {
-      if (!maps || maps.length === 0) return;
-      // Título da seção
-      const title = "Resumo das Trilhas";
-      addPageIfNeeded(16);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.setTextColor("#f1f5f9");
-      doc.text(title, margin, y);
-      y += 4;
-      doc.setDrawColor(236, 72, 153);
-      doc.line(margin, y, pageWidth - margin, y);
-      y += 4;
-
-      // Cabeçalho da tabela (larguras balanceadas)
-      const colProblemaW = textWidth * 0.25;
-      const colTrilhaW = textWidth * 0.28;
-      const colNivelW = textWidth * 0.12;
-      const colDuracaoW = textWidth * 0.10;
-      const colConteudosW = textWidth * 0.25;
-      const headerH = 9;
-      addPageIfNeeded(headerH + 2);
-      doc.setFillColor(24, 24, 27);
-      doc.rect(margin, y, textWidth, headerH, "F");
-      doc.setDrawColor(236, 72, 153);
-      doc.rect(margin, y, textWidth, headerH);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.setTextColor("#f1f5f9");
-      doc.text("Desafio", margin + 2, y + 6);
-      doc.text("Trilha", margin + 2 + colProblemaW, y + 6);
-      doc.text("Nível", margin + 2 + colProblemaW + colTrilhaW, y + 6);
-      doc.text("Duração", margin + 2 + colProblemaW + colTrilhaW + colNivelW, y + 6);
-      doc.text("Conteúdos-chave", margin + 2 + colProblemaW + colTrilhaW + colNivelW + colDuracaoW, y + 6);
-      y += headerH;
-
-      const drawRow = (p: string, t: {nome:string;nivel?:string;duracaoHoras?:number;conteudosChave?:string[]}) => {
-        const pad = 2;
-        const lineH = 5;
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
-        const linhasProblema = doc.splitTextToSize(p, colProblemaW - pad*2);
-        const linhasTrilha = doc.splitTextToSize(t.nome || '-', colTrilhaW - pad*2);
-        const nivelStr = t.nivel || '-';
-        const durStr = typeof t.duracaoHoras === 'number' ? `${t.duracaoHoras}h` : '-';
-        const conteudosStr = (t.conteudosChave && t.conteudosChave.length>0) ? t.conteudosChave.join(", ") : '-';
-        const linhasConteudos = doc.splitTextToSize(conteudosStr, colConteudosW - pad*2);
-        const cellsHigh = Math.max(linhasProblema.length, linhasTrilha.length, 1, 1, linhasConteudos.length);
-        const rowH = Math.max(cellsHigh * lineH, 8);
-        addPageIfNeeded(rowH + 2);
-        // fundo da linha
-        doc.setFillColor(17, 24, 39);
-        doc.rect(margin, y, textWidth, rowH, "F");
-        // bordas
-        doc.setDrawColor(71, 85, 105);
-        doc.rect(margin, y, colProblemaW, rowH);
-        doc.rect(margin + colProblemaW, y, colTrilhaW, rowH);
-        doc.rect(margin + colProblemaW + colTrilhaW, y, colNivelW, rowH);
-        doc.rect(margin + colProblemaW + colTrilhaW + colNivelW, y, colDuracaoW, rowH);
-        doc.rect(margin + colProblemaW + colTrilhaW + colNivelW + colDuracaoW, y, colConteudosW, rowH);
-        // textos
-        doc.setTextColor("#cbd5e1");
-        let ty = y + 4;
-        linhasProblema.forEach((ln:string)=>{ doc.text(ln, margin+pad, ty); ty+=lineH; });
-        ty = y + 4;
-        linhasTrilha.forEach((ln:string)=>{ doc.text(ln, margin+colProblemaW+pad, ty); ty+=lineH; });
-        doc.text(nivelStr, margin+colProblemaW+colTrilhaW+pad, y+4);
-        doc.text(durStr, margin+colProblemaW+colTrilhaW+colNivelW+pad, y+4);
-        ty = y + 4;
-        linhasConteudos.forEach((ln:string)=>{ doc.text(ln, margin+colProblemaW+colTrilhaW+colNivelW+colDuracaoW+pad, ty); ty+=lineH; });
-        y += rowH;
-      };
-
-      maps.forEach(m => {
-        if (!m?.trilhas || m.trilhas.length === 0) return;
-        const titulo = (m.desafio || m.problema || "-");
-        m.trilhas.slice(0,2).forEach(t => drawRow(titulo, t));
-      });
-      y += 6;
-    };
-
-    // (Removido) A tabela será adicionada ao final do documento
+    // (Removido) Funções de parsing/renderização de tabela
 
     lines.forEach((line, index) => { 
       const trimmedLine = line.trim();
@@ -508,13 +407,7 @@ export default function ResultadoDiagnosticoPage() {
       }
     });
 
-    // --- 5. INSERIR 'RESUMO DAS TRILHAS' AO FINAL ---
-    const htmlMaps = extractFromHtmlTable(preprocessed);
-    const mapsForTable = trilhasMapeadas || htmlMaps;
-    if (mapsForTable && (mapsForTable as any[]).length) {
-      addPageIfNeeded(30);
-      drawMappingTable(mapsForTable as TrilhasMap[]);
-    }
+    // --- 5. (Removido) Inserção de tabela de trilhas ao final ---
 
     // --- 6. ADICIONAR RODAPÉ NA ÚLTIMA PÁGINA ---
     addFooter();
@@ -647,12 +540,42 @@ export default function ResultadoDiagnosticoPage() {
                 .replace(/^\s{0,3}#{1,6}.*Saída\s+Estruturada[\s\S]*?\(\s*JSON\s*\)\s*$/gim, "")
                 .replace(/^\s{0,3}#{1,6}.*JSON.*Saída\s+Estruturada.*$/gim, "")
                 .replace(/Saída\s+Estruturada\s*–?\s*Trilhas\s+Mapeadas\s*\(\s*JSON\s*\)/gi, "");
+              const stripHtmlTables = (txt: string) => txt.replace(/<table[\s\S]*?<\/table>/gi, "");
+              const stripResumoDasTrilhasHeading = (txt: string) => txt.replace(/^\s{0,3}#{1,6}.*Resumo\s+das\s+Trilhas.*$/gim, "");
+              const stripMappingTableArtifacts = (txt: string) => {
+                const lines = txt.split('\n');
+                const result: string[] = [];
+                let skipping = false;
+                for (let i = 0; i < lines.length; i++) {
+                  const line = lines[i];
+                  const trimmed = line.trim();
+                  const isHeading = /tabela\s+de\s+correspond[êe]ncia/i.test(trimmed) || /resumo\s+das\s+trilhas/i.test(trimmed);
+                  const isPipeHeader = /^\|/.test(trimmed) && /(Problema|Desafio)/i.test(trimmed) && /Trilha/i.test(trimmed);
+                  if (!skipping && (isHeading || isPipeHeader)) {
+                    skipping = true;
+                    continue;
+                  }
+                  if (skipping) {
+                    if (/^\|/.test(trimmed)) {
+                      continue;
+                    } else if (trimmed === '') {
+                      skipping = false;
+                      continue;
+                    } else {
+                      skipping = false;
+                    }
+                  }
+                  if (!skipping) result.push(line);
+                }
+                return result.join('\n');
+              };
               const processed = stripJsonBlocks(stripJsonHeading((diagnostico.finalReport || '')
                 .split('\n')
                 .filter((ln) => !/^#\s*Relat[óo]rio de Diagn[óo]stico Profundo/i.test(ln.trim()))
                 .join('\n')
                 .replace(/\bSua Empresa\b/gi, empresaNome)));
-              return <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{processed}</ReactMarkdown>;
+              const processedWithoutTables = stripMappingTableArtifacts(stripResumoDasTrilhasHeading(stripHtmlTables(processed)));
+              return <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{processedWithoutTables}</ReactMarkdown>;
             })()}
           </div>
           <div className="mt-10 pt-6 border-t border-slate-700 flex flex-col sm:flex-row justify-center gap-4">
