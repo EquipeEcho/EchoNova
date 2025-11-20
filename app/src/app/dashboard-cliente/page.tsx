@@ -955,7 +955,7 @@ export default function DashboardClientePage() {
                     key={trilha.id}
                     className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-6 hover:border-fuchsia-700/50 transition-all"
                   >
-                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                    <div className="flex flex-col gap-4">
                       <div className="flex-1">
                         <div className="flex flex-wrap items-center gap-2 mb-3">
                           <h3 className="text-xl font-semibold text-white">
@@ -981,7 +981,7 @@ export default function DashboardClientePage() {
                           {trilha.descricao}
                         </p>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                           <div className="flex items-center gap-2 text-sm text-neutral-400">
                             <BookOpen className="h-4 w-4" />
                             <span>{trilha.modulos} módulos</span>
@@ -1004,51 +1004,18 @@ export default function DashboardClientePage() {
                               </span>
                             </div>
                           )}
+                          {trilha.dataConclusao && (
+                            <div className="flex items-center gap-2 text-sm text-green-400">
+                              <CheckCircle className="h-4 w-4" />
+                              <span>
+                                Concluído em{" "}
+                                {new Date(
+                                  trilha.dataConclusao
+                                ).toLocaleDateString("pt-BR")}
+                              </span>
+                            </div>
+                          )}
                         </div>
-
-                        {/* Barra de Progresso */}
-                        <div className="mb-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm text-neutral-400">
-                              Progresso
-                            </span>
-                            <span className="text-sm font-medium text-white">
-                              {trilha.progresso}%
-                            </span>
-                          </div>
-                          <div className="w-full bg-neutral-700 rounded-full h-2">
-                            <div
-                              className="bg-linear-to-r from-fuchsia-600 to-pink-600 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${trilha.progresso}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col gap-2 lg:w-40">
-                        <Button
-                          className={`w-full ${
-                            trilha.status === "concluido"
-                              ? "bg-green-700 hover:bg-green-600"
-                              : trilha.status === "em_andamento"
-                              ? "bg-blue-700 hover:bg-blue-600"
-                              : "bg-fuchsia-700 hover:bg-fuchsia-600"
-                          } text-white`}
-                        >
-                          {trilha.status === "concluido"
-                            ? "Revisar"
-                            : trilha.status === "em_andamento"
-                            ? "Continuar"
-                            : "Iniciar"}
-                        </Button>
-                        {trilha.dataConclusao && (
-                          <span className="text-xs text-green-400 text-center">
-                            Concluído em{" "}
-                            {new Date(trilha.dataConclusao).toLocaleDateString(
-                              "pt-BR"
-                            )}
-                          </span>
-                        )}
                       </div>
                     </div>
                   </div>
