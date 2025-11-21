@@ -431,6 +431,7 @@ export default function DashboardClientePage() {
   const [metrics, setMetrics] = useState<any>(null);
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [metricsUpdatedAt, setMetricsUpdatedAt] = useState<string | null>(null);
+  const [showDiagnosticoModal, setShowDiagnosticoModal] = useState(false);
 
   // Dados fictícios para os gráficos (seriam substituídos por dados reais)
   const progressoTrilhasData: ProgressoTrilha[] = [
@@ -550,9 +551,11 @@ export default function DashboardClientePage() {
         });
         if (!diagRes.ok) {
           setTrilhas([]);
+          setShowDiagnosticoModal(true); // Mostrar modal se não há diagnóstico
           return;
         }
         const diagData = await diagRes.json();
+        setShowDiagnosticoModal(false); // Esconder modal se há diagnóstico
         // Extrair trilhas recomendadas do structuredData
         let trilhasRecomendadas: Trilha[] = [];
         if (diagData.structuredData && diagData.structuredData.trilhas_recomendadas) {
@@ -1187,6 +1190,42 @@ export default function DashboardClientePage() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Diagnóstico Obrigatório */}
+      {showDiagnosticoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl w-full max-w-md mx-4">
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <BookOpen className="h-10 w-10 text-amber-400" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-4">
+                Diagnóstico Necessário
+              </h2>
+              <p className="text-neutral-300 mb-6 leading-relaxed">
+                Para acessar o dashboard completo, você precisa realizar o diagnóstico aprofundado primeiro.
+                Isso nos ajuda a personalizar as trilhas de aprendizagem para sua empresa.
+              </p>
+              <div className="space-y-3">
+                <Button
+                  onClick={() => router.push("/diagnostico-aprofundado")}
+                  className="w-full bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 rounded-lg transition-all duration-300 shadow-lg"
+                >
+                  <BookOpen className="mr-2 h-5 w-5" />
+                  Fazer Diagnóstico Agora
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowDiagnosticoModal(false)}
+                  className="w-full text-neutral-400 hover:text-white hover:bg-neutral-800 py-3 rounded-lg transition-all duration-300"
+                >
+                  Fechar (Dashboard limitado)
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Trilhas */}
       {showTrilhasModal && (
