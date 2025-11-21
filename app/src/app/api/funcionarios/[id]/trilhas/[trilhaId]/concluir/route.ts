@@ -4,11 +4,11 @@ import Funcionario from "@/models/Funcionario";
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string; trilhaId: string } }
+  { params }: { params: Promise<{ id: string; trilhaId: string }> }
 ) {
   try {
     await connectDB();
-    const { id, trilhaId } = params;
+    const { id, trilhaId } = await params;
 
     if (!id || !trilhaId) {
       return NextResponse.json(

@@ -16,6 +16,10 @@ interface Trilha {
   status: "não_iniciado" | "em_andamento" | "concluido";
   dataInicio?: string;
   dataConclusao?: string;
+  categoria?: string;
+  nivel?: string;
+  duracaoEstimada?: number;
+  thumbnail?: string;
 }
 
 interface Conquista {
@@ -92,6 +96,9 @@ export default function FuncionarioPage() {
           return;
         }
 
+        console.log("🔍 Dados do usuário no store:", user);
+        console.log("🔍 ID que será usado na API:", user.id);
+
         // Busca dados reais do funcionário
         const res = await fetch(`/api/funcionarios/${user.id}/trilhas`, {
           credentials: "include",
@@ -99,23 +106,29 @@ export default function FuncionarioPage() {
 
         if (!res.ok) {
           const errorData = await res.json();
+          console.error("❌ Erro da API:", errorData);
           throw new Error(errorData.error || "Erro ao buscar dados");
         }
 
         const data = await res.json();
+        console.log("✅ Dados retornados pela API:", data);
         
         const funcionarioData: FuncionarioData = {
           nome: data.nome,
           email: data.email,
           matricula: data.matricula,
           cargo: data.cargo,
-          empresa: user.empresaNome || "Empresa",
+          empresa: data.empresa?.nome_empresa || user.empresaNome || "Empresa",
           trilhas: (data.trilhas || []).map((t: any) => ({
             id: t._id,
             nome: t.nome,
             descricao: t.descricao,
             progresso: 0,
             status: "não_iniciado" as const,
+            categoria: t.categoria,
+            nivel: t.nivel,
+            duracaoEstimada: t.duracaoEstimada,
+            thumbnail: t.thumbnail,
           })),
           conquistas: [],
           microcursosConcluidos: [],
@@ -439,9 +452,29 @@ export default function FuncionarioPage() {
                           {statusLabel(t.status)}
                         </span>
                       </div>
-                      <p className="text-sm text-neutral-400 mb-5 line-clamp-3">
+                      <p className="text-sm text-neutral-400 mb-3 line-clamp-3">
                         {t.descricao}
                       </p>
+                      
+                      {/* Info adicional da trilha */}
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {t.categoria && (
+                          <span className="text-xs px-2 py-1 rounded-full border border-fuchsia-700/40 text-fuchsia-300 bg-fuchsia-900/20">
+                            {t.categoria}
+                          </span>
+                        )}
+                        {t.nivel && (
+                          <span className="text-xs px-2 py-1 rounded-full border border-cyan-700/40 text-cyan-300 bg-cyan-900/20">
+                            {t.nivel}
+                          </span>
+                        )}
+                        {t.duracaoEstimada && (
+                          <span className="text-xs px-2 py-1 rounded-full border border-purple-700/40 text-purple-300 bg-purple-900/20">
+                            {t.duracaoEstimada}h
+                          </span>
+                        )}
+                      </div>
+
                       <div className="mb-5">
                         <div className="flex justify-between text-xs mb-1">
                           <span className="text-neutral-500">Progresso</span>

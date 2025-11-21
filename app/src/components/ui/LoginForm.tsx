@@ -76,6 +76,9 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Falha no login.");
 
+      console.log("🔐 Resposta do login:", data);
+      console.log("👤 Dados do usuário que serão salvos:", data.user);
+
       if (loginType === "empresa") {
         toast.success(`Bem-vindo(a), ${data.user.nome_empresa}!`);
       } else {
@@ -83,6 +86,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       }
 
       loginAction(data.user);
+      console.log("💾 Usuário salvo no store");
       onSuccess && onSuccess();
       router.push("/pos-login");
     } catch (error: unknown) {

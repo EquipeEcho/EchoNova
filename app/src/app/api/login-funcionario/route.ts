@@ -21,12 +21,22 @@ export async function POST(req: Request) {
     }
 
     // Busca funcionário por email OU matrícula
+    console.log("🔍 Buscando funcionário com:", { email, matricula });
+    
+    const query: any[] = [];
+    if (email) query.push({ email });
+    if (matricula) query.push({ matricula });
+    
     const funcionario = await Funcionario.findOne({
-      $or: [
-        email ? { email } : {},
-        matricula ? { matricula } : {},
-      ],
+      $or: query,
     }).populate("empresa", "nome_empresa planoAtivo");
+    
+    console.log("📋 Funcionário encontrado:", funcionario ? {
+      id: funcionario._id,
+      nome: funcionario.nome,
+      email: funcionario.email,
+      matricula: funcionario.matricula
+    } : null);
 
     if (!funcionario) {
       return NextResponse.json(

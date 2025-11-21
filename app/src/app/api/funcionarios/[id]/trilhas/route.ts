@@ -5,11 +5,11 @@ import Trilha from "@/models/Trilha";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
-    const { id } = params;
+    const { id } = await params;
 
     if (!id) {
       return NextResponse.json(
@@ -18,11 +18,13 @@ export async function GET(
       );
     }
 
-    // Busca funcionário e popula trilhas
-    const funcionario = await Funcionario.findById(id).populate({
-      path: "trilhas",
-      model: Trilha,
-    });
+    // Busca funcionário e popula trilhas e empresa
+    const funcionario = await Funcionario.findById(id)
+      .populate({
+        path: "trilhas",
+        model: Trilha,
+      })
+      .populate("empresa", "nome_empresa");
 
     if (!funcionario) {
       return NextResponse.json(
@@ -36,6 +38,7 @@ export async function GET(
       email: funcionario.email,
       cargo: funcionario.cargo,
       matricula: funcionario.matricula,
+      empresa: funcionario.empresa,
       trilhas: funcionario.trilhas || [],
     });
   } catch (error: any) {
