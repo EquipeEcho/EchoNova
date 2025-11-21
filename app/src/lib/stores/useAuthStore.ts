@@ -32,14 +32,10 @@ export const useAuthStore = create<AuthState>()(
       user: null,
 
       // Ação de login: recebe os dados do usuário e os armazena no estado.
-      login: (userData) => {
-        console.log("🔄 Login action chamado com:", userData);
-        set({ user: userData });
-      },
+      login: (userData) => set({ user: userData }),
 
       // Ação de logout: limpa os dados do usuário do estado.
       logout: () => {
-        console.log("🚪 Logout action chamado");
         set({ user: null });
         // Limpar também o localStorage manualmente para garantir
         localStorage.removeItem('auth-storage');

@@ -96,9 +96,6 @@ export default function FuncionarioPage() {
           return;
         }
 
-        console.log("🔍 Dados do usuário no store:", user);
-        console.log("🔍 ID que será usado na API:", user.id);
-
         // Busca dados reais do funcionário
         const res = await fetch(`/api/funcionarios/${user.id}/trilhas`, {
           credentials: "include",
@@ -106,12 +103,10 @@ export default function FuncionarioPage() {
 
         if (!res.ok) {
           const errorData = await res.json();
-          console.error("❌ Erro da API:", errorData);
           throw new Error(errorData.error || "Erro ao buscar dados");
         }
 
         const data = await res.json();
-        console.log("✅ Dados retornados pela API:", data);
         
         const funcionarioData: FuncionarioData = {
           nome: data.nome,
