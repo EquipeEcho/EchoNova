@@ -86,12 +86,14 @@ const MetricCard = ({
   description,
   onClick,
   clickable,
-}: MetricCardProps & { onClick?: () => void; clickable?: boolean }) => (
+  tooltip,
+}: MetricCardProps & { onClick?: () => void; clickable?: boolean; tooltip?: string }) => (
   <div
     className={`bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 hover:border-gray-600 transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-1 ${
       clickable ? "cursor-pointer" : ""
     }`}
     onClick={onClick}
+    title={tooltip}
   >
     <div className="flex items-center justify-between">
       <div>
@@ -426,6 +428,9 @@ export default function DashboardClientePage() {
   const [trilhas, setTrilhas] = useState<Trilha[]>([]);
   const router = useRouter();
   const { user: authUser, logout } = useAuthStore();
+  const [metrics, setMetrics] = useState<any>(null);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+  const [metricsUpdatedAt, setMetricsUpdatedAt] = useState<string | null>(null);
 
   // Dados fictícios para os gráficos (seriam substituídos por dados reais)
   const progressoTrilhasData: ProgressoTrilha[] = [
@@ -454,44 +459,62 @@ export default function DashboardClientePage() {
     { mes: "Jun", pontos: 85, media: 70 },
   ];
 
-  // Métricas para os cards
+  // Métricas para os cards (dinâmicas)
   const metricCards = [
     {
       title: "Trilhas Ativas",
-      value: trilhas
-        .filter((t) => t.status === "em_andamento")
-        .length.toString(),
+      value: metrics ? metrics.totalTrilhasAtivas : "-",
       icon: <BookOpen className="h-8 w-8 text-blue-400" />,
       color: "bg-blue-500",
-      description: "Trilhas em andamento",
+      description: "Soma das trilhas não concluídas",
       clickable: true,
       onClick: () => setShowTrilhasModal(true),
+      tooltip: "Total de trilhas associadas aos funcionários que ainda não foram concluídas",
     },
     {
       title: "Progresso Médio",
-      value: "58%",
+      value: metrics ? `${metrics.progressoMedioPercent}%` : "-",
       icon: <TrendingUp className="h-8 w-8 text-green-400" />,
       color: "bg-green-500",
-      description: "Média de conclusão",
+      description: "Conclusões / Total atribuídas",
       clickable: false,
+      tooltip: `Cálculo: (Total de trilhas concluídas / Total de trilhas atribuídas) × 100`,
     },
     {
       title: "Horas Estudadas",
-      value: "42",
+      value: metrics ? `${metrics.horasEstudadasTotal}h` : "-",
       icon: <Clock className="h-8 w-8 text-purple-400" />,
       color: "bg-purple-500",
-      description: "Nas últimas 4 semanas",
+      description: "Somatório de durações concluídas",
       clickable: false,
+      tooltip: "Soma de todas as horas estimadas (duracaoEstimada) das trilhas já concluídas por todos os funcionários",
     },
     {
       title: "Objetivos Concluídos",
-      value: "12",
+      value: metrics ? (metrics.objetivosConcluidosPercent > 0 ? `${metrics.objetivosConcluidosPercent}%` : `0/${metrics.totalTrilhasEmpresa}`) : "-",
       icon: <CheckCircle className="h-8 w-8 text-yellow-400" />,
       color: "bg-yellow-500",
-      description: "Neste mês",
+      description: "Média de conclusão das trilhas da empresa",
       clickable: false,
+      tooltip: "Para cada trilha: (funcionários que concluíram / total funcionários). Depois calcula a média de todas as trilhas.",
     },
   ];
+
+  const fetchMetrics = async () => {
+    if (!authUser) return;
+    try {
+      setMetricsLoading(true);
+      const res = await fetch(`/api/empresa/${authUser.id}/dashboard`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Erro ao carregar métricas');
+      const data = await res.json();
+      setMetrics(data);
+      setMetricsUpdatedAt(data.updatedAt);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setMetricsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (isLoggingOut) return;
@@ -559,6 +582,7 @@ export default function DashboardClientePage() {
     };
 
     fetchUserData();
+    fetchMetrics();
   }, [authUser, router, isLoggingOut]);
 
   const handleLogout = () => {
@@ -884,10 +908,18 @@ export default function DashboardClientePage() {
                   Acompanhe o progresso e desempenho das trilhas de aprendizagem
                 </p>
               </div>
-              <div className="mt-4 md:mt-0">
+              <div className="mt-4 md:mt-0 flex items-center gap-2">
                 <div className="bg-gray-800 px-4 py-2 rounded-lg">
-                  <p className="text-gray-400 text-sm">Atualizado agora</p>
+                  <p className="text-gray-400 text-xs">{metricsUpdatedAt ? `Atualizado às ${new Date(metricsUpdatedAt).toLocaleTimeString('pt-BR')}` : 'Calculando...'}</p>
                 </div>
+                <Button
+                  variant="outline"
+                  className="text-xs border-fuchsia-600 text-fuchsia-400 hover:bg-fuchsia-600/10 cursor-pointer"
+                  disabled={metricsLoading}
+                  onClick={fetchMetrics}
+                >
+                  {metricsLoading ? 'Atualizando...' : 'Atualizar agora'}
+                </Button>
               </div>
             </div>
           </div>
@@ -904,53 +936,168 @@ export default function DashboardClientePage() {
                 description={card.description}
                 clickable={card.clickable}
                 onClick={card.onClick}
+                tooltip={card.tooltip}
               />
             ))}
           </div>
 
           {/* Gráficos */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <ProgressoTrilhasChart data={progressoTrilhasData} />
-            <DistribuicaoTrilhasChart data={progressoTrilhasData} />
-          </div>
-
-          {/* Novo gráfico de progresso médio */}
-          <div className="grid grid-cols-1 gap-6 mb-8">
-            <ProgressoMedioChart data={progressoMedioData} />
-          </div>
-
-          {/* Seção adicional de métricas */}
-          <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 mb-8">
-            <h2 className="text-2xl font-bold text-white mb-6">
-              Resumo de Desempenho
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-gray-700/30 p-5 rounded-xl border border-gray-600">
-                <div className="flex items-center mb-3">
-                  <Target className="h-6 w-6 text-blue-400 mr-2" />
-                  <h3 className="text-gray-300 font-medium">Objetivos</h3>
+          {metrics && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              {/* Gráfico de Barras: Progresso por Categoria */}
+              <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700" title="Progresso de conclusão de trilhas por categoria">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-white">Progresso por Categoria</h3>
+                  <div className="flex space-x-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="text-gray-400 text-sm">Concluídas</span>
+                  </div>
                 </div>
-                <p className="text-3xl font-bold text-white">8/10</p>
-                <p className="text-green-400 text-sm mt-1">80% de conclusão</p>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={metrics.trilhasPorCategoria}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#444" vertical={false} />
+                      <XAxis
+                        dataKey="categoria"
+                        stroke="#888"
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                        tickLine={false}
+                      />
+                      <YAxis stroke="#888" tickLine={false} axisLine={false} />
+                      <Tooltip
+                        content={({ active, payload }: any) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            const percentConcluidas = data.total > 0 
+                              ? ((data.concluidas / data.total) * 100).toFixed(1)
+                              : 0;
+                            return (
+                              <div className="bg-gray-800 border border-gray-700 p-4 rounded-lg shadow-lg">
+                                <p className="text-white font-semibold mb-2">{data.categoria}</p>
+                                <p className="text-green-400">Concluídas: <span className="font-bold">{data.concluidas}</span></p>
+                                <p className="text-blue-400">Em Andamento: <span className="font-bold">{data.emAndamento}</span></p>
+                                <p className="text-gray-400">Pendentes: <span className="font-bold">{data.pendentes}</span></p>
+                                <p className="text-white mt-1">Total: <span className="font-bold">{data.total}</span></p>
+                                <p className="text-xs text-gray-400 mt-2">Taxa de conclusão: {percentConcluidas}%</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Legend />
+                      <Bar dataKey="concluidas" name="Concluídas" stackId="a" fill="#10B981" />
+                      <Bar dataKey="emAndamento" name="Em Andamento" stackId="a" fill="#3B82F6" />
+                      <Bar dataKey="pendentes" name="Pendentes" stackId="a" fill="#6B7280" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
-              <div className="bg-gray-700/30 p-5 rounded-xl border border-gray-600">
-                <div className="flex items-center mb-3">
-                  <Calendar className="h-6 w-6 text-green-400 mr-2" />
-                  <h3 className="text-gray-300 font-medium">Dias Ativos</h3>
+
+              {/* Gráfico de Pizza: Distribuição condicional */}
+              <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700" title="Distribuição por categoria ou status">
+                <div className="flex items-center justify-between mb-6">
+                  {(() => {
+                    const isSingle = (metrics.categoriasAssociadas?.length || 0) === 1;
+                    return (
+                      <h3 className="text-xl font-bold text-white">
+                        {isSingle ? "Status da Categoria" : "Distribuição por Categoria"}
+                      </h3>
+                    );
+                  })()}
+                  <div className="flex space-x-2">
+                    <div className="w-3 h-3 bg-fuchsia-500 rounded-full"></div>
+                    <span className="text-gray-400 text-sm">{(metrics.categoriasAssociadas?.length || 0) === 1 ? "Pendentes x Andamento x Concluídas" : "Percentual por categoria"}</span>
+                  </div>
                 </div>
-                <p className="text-3xl font-bold text-white">18</p>
-                <p className="text-green-400 text-sm mt-1">Este mês</p>
-              </div>
-              <div className="bg-gray-700/30 p-5 rounded-xl border border-gray-600">
-                <div className="flex items-center mb-3">
-                  <Award className="h-6 w-6 text-yellow-400 mr-2" />
-                  <h3 className="text-gray-300 font-medium">Certificados</h3>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      {(() => {
+                        const isSingle = (metrics.categoriasAssociadas?.length || 0) === 1;
+                        if (isSingle) {
+                          const cat = metrics.categoriasAssociadas[0];
+                          const item = metrics.trilhasPorCategoria.find((x: any) => x.categoria === cat) || { pendentes: 0, emAndamento: 0, concluidas: 0 };
+                          const data = [
+                            { nome: "Pendentes", valor: item.pendentes, cor: "#6B7280" },
+                            { nome: "Em Andamento", valor: item.emAndamento, cor: "#3B82F6" },
+                            { nome: "Concluídas", valor: item.concluidas, cor: "#10B981" },
+                          ];
+                          return (
+                            <Pie
+                              data={data}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={true}
+                              label={(entry: any) => `${entry.nome}: ${entry.valor}`}
+                              outerRadius={80}
+                              dataKey="valor"
+                              nameKey="nome"
+                              stroke="#1f2937"
+                              strokeWidth={2}
+                            >
+                              {data.map((entry, index) => (
+                                <Cell key={`cell-status-${index}`} fill={entry.cor} />
+                              ))}
+                            </Pie>
+                          );
+                        }
+                        // Caso com múltiplas categorias
+                        return (
+                          <Pie
+                            data={metrics.categoriaDistribuicao}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={true}
+                            label={(entry: any) => `${entry.categoria}: ${entry.percentual}%`}
+                            outerRadius={80}
+                            fill="#A855F7"
+                            dataKey="percentual"
+                            nameKey="categoria"
+                            stroke="#1f2937"
+                            strokeWidth={2}
+                          >
+                            {metrics.categoriaDistribuicao.map((entry, index) => {
+                              const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088FE", "#A855F7"];
+                              return <Cell key={`cell-cat-${index}`} fill={COLORS[index % COLORS.length]} />;
+                            })}
+                          </Pie>
+                        );
+                      })()}
+                      <Tooltip
+                        content={({ active, payload }: any) => {
+                          if (active && payload && payload.length) {
+                            const p = payload[0];
+                            const isSingle = (metrics.categoriasAssociadas?.length || 0) === 1;
+                            return (
+                              <div className="bg-gray-800 border border-gray-700 p-4 rounded-lg shadow-lg">
+                                <p className="text-white font-semibold">{isSingle ? p.payload.nome : p.payload.categoria}</p>
+                                <p className="text-gray-300">
+                                  {isSingle ? (
+                                    <>Quantidade: <span className="text-white font-bold">{p.value}</span></>
+                                  ) : (
+                                    <>Percentual: <span className="text-white font-bold">{p.value}%</span></>
+                                  )}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-1">{isSingle ? metrics.categoriasAssociadas[0] : "Do total de trilhas associadas"}</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-                <p className="text-3xl font-bold text-white">3</p>
-                <p className="text-green-400 text-sm mt-1">Obtidos</p>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Trilhas Recomendadas por Categoria */}
           <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 mb-8">
@@ -958,52 +1105,37 @@ export default function DashboardClientePage() {
               Trilhas Recomendadas por Categoria
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {["Comunicação", "Gestão de Tempo", "Inovação", "Liderança", "Diversidade"].map((categoria) => {
-                const trilhasCategoria = trilhas.filter(t => t.categoria === categoria);
-                const emAndamento = trilhasCategoria.filter(t => t.status === "em_andamento").length;
-                const concluidas = trilhasCategoria.filter(t => t.status === "concluido").length;
-
+              {(metrics?.trilhasPorCategoria || []).map((item: any) => {
+                const categoria = item.categoria;
                 return (
-                  <div key={categoria} className="bg-gray-700/30 p-5 rounded-xl border border-gray-600 hover:border-fuchsia-500/50 transition-all cursor-pointer" onClick={() => setShowTrilhasModal(true)}>
+                  <div key={categoria} className="bg-gray-700/30 p-5 rounded-xl border border-gray-600 hover:border-fuchsia-500/50 transition-all cursor-pointer" title="Dados calculados a partir das trilhas associadas aos funcionários">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-lg font-semibold text-white">{categoria}</h3>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-fuchsia-400">{trilhasCategoria.length}</p>
+                        <p className="text-2xl font-bold text-fuchsia-400">{item.total}</p>
                         <p className="text-xs text-gray-400">trilhas</p>
                       </div>
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-400">Em andamento:</span>
-                        <span className="text-blue-400 font-medium">{emAndamento}</span>
+                        <span className="text-blue-400 font-medium">{item.emAndamento}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-400">Concluídas:</span>
-                        <span className="text-green-400 font-medium">{concluidas}</span>
+                        <span className="text-green-400 font-medium">{item.concluidas}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Pendentes:</span>
+                        <span className="text-gray-300 font-medium">{item.pendentes}</span>
                       </div>
                     </div>
-                    {trilhasCategoria.length > 0 && (
-                      <div className="mt-4 pt-3 border-t border-gray-600">
-                        <p className="text-xs text-gray-400 mb-2">Próximas trilhas:</p>
-                        <div className="space-y-1">
-                          {trilhasCategoria.slice(0, 2).map((trilha) => (
-                            <div key={trilha.id} className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${
-                                trilha.status === "concluido" ? "bg-green-400" :
-                                trilha.status === "em_andamento" ? "bg-blue-400" : "bg-gray-400"
-                              }`}></div>
-                              <span className="text-xs text-gray-300 truncate">{trilha.nome}</span>
-                            </div>
-                          ))}
-                          {trilhasCategoria.length > 2 && (
-                            <p className="text-xs text-fuchsia-400">+{trilhasCategoria.length - 2} mais...</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 );
               })}
+              {(!metrics || metrics.trilhasPorCategoria?.length === 0) && (
+                <div className="text-gray-400 text-sm">Sem dados de trilhas associadas ainda.</div>
+              )}
             </div>
           </div>
 

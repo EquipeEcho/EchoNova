@@ -12,9 +12,18 @@ const FuncionarioSchema = new Schema(
     senha: { type: String, required: true },
 
     trilhas: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Trilha",
-      default: []
+      trilha: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Trilha",
+      },
+      status: {
+        type: String,
+        enum: ["pendente", "em_andamento"],
+        default: "pendente",
+      },
+      dataInicio: {
+        type: Date,
+      },
     }],
 
     trilhasConcluidas: [{
