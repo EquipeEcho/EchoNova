@@ -86,130 +86,55 @@ export default function FuncionarioPage() {
   useEffect(() => {
     const fetchFuncionario = async () => {
       try {
-        const data: FuncionarioData = {
-          nome: "João Silva",
-          email: "joao.silva@empresa.com",
-          matricula: "12345",
-          cargo: "Analista de Vendas",
-          empresa: "Empresa XYZ Ltda",
-          trilhas: [
-            {
-              id: "1",
-              nome: "Técnicas de Vendas Avançadas",
-              descricao: "Domine estratégias modernas de vendas consultivas",
-              progresso: 65,
-              status: "em_andamento",
-              dataInicio: "2025-10-01",
-            },
-            {
-              id: "2",
-              nome: "Atendimento ao Cliente",
-              descricao: "Aprenda a encantar seus clientes",
-              progresso: 100,
-              status: "concluido",
-              dataInicio: "2025-09-01",
-              dataConclusao: "2025-09-30",
-            },
-            {
-              id: "3",
-              nome: "Negociação Eficaz",
-              descricao: "Técnicas de negociação win-win",
-              progresso: 0,
-              status: "não_iniciado",
-            },
-          ],
+        if (!user || user.tipo !== "funcionario") {
+          toast.error("Acesso não autorizado");
+          router.push("/");
+          return;
+        }
+
+        // Busca dados reais do funcionário
+        const res = await fetch(`/api/funcionarios/${user.id}/trilhas`, {
+          credentials: "include",
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.error || "Erro ao buscar dados");
+        }
+
+        const data = await res.json();
+        
+        const funcionarioData: FuncionarioData = {
+          nome: data.nome,
+          email: data.email,
+          matricula: data.matricula,
+          cargo: data.cargo,
+          empresa: user.empresaNome || "Empresa",
+          trilhas: (data.trilhas || []).map((t: any) => ({
+            id: t._id,
+            nome: t.nome,
+            descricao: t.descricao,
+            progresso: 0,
+            status: "não_iniciado" as const,
+          })),
           conquistas: [],
-          microcursosConcluidos: [
-            {
-              id: "m1",
-              titulo: "Argumentação de Valor",
-              categoria: "Vendas",
-              concluidoEm: "2025-09-12",
-              certificadoUrl: "#",
-            },
-            {
-              id: "m2",
-              titulo: "Gestão do Tempo",
-              categoria: "Produtividade",
-              concluidoEm: "2025-09-20",
-              certificadoUrl: "#",
-            },
-            {
-              id: "m3",
-              titulo: "Técnicas de Escuta Ativa",
-              categoria: "Atendimento",
-              concluidoEm: "2025-10-05",
-            },
-          ],
-          microcursosDisponiveis: [
-            {
-              id: "md1",
-              titulo: "Prospecção Digital",
-              descricao:
-                "Aprenda técnicas modernas de prospecção usando ferramentas digitais e redes sociais.",
-              categoria: "Vendas",
-              duracao: "45 min",
-              nivel: "intermediario",
-            },
-            {
-              id: "md2",
-              titulo: "Comunicação Assertiva",
-              descricao:
-                "Desenvolva habilidades de comunicação clara e efetiva no ambiente corporativo.",
-              categoria: "Soft Skills",
-              duracao: "30 min",
-              nivel: "iniciante",
-            },
-            {
-              id: "md3",
-              titulo: "Análise de Métricas de Vendas",
-              descricao:
-                "Entenda e utilize indicadores para melhorar seus resultados em vendas.",
-              categoria: "Análise",
-              duracao: "60 min",
-              nivel: "avancado",
-            },
-            {
-              id: "md4",
-              titulo: "Inteligência Emocional",
-              descricao:
-                "Aprenda a gerenciar suas emoções e desenvolver empatia nas relações profissionais.",
-              categoria: "Desenvolvimento Pessoal",
-              duracao: "40 min",
-              nivel: "iniciante",
-            },
-            {
-              id: "md5",
-              titulo: "Fechamento de Vendas",
-              descricao:
-                "Técnicas comprovadas para aumentar sua taxa de conversão e fechar mais negócios.",
-              categoria: "Vendas",
-              duracao: "50 min",
-              nivel: "intermediario",
-            },
-            {
-              id: "md6",
-              titulo: "Gestão de Conflitos",
-              descricao:
-                "Estratégias para lidar com situações difíceis e resolver conflitos de forma construtiva.",
-              categoria: "Liderança",
-              duracao: "35 min",
-              nivel: "intermediario",
-            },
-          ],
+          microcursosConcluidos: [],
+          microcursosDisponiveis: [],
         };
-        await new Promise((r) => setTimeout(r, 400));
-        setFuncionario(data);
+
+        setFuncionario(funcionarioData);
       } catch (e: any) {
-        toast.error(e.message);
+        console.error("Erro ao buscar funcionário:", e);
+        toast.error(e.message || "Erro ao carregar dados");
+        router.push("/");
       } finally {
         setLoading(false);
       }
     };
-        if (user) {
+    if (user) {
       fetchFuncionario();
     }
-  }, [user]);
+  }, [user, router]);
 
   useEffect(() => {
     if (funcionario) {
@@ -300,6 +225,38 @@ export default function FuncionarioPage() {
       setTab("Perfil");
     } catch (e: any) {
       toast.error(e.message);
+    }
+  };
+
+  const handleConcluirTrilha = async (trilhaId: string) => {
+    if (!user) return;
+
+    try {
+      const res = await fetch(
+        `/api/funcionarios/${user.id}/trilhas/${trilhaId}/concluir`,
+        {
+          method: "POST",
+          credentials: "include",
+        }
+      );
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Erro ao concluir trilha");
+      }
+
+      toast.success("Trilha concluída com sucesso! 🎉");
+
+      // Remove a trilha da lista
+      if (funcionario) {
+        setFuncionario({
+          ...funcionario,
+          trilhas: funcionario.trilhas.filter((t) => t.id !== trilhaId),
+        });
+      }
+    } catch (e: any) {
+      console.error("Erro ao concluir trilha:", e);
+      toast.error(e.message || "Erro ao concluir trilha");
     }
   };
 
@@ -515,18 +472,26 @@ export default function FuncionarioPage() {
                           </div>
                         )}
                       </div>
-                      <Button
-                        className="w-full mt-5 bg-fuchsia-700 hover:bg-fuchsia-600 text-white text-sm"
-                        onClick={() =>
-                          router.push(`/funcionario/trilha/${t.id}`)
-                        }
-                      >
-                        {t.status === "não_iniciado"
-                          ? "Iniciar"
-                          : t.status === "concluido"
-                          ? "Revisar"
-                          : "Continuar"}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          className="flex-1 bg-fuchsia-700 hover:bg-fuchsia-600 text-white text-sm"
+                          onClick={() =>
+                            router.push(`/funcionario/trilha/${t.id}`)
+                          }
+                        >
+                          {t.status === "não_iniciado"
+                            ? "Iniciar"
+                            : t.status === "concluido"
+                            ? "Revisar"
+                            : "Continuar"}
+                        </Button>
+                        <Button
+                          className="flex-1 bg-green-700 hover:bg-green-600 text-white text-sm"
+                          onClick={() => handleConcluirTrilha(t.id)}
+                        >
+                          Concluir
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

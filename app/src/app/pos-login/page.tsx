@@ -73,7 +73,12 @@ export default function PosLoginPage() {
         return;
       }
 
-      // (removido: lógica de funcionário)
+      // Se for funcionário, redireciona para página de funcionários
+      if (user.tipo === "funcionario") {
+        redirected = true;
+        router.push("/pagina-funcionarios");
+        return;
+      }
 
       // Se for empresa, busca empresa e diagnóstico
       try {
