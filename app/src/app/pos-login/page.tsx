@@ -20,11 +20,10 @@ export default function PosLoginPage() {
   const router = useRouter();
   const { user: authUser, logout } = useAuthStore();
 
-  // --- NOVO ESTADO ---
-  // Armazena o ID do último diagnóstico, se existir.
-  const [ultimoDiagnosticoId, setUltimoDiagnosticoId] = useState<string | null>(
-    null
-  );
+  // Estado para trilhas do funcionário
+  // (removido, pois não existia antes da sessão)
+  // Estado para diagnóstico (apenas para empresa)
+  const [ultimoDiagnosticoId, setUltimoDiagnosticoId] = useState<string | null>(null);
 
   useEffect(() => {
     let redirected = false;
@@ -74,14 +73,20 @@ export default function PosLoginPage() {
         return;
       }
 
+      // (removido: lógica de funcionário)
+
+      // Se for empresa, busca empresa e diagnóstico
       try {
-        // --- LÓGICA DE BUSCA DOS DOIS DADOS EM PARALELO ---
+        const empresaId = user.empresaId || user.id;
         const [empresaRes, ultimoDiagRes] = await Promise.all([
-          fetch(`/api/empresa/${user.id}`),
-          fetch(`/api/diagnostico-aprofundado/ultimo`), // Busca o último diagnóstico
+          fetch(`/api/empresa/${empresaId}`, {
+            credentials: "include",
+          }),
+          fetch(`/api/diagnostico-aprofundado/ultimo`, {
+            credentials: "include",
+          }),
         ]);
 
-        // Processa dados da empresa
         if (!empresaRes.ok) {
           const errorData = await empresaRes.json();
           throw new Error(errorData.error || "Erro ao buscar dados do usuário");
@@ -94,19 +99,15 @@ export default function PosLoginPage() {
         };
         setUserInfo(userData);
 
-        // Processa o resultado do último diagnóstico
         if (ultimoDiagRes.ok) {
           const diagData = await ultimoDiagRes.json();
-          setUltimoDiagnosticoId(diagData._id); // Salva o ID do diagnóstico
+          setUltimoDiagnosticoId(diagData._id);
         } else if (ultimoDiagRes.status === 404) {
-          console.log("Nenhum diagnóstico aprofundado anterior encontrado.");
-          setUltimoDiagnosticoId(null); // Garante que o estado é nulo
+          setUltimoDiagnosticoId(null);
         }
       } catch (error) {
         console.error("Erro ao carregar informações da página:", error);
         if (!redirected) {
-          // Apenas redireciona se o erro for crítico (como falha ao buscar dados da empresa)
-          // Se for só o 404 do diagnóstico, a página deve carregar normalmente.
           if ((error as Error).message.includes("dados do usuário")) {
             redirected = true;
             router.push("/");
@@ -421,14 +422,6 @@ export default function PosLoginPage() {
                 </Button>
               )}
             </div>
-          </div>
-
-          <div className="text-gray-400 text-sm max-w-2xl mx-auto">
-            <p>
-              O diagnóstico aprofundado leva em média 15-20 minutos para ser
-              concluído. Recomendamos que você reserve um tempo tranquilo para
-              responder com atenção.
-            </p>
           </div>
         </div>
 

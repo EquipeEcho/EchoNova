@@ -51,7 +51,9 @@ export default function ResultadoDiagnosticoPage() {
       const fetchDiagnostico = async () => {
         setLoading(true);
         try {
-          const res = await fetch(`/api/diagnostico-aprofundado/${id}`);
+          const res = await fetch(`/api/diagnostico-aprofundado/${id}`, {
+            credentials: "include",
+          });
           if (!res.ok) {
             const errorData = await res.json();
             throw new Error(errorData.error || "Falha ao carregar diagnóstico.");
@@ -527,8 +529,6 @@ export default function ResultadoDiagnosticoPage() {
             [&>em]:text-pink-300 [&>em]:italic
             [&>hr]:border-slate-600 [&>hr]:my-8
             [&>blockquote]:border-l-4 [&>blockquote]:border-pink-500 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:text-slate-400
-            [&_h3:has(+_h4:contains('Trilha'))]:text-purple-400
-            [&_h4:contains('Trilha')]:text-emerald-400 [&_h4:contains('Trilha')]:bg-emerald-900/20 [&_h4:contains('Trilha')]:p-3 [&_h4:contains('Trilha')]:rounded-lg [&_h4:contains('Trilha')]:border [&_h4:contains('Trilha')]:border-emerald-700/30
             [&_table]:w-full [&_table]:my-6 [&_table]:border-collapse [&_thead_th]:bg-slate-800/60 [&_th]:text-slate-300 [&_th]:px-4 [&_th]:py-2 [&_td]:px-4 [&_td]:py-2 [&_td]:border-t [&_td]:border-slate-700
           ">
             {(() => {

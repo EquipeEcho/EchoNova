@@ -88,6 +88,7 @@ export default function Diagnostico() {
       const response = await fetch("/api/empresas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ perfil: respostas }),
       });
 
@@ -153,6 +154,7 @@ export default function Diagnostico() {
       const response = await fetch("/api/diagnosticos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           perfil: respostasPerfil,
           dimensoesSelecionadas,

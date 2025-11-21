@@ -82,6 +82,7 @@ export default function PlanosPage() {
       const response = await fetch("/api/transacoes/iniciar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ empresaId, plano: planoNormalizado }),
       });
 

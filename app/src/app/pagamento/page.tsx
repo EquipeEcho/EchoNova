@@ -413,6 +413,7 @@ export default function PagamentoPage() {
         const response = await fetch("/api/transacoes/finalizar", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({
             transacaoId,
             email: formData.email,
@@ -426,6 +427,7 @@ export default function PagamentoPage() {
         const enviar = await fetch("/api/send-pagamento", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({
             transacaoId,
             nome: formData.nome,
@@ -460,6 +462,7 @@ export default function PagamentoPage() {
       const loginResponse = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           email,
           cnpj,
@@ -522,6 +525,7 @@ export default function PagamentoPage() {
       const resposta = await fetch("/api/transacoes/finalizar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ transacaoId }),
       });
 
@@ -530,6 +534,7 @@ export default function PagamentoPage() {
       const enviar = await fetch("/api/send-pagamento", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           transacaoId,
           nome: formData.nome,

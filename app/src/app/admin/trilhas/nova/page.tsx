@@ -114,6 +114,7 @@ export default function NovaTrilhaPage() {
       const res = await fetch("/api/trilhas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify(trilhaData),
       });
 

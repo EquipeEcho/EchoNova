@@ -31,6 +31,7 @@ import {
   Play,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 // Tipagem para os dados do gráfico de progresso
 interface ProgressoTrilha {
@@ -337,12 +338,91 @@ const ProgressoMedioChart = ({ data }: { data: ProgressoMedio[] }) => {
   );
 };
 
+// Função para parsear trilhas do relatório markdown (fallback)
+const parseTrilhasFromMarkdown = (markdown: string): Trilha[] => {
+  const trilhas: Trilha[] = [];
+  const lines = markdown.split('\n');
+  let inTrilhasSection = false;
+  let currentTrilha: Partial<Trilha> | null = null;
+
+  for (const line of lines) {
+    if (line.includes('### Trilhas de Aprendizagem Recomendadas')) {
+      inTrilhasSection = true;
+      continue;
+    }
+
+    if (inTrilhasSection && line.startsWith('#### Desafio:')) {
+      // Save previous trilha if exists
+      if (currentTrilha && currentTrilha.nome) {
+        trilhas.push(currentTrilha as Trilha);
+      }
+      currentTrilha = {
+        id: String(trilhas.length + 1),
+        status: "nao_iniciado",
+        progresso: 0,
+        modulos: 0,
+        nivel: "iniciante",
+        categoria: "",
+      };
+      continue;
+    }
+
+    if (inTrilhasSection && currentTrilha && line.startsWith('**Trilha Recomendada:')) {
+      const match = line.match(/\*\*Trilha Recomendada:\s*(.+?)\*\*/);
+      if (match) {
+        currentTrilha.nome = match[1].trim();
+      }
+      continue;
+    }
+
+    if (inTrilhasSection && currentTrilha && line.startsWith('* **Nível:**')) {
+      const match = line.match(/\* \*\*Nível:\*\*\s*(.+)/);
+      if (match) {
+        const nivelRaw = match[1].trim().toLowerCase();
+        // Mapear para os valores esperados
+        let nivel: "iniciante" | "intermediario" | "avancado" = "iniciante";
+        if (nivelRaw.includes("avançado") || nivelRaw.includes("avancado")) {
+          nivel = "avancado";
+        } else if (nivelRaw.includes("intermediário") || nivelRaw.includes("intermediario")) {
+          nivel = "intermediario";
+        }
+        currentTrilha.nivel = nivel;
+      }
+      continue;
+    }
+
+    if (inTrilhasSection && currentTrilha && line.startsWith('* **Duração Estimada:**')) {
+      const match = line.match(/\* \*\*Duração Estimada:\*\*\s*(.+)/);
+      if (match) {
+        currentTrilha.duracao = match[1].trim();
+      }
+      continue;
+    }
+
+    if (inTrilhasSection && currentTrilha && line.startsWith('* **Justificativa:**')) {
+      const match = line.match(/\* \*\*Justificativa:\*\*\s*(.+)/);
+      if (match) {
+        currentTrilha.descricao = match[1].trim();
+      }
+      continue;
+    }
+  }
+
+  // Save last trilha
+  if (currentTrilha && currentTrilha.nome) {
+    trilhas.push(currentTrilha as Trilha);
+  }
+
+  return trilhas;
+};
+
 export default function DashboardClientePage() {
   const [userInfo, setUserInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showTrilhasModal, setShowTrilhasModal] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [trilhas, setTrilhas] = useState<Trilha[]>([]);
   const router = useRouter();
   const { user: authUser, logout } = useAuthStore();
@@ -427,7 +507,9 @@ export default function DashboardClientePage() {
         }
 
         // Buscar dados reais do usuário
-        const response = await fetch(`/api/empresa/${user.id}`);
+        const response = await fetch(`/api/empresa/${user.id}`, {
+          credentials: 'include'
+        });
         if (!response.ok) {
           throw new Error("Erro ao buscar dados do usuário");
         }
@@ -439,76 +521,36 @@ export default function DashboardClientePage() {
           plano: data.empresa.planoAtivo || "Nenhum",
         });
 
-        // Carregar trilhas (dados mockados - substituir por API real)
-        const mockTrilhas: Trilha[] = [
-          {
-            id: "1",
-            nome: "Liderança Estratégica",
-            descricao:
-              "Desenvolva habilidades essenciais para liderar equipes de alta performance e tomar decisões estratégicas.",
-            progresso: 75,
-            status: "em_andamento",
-            dataInicio: "2025-10-01",
-            duracao: "8 semanas",
-            modulos: 12,
-            nivel: "avancado",
-            categoria: "Liderança",
-          },
-          {
-            id: "2",
-            nome: "Comunicação Eficaz",
-            descricao:
-              "Aprimore suas habilidades de comunicação verbal e escrita para o ambiente corporativo.",
-            progresso: 60,
-            status: "em_andamento",
-            dataInicio: "2025-09-15",
-            duracao: "6 semanas",
-            modulos: 10,
-            nivel: "intermediario",
-            categoria: "Soft Skills",
-          },
-          {
-            id: "3",
-            nome: "Gestão do Tempo",
-            descricao:
-              "Técnicas avançadas para otimizar sua produtividade e gerenciar melhor seu tempo.",
-            progresso: 45,
-            status: "em_andamento",
-            dataInicio: "2025-11-01",
-            duracao: "4 semanas",
-            modulos: 8,
-            nivel: "iniciante",
-            categoria: "Produtividade",
-          },
-          {
-            id: "4",
-            nome: "Inovação e Criatividade",
-            descricao:
-              "Desenvolva o pensamento criativo e aprenda metodologias de inovação aplicadas ao negócio.",
-            progresso: 30,
-            status: "em_andamento",
-            dataInicio: "2025-11-10",
-            duracao: "6 semanas",
-            modulos: 9,
-            nivel: "intermediario",
-            categoria: "Inovação",
-          },
-          {
-            id: "5",
-            nome: "Diversidade e Inclusão",
-            descricao:
-              "Compreenda a importância da diversidade no ambiente de trabalho e como promover a inclusão.",
-            progresso: 100,
-            status: "concluido",
-            dataInicio: "2025-08-01",
-            dataConclusao: "2025-09-30",
-            duracao: "5 semanas",
-            modulos: 7,
-            nivel: "iniciante",
-            categoria: "Cultura Organizacional",
-          },
-        ];
-        setTrilhas(mockTrilhas);
+        // Buscar trilhas recomendadas do último diagnóstico
+        const diagRes = await fetch("/api/diagnostico-aprofundado/ultimo", {
+          credentials: 'include'
+        });
+        if (!diagRes.ok) {
+          setTrilhas([]);
+          return;
+        }
+        const diagData = await diagRes.json();
+        // Extrair trilhas recomendadas do structuredData
+        let trilhasRecomendadas: Trilha[] = [];
+        if (diagData.structuredData && diagData.structuredData.trilhas_recomendadas) {
+          trilhasRecomendadas = diagData.structuredData.trilhas_recomendadas.map((t: any, idx: number) => ({
+            id: String(idx + 1),
+            nome: t.trilha_nome,
+            descricao: t.justificativa || "",
+            progresso: 0,
+            status: "nao_iniciado" as const,
+            dataInicio: undefined,
+            dataConclusao: undefined,
+            duracao: t.duracao || "",
+            modulos: 0,
+            nivel: t.nivel || "iniciante",
+            categoria: "",
+          }));
+        } else if (diagData.finalReport) {
+          // Fallback: parse do markdown se não houver structuredData
+          trilhasRecomendadas = parseTrilhasFromMarkdown(diagData.finalReport);
+        }
+        setTrilhas(trilhasRecomendadas);
       } catch (err: any) {
         setError(err.message || "Erro ao carregar dados do usuário");
       } finally {
@@ -521,8 +563,13 @@ export default function DashboardClientePage() {
 
   const handleLogout = () => {
     setIsLoggingOut(true);
+    setIsMenuOpen(false);
     logout();
     router.push("/");
+  };
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
   };
 
   const getPlanoColor = (plano: string) => {
@@ -715,27 +762,28 @@ export default function DashboardClientePage() {
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="logo-container hover:scale-100">
             <Link href="/dashboard-cliente">
-              <div className="h-10 w-32 bg-linear-to-r from-fuchsia-600 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold">
-                EchoNova
-              </div>
+              <Image
+                src="/img/logo.png"
+                alt="EchoNova - Diagnóstico Inteligente de Treinamentos"
+                width={120}
+                height={40}
+                className="h-8 w-auto object-contain sm:h-10 md:h-12 lg:h-14"
+                priority
+              />
             </Link>
           </div>
 
           <div className="flex items-center gap-4">
             {userInfo && (
-              <div className="hidden md:flex items-center gap-2 bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700/50">
-                <span className="text-gray-300 text-sm">
-                  Olá, {userInfo.nome?.split(" ")[0] || "Usuário"}
-                </span>
-                <span className="text-gray-400 mx-2">•</span>
+              <div className="hidden md:flex items-center gap-2 bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700/50 cursor-pointer hover:bg-slate-700/50 transition-colors">
                 <span className="text-gray-300 text-sm">Plano:</span>
                 <div
                   className={`px-3 py-1 rounded-full bg-linear-to-r ${getPlanoColor(
-                    userInfo.plano
+                    userInfo?.plano || ""
                   )} text-white text-xs font-bold flex items-center gap-1`}
                 >
-                  <span>{getPlanoIcon(userInfo.plano)}</span>
-                  <span>{userInfo.plano}</span>
+                  <span>{getPlanoIcon(userInfo?.plano || "")}</span>
+                  <span>{userInfo?.plano || "Nenhum"}</span>
                 </div>
               </div>
             )}
@@ -744,24 +792,80 @@ export default function DashboardClientePage() {
               <Button
                 variant="ghost"
                 className="relative h-10 w-10 rounded-full hover:bg-slate-800 p-0 cursor-pointer"
-                onClick={handleLogout}
+                onClick={toggleMenu}
               >
                 <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-medium">
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                    />
-                  </svg>
+                  {userInfo?.nome?.charAt(0) || "U"}
                 </div>
               </Button>
+
+              {isMenuOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-2 z-50">
+                  <div className="px-4 py-2 border-b border-slate-700">
+                    <p className="text-sm font-medium text-white truncate">
+                      {userInfo?.nome || "Usuário"}
+                    </p>
+                    <p className="text-xs text-gray-400 truncate">
+                      {userInfo?.email || "email@exemplo.com"}
+                    </p>
+                  </div>
+                  <div className="px-4 py-2 border-b border-slate-700">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-300 text-sm">Plano:</span>
+                      <div
+                        className={`px-2 py-0.5 rounded-full bg-linear-to-r ${getPlanoColor(
+                          userInfo?.plano || ""
+                        )} text-white text-xs font-bold flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity`}
+                      >
+                        <span>{getPlanoIcon(userInfo?.plano || "")}</span>
+                        <span>{userInfo?.plano || "Nenhum"}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => router.push("/perfil")}
+                    className="w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                    Meu Perfil
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                      />
+                    </svg>
+                    Sair
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -848,6 +952,61 @@ export default function DashboardClientePage() {
             </div>
           </div>
 
+          {/* Trilhas Recomendadas por Categoria */}
+          <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 mb-8">
+            <h2 className="text-2xl font-bold text-white mb-6">
+              Trilhas Recomendadas por Categoria
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {["Comunicação", "Gestão de Tempo", "Inovação", "Liderança", "Diversidade"].map((categoria) => {
+                const trilhasCategoria = trilhas.filter(t => t.categoria === categoria);
+                const emAndamento = trilhasCategoria.filter(t => t.status === "em_andamento").length;
+                const concluidas = trilhasCategoria.filter(t => t.status === "concluido").length;
+
+                return (
+                  <div key={categoria} className="bg-gray-700/30 p-5 rounded-xl border border-gray-600 hover:border-fuchsia-500/50 transition-all cursor-pointer" onClick={() => setShowTrilhasModal(true)}>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-lg font-semibold text-white">{categoria}</h3>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-fuchsia-400">{trilhasCategoria.length}</p>
+                        <p className="text-xs text-gray-400">trilhas</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Em andamento:</span>
+                        <span className="text-blue-400 font-medium">{emAndamento}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Concluídas:</span>
+                        <span className="text-green-400 font-medium">{concluidas}</span>
+                      </div>
+                    </div>
+                    {trilhasCategoria.length > 0 && (
+                      <div className="mt-4 pt-3 border-t border-gray-600">
+                        <p className="text-xs text-gray-400 mb-2">Próximas trilhas:</p>
+                        <div className="space-y-1">
+                          {trilhasCategoria.slice(0, 2).map((trilha) => (
+                            <div key={trilha.id} className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${
+                                trilha.status === "concluido" ? "bg-green-400" :
+                                trilha.status === "em_andamento" ? "bg-blue-400" : "bg-gray-400"
+                              }`}></div>
+                              <span className="text-xs text-gray-300 truncate">{trilha.nome}</span>
+                            </div>
+                          ))}
+                          {trilhasCategoria.length > 2 && (
+                            <p className="text-xs text-fuchsia-400">+{trilhasCategoria.length - 2} mais...</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Ações rápidas */}
           <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700">
             <h2 className="text-2xl font-bold text-white mb-6">
@@ -866,16 +1025,18 @@ export default function DashboardClientePage() {
                 className="border-fuchsia-500 text-fuchsia-500 hover:bg-fuchsia-500/10 hover:text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
                 onClick={async () => {
                   try {
-                    const res = await fetch("/api/diagnostico-aprofundado/ultimo");
+                    const res = await fetch("/api/diagnostico-aprofundado/ultimo", {
+                      credentials: 'include'
+                    });
                     if (!res.ok) throw new Error("Nenhum diagnóstico encontrado");
                     const data = await res.json();
                     if (data._id) {
                       router.push(`/diagnostico-aprofundado/resultados/${data._id}`);
                     } else {
-                      toast.error("Diagnóstico não encontrado");
+                      console.error("Diagnóstico não encontrado");
                     }
                   } catch (err) {
-                    toast.error("Diagnóstico não encontrado");
+                    console.error("Diagnóstico não encontrado");
                   }
                 }}
               >
@@ -961,78 +1122,95 @@ export default function DashboardClientePage() {
                 </div>
               </div>
 
-              {/* Lista de Trilhas */}
-              <div className="space-y-4">
-                {trilhas.map((trilha) => (
-                  <div
-                    key={trilha.id}
-                    className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-6 hover:border-fuchsia-700/50 transition-all"
-                  >
-                    <div className="flex flex-col gap-4">
-                      <div className="flex-1">
-                        <div className="flex flex-wrap items-center gap-2 mb-3">
-                          <h3 className="text-xl font-semibold text-white">
-                            {trilha.nome}
-                          </h3>
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                              trilha.status
-                            )}`}
-                          >
-                            {getStatusText(trilha.status)}
-                          </span>
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium border ${getNivelColor(
-                              trilha.nivel
-                            )}`}
-                          >
-                            {trilha.nivel.charAt(0).toUpperCase() +
-                              trilha.nivel.slice(1)}
-                          </span>
-                        </div>
-                        <p className="text-neutral-400 mb-4">
-                          {trilha.descricao}
-                        </p>
+              {/* Lista de Trilhas por Categoria */}
+              <div className="space-y-8">
+                {["Comunicação", "Gestão de Tempo", "Inovação", "Liderança", "Diversidade"].map((categoria) => {
+                  const trilhasCategoria = trilhas.filter(t => t.categoria === categoria);
+                  if (trilhasCategoria.length === 0) return null;
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                          <div className="flex items-center gap-2 text-sm text-neutral-400">
-                            <BookOpen className="h-4 w-4" />
-                            <span>{trilha.modulos} módulos</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-neutral-400">
-                            <Clock className="h-4 w-4" />
-                            <span>{trilha.duracao}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-neutral-400">
-                            <Award className="h-4 w-4" />
-                            <span>{trilha.categoria}</span>
-                          </div>
-                          {trilha.dataInicio && (
-                            <div className="flex items-center gap-2 text-sm text-neutral-400">
-                              <Calendar className="h-4 w-4" />
-                              <span>
-                                {new Date(trilha.dataInicio).toLocaleDateString(
-                                  "pt-BR"
-                                )}
-                              </span>
+                  return (
+                    <div key={categoria} className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <h3 className="text-xl font-bold text-white">{categoria}</h3>
+                        <span className="px-3 py-1 bg-neutral-700 text-neutral-300 rounded-full text-sm">
+                          {trilhasCategoria.length} trilha{trilhasCategoria.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div className="grid gap-4">
+                        {trilhasCategoria.map((trilha) => (
+                          <div
+                            key={trilha.id}
+                            className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-6 hover:border-fuchsia-700/50 transition-all"
+                          >
+                            <div className="flex flex-col gap-4">
+                              <div className="flex-1">
+                                <div className="flex flex-wrap items-center gap-2 mb-3">
+                                  <h4 className="text-lg font-semibold text-white">
+                                    {trilha.nome}
+                                  </h4>
+                                  <span
+                                    className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+                                      trilha.status
+                                    )}`}
+                                  >
+                                    {getStatusText(trilha.status)}
+                                  </span>
+                                  <span
+                                    className={`px-3 py-1 rounded-full text-xs font-medium border ${getNivelColor(
+                                      trilha.nivel
+                                    )}`}
+                                  >
+                                    {trilha.nivel.charAt(0).toUpperCase() +
+                                      trilha.nivel.slice(1)}
+                                  </span>
+                                </div>
+                                <p className="text-neutral-400 mb-4">
+                                  {trilha.descricao}
+                                </p>
+
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                  <div className="flex items-center gap-2 text-sm text-neutral-400">
+                                    <BookOpen className="h-4 w-4" />
+                                    <span>{trilha.modulos} módulos</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-sm text-neutral-400">
+                                    <Clock className="h-4 w-4" />
+                                    <span>{trilha.duracao}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-sm text-neutral-400">
+                                    <Award className="h-4 w-4" />
+                                    <span>{trilha.categoria}</span>
+                                  </div>
+                                  {trilha.dataInicio && (
+                                    <div className="flex items-center gap-2 text-sm text-neutral-400">
+                                      <Calendar className="h-4 w-4" />
+                                      <span>
+                                        {new Date(trilha.dataInicio).toLocaleDateString(
+                                          "pt-BR"
+                                        )}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {trilha.dataConclusao && (
+                                    <div className="flex items-center gap-2 text-sm text-green-400">
+                                      <CheckCircle className="h-4 w-4" />
+                                      <span>
+                                        Concluído em{" "}
+                                        {new Date(
+                                          trilha.dataConclusao
+                                        ).toLocaleDateString("pt-BR")}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          )}
-                          {trilha.dataConclusao && (
-                            <div className="flex items-center gap-2 text-sm text-green-400">
-                              <CheckCircle className="h-4 w-4" />
-                              <span>
-                                Concluído em{" "}
-                                {new Date(
-                                  trilha.dataConclusao
-                                ).toLocaleDateString("pt-BR")}
-                              </span>
-                            </div>
-                          )}
-                        </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>

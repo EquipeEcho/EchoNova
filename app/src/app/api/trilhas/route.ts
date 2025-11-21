@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Trilha from "@/models/Trilha";
+import { authenticateAndAuthorize } from "@/lib/middleware/authMiddleware";
 
 // GET - Listar todas as trilhas ou buscar por tags/áreas
 export async function GET(req: Request) {
@@ -47,6 +48,15 @@ export async function GET(req: Request) {
 // POST - Criar nova trilha
 export async function POST(req: Request) {
   try {
+    // Autenticar e autorizar como admin
+    const authResult = await authenticateAndAuthorize(req as any, "ADMIN");
+    if (!authResult.isAuthorized) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.status }
+      );
+    }
+
     await connectDB();
 
     const body = await req.json();

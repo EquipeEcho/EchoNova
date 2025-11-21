@@ -48,6 +48,7 @@ const enviarEmail = async (dados: DiagnosticoData) => {
     const emailResponse = await fetch("/api/send-diagnostico", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({
         nome: dados.perfil.empresa,
         email: dados.perfil.email,
@@ -121,7 +122,9 @@ export default function Resultados() {
   const carregarDoBanco = useCallback(async (id: string) => {
     console.log("[Resultados] Carregando diagnóstico do banco com ID:", id);
     try {
-      const response = await fetch(`/api/diagnosticos/${id}`);
+      const response = await fetch(`/api/diagnosticos/${id}`, {
+        credentials: "include",
+      });
       const data = await response.json();
 
       if (response.ok) {

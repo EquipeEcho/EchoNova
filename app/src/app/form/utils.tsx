@@ -18,6 +18,7 @@ export async function verificarEmailDuplicado(email: string): Promise<{ duplicad
         const response = await fetch("/api/empresas/check-email", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            credentials: "include",
             body: JSON.stringify({ email }),
         });
 
@@ -42,6 +43,7 @@ export async function verificarCNPJDuplicado(cnpj: string): Promise<{ duplicado:
         const response = await fetch("/api/empresas/check-cnpj", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            credentials: "include",
             body: JSON.stringify({ cnpj }),
         });
 
@@ -69,6 +71,7 @@ export async function iniciarTransacao(empresaId: string, plano: string) {
         const response = await fetch("/api/transacoes/iniciar", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            credentials: "include",
             body: JSON.stringify({ empresaId, plano }),
         });
 
@@ -87,6 +90,7 @@ export async function finalizarTransacao(transacaoId: string) {
         const response = await fetch("/api/transacoes/finalizar", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            credentials: "include",
             body: JSON.stringify({ transacaoId }),
         });
 

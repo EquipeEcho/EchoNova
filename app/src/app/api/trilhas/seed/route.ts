@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Trilha from "@/models/Trilha";
+import { authenticateAndAuthorize } from "@/lib/middleware/authMiddleware";
 
 // Trilhas de exemplo (mocks)
 const trilhasMock = [
@@ -416,6 +417,15 @@ const trilhasMock = [
 // POST - Popular banco com trilhas de exemplo
 export async function POST(req: Request) {
   try {
+    // Autenticar e autorizar como admin
+    const authResult = await authenticateAndAuthorize(req as any, "ADMIN");
+    if (!authResult.isAuthorized) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.status }
+      );
+    }
+
     await connectDB();
 
     // Limpar índices problemáticos (arrays paralelos)
@@ -428,8 +438,10 @@ export async function POST(req: Request) {
         const keys = Object.keys(index.key);
         // Remover índice composto com múltiplos arrays
         if (keys.includes('tags') && keys.includes('areasAbordadas')) {
-          await collection.dropIndex(index.name);
-          console.log(`Índice problemático removido: ${index.name}`);
+          if (index.name) {
+            await collection.dropIndex(index.name);
+            console.log(`Índice problemático removido: ${index.name}`);
+          }
         }
       }
     } catch (indexError) {

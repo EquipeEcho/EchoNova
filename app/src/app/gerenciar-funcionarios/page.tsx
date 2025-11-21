@@ -18,6 +18,13 @@ interface Funcionario {
   cargo: string;
   dataCadastro: string;
   status: "ativo" | "inativo";
+  trilhas: Trilha[]; // Trilhas atribuídas ao funcionário
+}
+
+interface Trilha {
+  _id: string;
+  nome: string;
+  descricao: string;
 }
 
 type ModalMode = "criar" | "editar" | null;
@@ -40,7 +47,9 @@ export default function GerenciarFuncionariosPage() {
     cargo: "",
     senha: "",
     status: "ativo" as "ativo" | "inativo",
+    trilhas: [] as string[],
   });
+  const [trilhasDisponiveis, setTrilhasDisponiveis] = useState<Trilha[]>([]);
 
   // ----------------------------------------------------
   // Carregar funcionários só da empresa logada (user.id)
@@ -48,18 +57,32 @@ export default function GerenciarFuncionariosPage() {
   useEffect(() => {
     if (!user) return; // segurança extra
     fetchFuncionarios();
+    fetchTrilhasDisponiveis();
   }, [user]);
 
-  const fetchFuncionarios = async () => {
-    if (!user?.id) {
-      console.warn("User ainda não carregado.");
-      return;
-    }
-
+  const fetchTrilhasDisponiveis = async () => {
     try {
-      setLoading(true);
+      const res = await fetch("/api/trilhas?status=ativa", {
+        credentials: "include",
+      });
 
-      const res = await fetch(`/api/funcionarios?empresaId=${user.id}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Erro ao buscar trilhas");
+      }
+
+      const data = await res.json();
+      setTrilhasDisponiveis(data.trilhas || []);
+    } catch (e: any) {
+      toast.error("Erro ao carregar trilhas disponíveis: " + e.message);
+    }
+  };
+
+  const fetchFuncionarios = async () => {
+    try {
+      const res = await fetch(`/api/funcionarios?empresaId=${user!.id}`, {
+        credentials: "include",
+      });
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -67,21 +90,16 @@ export default function GerenciarFuncionariosPage() {
       }
 
       const data = await res.json();
-
-      const formatados = data.map((f: any) => ({
-        id: f._id,
-        nome: f.nome,
-        email: f.email,
-        matricula: f.matricula,
-        cargo: f.cargo,
-        status: f.status,
-        dataCadastro: f.data_cadastro || f.createdAt,
+      // Transformar os dados para incluir o campo 'id' correto
+      const funcionariosTransformados = (data || []).map((func: any) => ({
+        ...func,
+        id: func._id, // Usar _id como id
+        dataCadastro: func.createdAt || func.data_cadastro || new Date().toISOString(), // Padronizar campo de data
+        trilhas: func.trilhas || [], // Garantir que trilhas seja um array
       }));
-
-      setFuncionarios(formatados);
-
+      setFuncionarios(funcionariosTransformados);
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error("Erro ao carregar funcionários: " + e.message);
     } finally {
       setLoading(false);
     }
@@ -103,6 +121,7 @@ export default function GerenciarFuncionariosPage() {
         cargo: funcionario.cargo,
         senha: "",
         status: funcionario.status,
+        trilhas: funcionario.trilhas.map(t => t._id), // IDs das trilhas atribuídas
       });
     } else {
       setSelectedFuncionario(null);
@@ -113,6 +132,7 @@ export default function GerenciarFuncionariosPage() {
         cargo: "",
         senha: "",
         status: "ativo",
+        trilhas: [],
       });
     }
   };
@@ -127,7 +147,53 @@ export default function GerenciarFuncionariosPage() {
       cargo: "",
       senha: "",
       status: "ativo",
+      trilhas: [],
     });
+  };
+
+  // ----------------------------------------------------
+  // Criar funcionário de teste (dados aleatórios)
+  // ----------------------------------------------------
+  const handleCreateTestFuncionario = async () => {
+    // garante que temos um usuário logado com id
+    if (!user?.id) {
+      toast.error("Erro: usuário não identificado.");
+      return;
+    }
+
+    // Gerar dados aleatórios
+    const randomNum = Math.floor(Math.random() * 10000);
+    const testData = {
+      nome: `Funcionário Teste ${randomNum}`,
+      email: `teste${randomNum}@teste.com`,
+      matricula: `TEST${randomNum}`,
+      cargo: "Cargo de Teste",
+      senha: "senha123",
+      status: "ativo" as "ativo" | "inativo",
+      trilhas: trilhasDisponiveis.length > 0
+        ? [trilhasDisponiveis[Math.floor(Math.random() * trilhasDisponiveis.length)]._id]
+        : [],
+      empresaId: user.id,
+    };
+
+    try {
+      const res = await fetch("/api/funcionarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(testData),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Erro ao criar funcionário de teste");
+      }
+
+      toast.success("Funcionário de teste criado com sucesso!");
+      await fetchFuncionarios(); // recarrega a lista
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao criar funcionário de teste");
+    }
   };
 
   // ----------------------------------------------------
@@ -158,6 +224,7 @@ export default function GerenciarFuncionariosPage() {
         const res = await fetch("/api/funcionarios", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({
             ...formData,
             empresaId: user.id, // vincula ao dono logado
@@ -176,6 +243,7 @@ export default function GerenciarFuncionariosPage() {
           {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
+            credentials: "include",
             body: JSON.stringify(formData), // empresaId vem pela query
           }
         );
@@ -208,6 +276,7 @@ export default function GerenciarFuncionariosPage() {
         `/api/funcionarios/${id}?empresaId=${user!.id}`,
         {
           method: "DELETE",
+          credentials: "include",
         }
       );
 
@@ -277,6 +346,12 @@ export default function GerenciarFuncionariosPage() {
                 + Novo Funcionário
               </Button>
               <Button
+                onClick={handleCreateTestFuncionario}
+                className="bg-orange-600 hover:bg-orange-500 text-white"
+              >
+                🧪 Funcionário de Teste
+              </Button>
+              <Button
                 onClick={handleLogout}
                 className="bg-gray-800 hover:bg-gray-700 text-white border border-neutral-700"
               >
@@ -339,6 +414,21 @@ export default function GerenciarFuncionariosPage() {
                           {funcionario.cargo}
                         </div>
                       </div>
+                      {funcionario.trilhas.length > 0 && (
+                        <div className="mt-3">
+                          <span className="text-neutral-500 text-sm">Trilhas atribuídas:</span>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {funcionario.trilhas.map((trilha) => (
+                              <span
+                                key={trilha._id}
+                                className="px-2 py-1 bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-600/40 rounded-full text-xs font-medium"
+                              >
+                                {trilha.nome}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       <div className="text-xs text-neutral-500 mt-2">
                         Cadastrado em:{" "}
                         {new Date(funcionario.dataCadastro).toLocaleDateString(
@@ -485,6 +575,57 @@ export default function GerenciarFuncionariosPage() {
                     <option value="ativo">Ativo</option>
                     <option value="inativo">Inativo</option>
                   </select>
+                </div>
+
+                <div>
+                  <Label className="text-neutral-300">
+                    Trilhas de Aprendizado
+                  </Label>
+                  <p className="text-sm text-neutral-500 mb-3">
+                    Selecione as trilhas que este funcionário deve seguir
+                  </p>
+                  <div className="max-h-40 overflow-y-auto border border-neutral-700 rounded-lg p-3 bg-neutral-800/50">
+                    {trilhasDisponiveis.length === 0 ? (
+                      <p className="text-neutral-400 text-sm">
+                        Nenhuma trilha disponível
+                      </p>
+                    ) : (
+                      trilhasDisponiveis.map((trilha) => (
+                        <label
+                          key={trilha._id}
+                          className="flex items-center gap-3 py-2 cursor-pointer hover:bg-neutral-700/30 rounded px-2"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.trilhas.includes(trilha._id)}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setFormData({
+                                ...formData,
+                                trilhas: checked
+                                  ? [...formData.trilhas, trilha._id]
+                                  : formData.trilhas.filter(id => id !== trilha._id)
+                              });
+                            }}
+                            className="w-4 h-4 text-fuchsia-600 bg-neutral-800 border-neutral-600 rounded focus:ring-fuchsia-500 focus:ring-2"
+                          />
+                          <div className="flex-1">
+                            <div className="text-white font-medium text-sm">
+                              {trilha.nome}
+                            </div>
+                            <div className="text-neutral-400 text-xs">
+                              {trilha.descricao}
+                            </div>
+                          </div>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                  {formData.trilhas.length > 0 && (
+                    <p className="text-sm text-fuchsia-400 mt-2">
+                      {formData.trilhas.length} trilha(s) selecionada(s)
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex gap-3 pt-4">

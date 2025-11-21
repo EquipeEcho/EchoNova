@@ -61,7 +61,9 @@ export default function PerfilPage() {
 
       try {
         setLoading(true);
-        const res = await fetch(`/api/empresa/${user.id}`);
+        const res = await fetch(`/api/empresa/${user.id}`, {
+          credentials: "include",
+        });
         
         if (!res.ok) {
           const errorData = await res.json();
@@ -96,6 +98,7 @@ export default function PerfilPage() {
       const res = await fetch(`/api/empresa/${empresaData._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           nome_empresa: nomeEmpresa,
           email,
@@ -159,6 +162,7 @@ export default function PerfilPage() {
       const res = await fetch(`/api/empresa/${empresaData._id}/change-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           senhaAtual,
           novaSenha,

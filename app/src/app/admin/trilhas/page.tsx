@@ -87,7 +87,9 @@ export default function AdminTrilhasPage() {
   const loadTrilhas = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/trilhas");
+      const res = await fetch("/api/trilhas", {
+        credentials: 'include'
+      });
       const data = await res.json();
 
       if (res.ok) {
@@ -109,6 +111,7 @@ export default function AdminTrilhasPage() {
     try {
       const res = await fetch(`/api/trilhas/${selectedTrilha._id}`, {
         method: "DELETE",
+        credentials: 'include'
       });
 
       const data = await res.json();
@@ -133,6 +136,7 @@ export default function AdminTrilhasPage() {
       const res = await fetch("/api/trilhas/seed", { 
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify({ force: true })
       });
       const data = await res.json();

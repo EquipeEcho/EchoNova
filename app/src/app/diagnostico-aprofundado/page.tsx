@@ -20,6 +20,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Ondas } from "../clientFuncs";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -47,6 +55,7 @@ interface Pergunta {
     | "sim_nao";
   opcoes: string[] | null;
   placeholder?: string | null;
+  problema?: string; // Propriedade opcional para focar em problemas específicos
 }
 
 interface ProgressState {
@@ -92,6 +101,13 @@ export default function DiagnosticoAprofundadoPage() {
     setIsClient(true);
   }, []);
 
+  // Verificar autenticação
+  useEffect(() => {
+    if (isClient && !user) {
+      router.push("/");
+    }
+  }, [isClient, user, router]);
+
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   const handleLogout = () => {
@@ -122,6 +138,8 @@ export default function DiagnosticoAprofundadoPage() {
   const [progress, setProgress] = useState<ProgressState | null>(null);
   const [dadosColetados, setDadosColetados] = useState<Record<string, unknown> | null>(null); // Estado para o resumo
   const [progressoRestaurado, setProgressoRestaurado] = useState(false); // Indica se o progresso foi restaurado
+  const [showRestoreModal, setShowRestoreModal] = useState(false); // Modal de restauração
+  const [savedStateData, setSavedStateData] = useState<any>(null); // Dados salvos temporariamente
 
   // Chave de armazenamento local
   const STORAGE_KEY = 'diagnostico_aprofundado_state';
@@ -143,21 +161,13 @@ export default function DiagnosticoAprofundadoPage() {
           return;
         }
         
-        // Restaurar estados
-        if (parsed.fase) setFase(parsed.fase);
-        if (parsed.setupStep !== undefined) setSetupStep(parsed.setupStep);
-        if (parsed.setupData) setSetupData(parsed.setupData);
-        if (parsed.sessionId) setSessionId(parsed.sessionId);
-        if (parsed.perguntaAtual) setPerguntaAtual(parsed.perguntaAtual);
-        if (parsed.progress) setProgress(parsed.progress);
-        if (parsed.dadosColetados) setDadosColetados(parsed.dadosColetados);
-        
-        setProgressoRestaurado(true);
-        console.log('📦 Estado do diagnóstico restaurado do localStorage');
-        toast.success('Progresso anterior restaurado! Você pode continuar de onde parou.');
+        // Mostrar modal de restauração em vez de restaurar automaticamente
+        setSavedStateData(parsed);
+        setShowRestoreModal(true);
+        console.log('📦 Estado salvo encontrado, mostrando modal de restauração');
       }
     } catch (error) {
-      console.error('Erro ao restaurar estado do diagnóstico:', error);
+      console.error('Erro ao carregar estado do diagnóstico:', error);
       localStorage.removeItem(STORAGE_KEY);
     }
   }, [isClient]);
@@ -218,6 +228,446 @@ export default function DiagnosticoAprofundadoPage() {
     }
   };
 
+  const handleRestoreProgress = () => {
+    if (!savedStateData) return;
+    
+    // Restaurar estados
+    if (savedStateData.fase) setFase(savedStateData.fase);
+    if (savedStateData.setupStep !== undefined) setSetupStep(savedStateData.setupStep);
+    if (savedStateData.setupData) setSetupData(savedStateData.setupData);
+    if (savedStateData.sessionId) setSessionId(savedStateData.sessionId);
+    if (savedStateData.perguntaAtual) setPerguntaAtual(savedStateData.perguntaAtual);
+    if (savedStateData.progress) setProgress(savedStateData.progress);
+    if (savedStateData.dadosColetados) setDadosColetados(savedStateData.dadosColetados);
+    
+    setProgressoRestaurado(true);
+    setShowRestoreModal(false);
+    setSavedStateData(null);
+    console.log('📦 Estado do diagnóstico restaurado do localStorage');
+    toast.success('Progresso anterior restaurado! Você pode continuar de onde parou.');
+  };
+
+  const handleStartFresh = () => {
+    // Limpar dados salvos e começar do zero
+    localStorage.removeItem(STORAGE_KEY);
+    setShowRestoreModal(false);
+    setSavedStateData(null);
+    console.log('🗑️ Estado salvo descartado, começando do zero');
+    toast.info('Começando um novo diagnóstico.');
+  };
+
+  // Função para gerar respostas simuladas que seguem o fluxo completo do diagnóstico
+  const gerarRespostasTeste = (nomeEmpresa: string) => {
+    const setor = setupData.setor === "Outros" ? setupData.setorOutro : setupData.setor;
+    const numFuncionarios = setupData.numFuncionarios;
+    const numUnidades = setupData.numUnidades;
+
+    // Respostas que simulam problemas específicos que correspondem às trilhas disponíveis
+    // Baseado nas trilhas do sistema: Comunicação, Liderança, Gestão de Tempo, Inovação, Diversidade
+    const respostas = [
+      // Etapa 2: Identificação de problemas (Pergunta inicial)
+      `Como ${nomeEmpresa}, uma empresa do setor ${setor.toLowerCase()} com ${numFuncionarios} funcionários distribuídos em ${numUnidades} unidade(s), enfrentamos vários desafios significativos. Os principais problemas que identificamos são: comunicação ineficiente entre equipes, falta de liderança inspiradora, dificuldade em gerenciar o tempo de forma produtiva, resistência à inovação e falta de diversidade nas equipes.`,
+
+      // Etapa 2: Priorização (escolher os 3 mais críticos)
+      `Dos desafios mencionados, os três mais críticos para nosso negócio neste momento são: 1) Comunicação ineficiente entre equipes, 2) Falta de liderança inspiradora, e 3) Dificuldade em gerenciar o tempo de forma produtiva.`,
+
+      // Etapa 3: Aprofundamento do Problema 1 - Comunicação ineficiente
+      // Impacto
+      "4",
+      // Frequência
+      "5",
+      // Alcance
+      "4",
+      // Evidência 1
+      "Recentemente, um projeto importante atrasou duas semanas porque a equipe de desenvolvimento não recebeu informações atualizadas sobre mudanças nos requisitos do cliente. Isso resultou em retrabalho significativo e insatisfação do cliente.",
+      // Evidência 2
+      "Em outra situação, a equipe de vendas não foi informada sobre uma promoção especial, perdendo uma oportunidade de venda significativa para um cliente importante.",
+      // Causa raiz
+      "A causa raiz é a falta de canais de comunicação estruturados e uma cultura organizacional que não valoriza o compartilhamento de informações.",
+
+      // Etapa 3: Aprofundamento do Problema 2 - Processos operacionais ineficientes
+      // Impacto
+      "4",
+      // Frequência
+      "4",
+      // Alcance
+      "5",
+      // Evidência 1
+      "Nossos processos de aprovação de projetos levam em média 3 semanas, muito acima do necessário, causando perda de oportunidades de negócio.",
+      // Evidência 2
+      "A gestão de estoque ainda é feita manualmente com planilhas Excel, gerando erros frequentes e falta de visibilidade em tempo real.",
+      // Causa raiz
+      "A causa raiz é a combinação de ferramentas tecnológicas obsoletas com processos burocráticos excessivos herdados de uma estrutura organizacional antiga.",
+
+      // Etapa 3: Aprofundamento do Problema 3 - Dificuldade em gerenciar o tempo
+      // Impacto
+      "5",
+      // Frequência
+      "3",
+      // Alcance
+      "5",
+      // Evidência 1
+      "Temos observado um aumento significativo na rotatividade de funcionários, com 4 profissionais-chave saindo nos últimos 6 meses, citando falta de desenvolvimento profissional como motivo principal.",
+      // Evidência 2
+      "Em reuniões de equipe, há pouca participação e engajamento, com funcionários demonstrando desmotivação e falta de clareza sobre os objetivos da empresa.",
+      // Causa raiz
+      "A causa raiz é a ausência de um estilo de liderança que inspire, motive e desenvolva as equipes, combinada com uma cultura organizacional conservadora.",
+
+      // Etapa 4: Confirmação para gerar relatório
+      "Sim"
+    ];
+
+    return respostas;
+  };
+
+  const iniciarDiagnosticoTeste = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Gerar respostas simuladas que seguem o fluxo completo
+      const respostasTeste = gerarRespostasTeste(setupData.nomeEmpresa);
+
+      // Enviar o resumo inicial para começar o diagnóstico
+      const setupResumo = `
+        Os dados iniciais da empresa já foram coletados e CONFIRMADOS pelo usuário. São eles:
+        - Nome da Empresa: ${setupData.nomeEmpresa}
+        - Representante: ${setupData.nomeRepresentante}
+        - Setor: ${setupData.setor === "Outros" ? setupData.setorOutro : setupData.setor}
+        - Nº de Funcionários: ${setupData.numFuncionarios}
+        - Nº de Unidades: ${setupData.numUnidades}
+        - Respeitar LGPD: ${setupData.politicaLgpd}
+        A etapa de confirmação está CONCLUÍDA.
+        Por favor, inicie o diagnóstico fazendo a PRIMEIRA PERGUNTA INVESTIGATIVA agora.
+      `;
+
+      // Iniciar diagnóstico com o resumo
+      let sessionId: string | null = null;
+      let finalDiagnosticId: string | null = null;
+
+      // Função auxiliar para retry com backoff exponencial
+      const retryWithBackoff = async (fn: () => Promise<any>, maxRetries = 3, baseDelay = 2000) => {
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+          try {
+            return await fn();
+          } catch (error: any) {
+            if (error.message?.includes('429') || error.message?.includes('Too Many Requests')) {
+              if (attempt === maxRetries) throw error;
+
+              const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000; // Backoff exponencial + jitter
+              console.log(`Rate limit atingido, tentando novamente em ${Math.round(delay/1000)}s (tentativa ${attempt + 1}/${maxRetries + 1})`);
+              await new Promise(resolve => setTimeout(resolve, delay));
+            } else {
+              throw error;
+            }
+          }
+        }
+      };
+
+      // Primeira chamada - setup
+      const primeiraData = await retryWithBackoff(async () => {
+        const res = await fetch("/api/diagnostico-ia", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            sessionId: null,
+            resposta_usuario: setupResumo,
+          }),
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.error || `Falha ao iniciar diagnóstico: ${res.status}`);
+        }
+
+        return await res.json();
+      });
+
+      sessionId = primeiraData.sessionId;
+
+      // Enviar respostas sequencialmente simulando um usuário real
+      for (let i = 0; i < respostasTeste.length; i++) {
+        const resposta = respostasTeste[i];
+
+        const data = await retryWithBackoff(async () => {
+          const res = await fetch("/api/diagnostico-ia", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              sessionId,
+              resposta_usuario: resposta,
+            }),
+          });
+
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.error || `Falha ao processar resposta ${i + 1}: ${res.status}`);
+          }
+
+          return await res.json();
+        });
+
+        // Verificar se o diagnóstico foi finalizado
+        if (data.status === "finalizado" && data.finalDiagnosticId) {
+          finalDiagnosticId = data.finalDiagnosticId;
+          break;
+        }
+
+        // Delay maior entre chamadas para evitar rate limiting
+        const delay = 3000 + Math.random() * 2000; // 3-5 segundos + jitter
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+
+      if (!finalDiagnosticId) {
+        throw new Error("Diagnóstico de teste não foi finalizado corretamente.");
+      }
+
+      // Limpar dados salvos do localStorage
+      localStorage.removeItem(STORAGE_KEY);
+
+      // Redirecionar para os resultados
+      toast.success("Diagnóstico de teste gerado com sucesso!");
+      router.push(`/diagnostico-aprofundado/resultados/${finalDiagnosticId}`);
+
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message);
+      toast.error("Erro ao gerar diagnóstico de teste: " + message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Função para gerar respostas aleatórias e realistas como se fosse uma empresa
+  const gerarRespostaAleatoria = (perguntaIndex: number): string => {
+    const respostasPorCategoria = {
+      // Mercado e Clientes (0-4)
+      mercado: [
+        "Operamos em um mercado altamente competitivo com muitos concorrentes inovadores, especialmente startups que estão revolucionando o setor.",
+        "O mercado está em constante transformação digital, com pressão para inovação e eficiência operacional.",
+        "Somos um player tradicional em um mercado que está sendo disruptado por novas tecnologias e modelos de negócio.",
+        "Nosso setor enfrenta desafios significativos de regulamentação e mudanças nas preferências dos consumidores.",
+        "A concorrência internacional está cada vez mais presente, pressionando os preços e exigindo diferenciação."
+      ],
+      receita: [
+        "Nossa principal receita vem de produtos SaaS e soluções digitais para empresas, mas estamos vendo uma queda nas vendas.",
+        "Trabalhamos principalmente com contratos de prestação de serviços e consultoria especializada.",
+        "Temos uma base diversificada de receita, incluindo vendas de produtos, serviços e licenciamento de tecnologia.",
+        "A maior parte da nossa receita vem de clientes recorrentes através de contratos de manutenção e suporte.",
+        "Focamos em projetos customizados de grande porte, mas estamos enfrentando dificuldades em fechar novos contratos."
+      ],
+      diferenciacao: [
+        "Nos diferenciamos pela experiência do usuário e suporte personalizado, embora nossa tecnologia esteja ficando ultrapassada.",
+        "Oferecemos soluções completas e integradas, ao contrário dos concorrentes que focam em nichos específicos.",
+        "Nossa vantagem competitiva está no conhecimento profundo do mercado local e relacionamentos de longo prazo.",
+        "Temos uma equipe altamente qualificada e especializada, o que nos permite oferecer soluções de alta qualidade.",
+        "Investimos em pesquisa e desenvolvimento próprio, criando soluções proprietárias que os concorrentes não têm."
+      ],
+      perfil_cliente: [
+        "Nossos clientes típicos são empresas de médio porte que buscam soluções digitais para otimizar seus processos.",
+        "Atendemos principalmente grandes corporações com necessidades complexas de transformação digital.",
+        "Trabalhamos com startups e empresas em crescimento que precisam de soluções escaláveis e flexíveis.",
+        "Nosso público-alvo são organizações do setor público e privado que precisam cumprir regulamentações específicas.",
+        "Focamos em clientes de diversos setores que buscam modernização de seus sistemas legados."
+      ],
+      desafios_clientes: [
+        "Os principais desafios incluem digitalização de processos, adaptação tecnológica e redução de custos operacionais.",
+        "Nossos clientes enfrentam pressão para inovação, compliance regulatório e eficiência operacional.",
+        "As maiores dificuldades são relacionadas à transformação cultural, capacitação de equipes e integração de sistemas.",
+        "Os clientes precisam lidar com concorrência internacional, mudanças no comportamento do consumidor e volatilidade econômica.",
+        "Os desafios principais envolvem cibersegurança, privacidade de dados e adaptação às novas tecnologias emergentes."
+      ],
+
+      // Estrutura e Operações (5-9)
+      estrutura: [
+        "Temos uma estrutura hierárquica muito rígida com muitas camadas de decisão, o que torna tudo muito lento.",
+        "A organização é bastante centralizada, com decisões importantes tomadas no topo da hierarquia.",
+        "Mantemos uma estrutura tradicional com departamentos funcionais bem definidos, mas com pouca flexibilidade.",
+        "Somos organizados por unidades de negócio independentes, mas com coordenação limitada entre elas.",
+        "A estrutura é matricial, o que às vezes gera conflitos de prioridades e responsabilidades."
+      ],
+      processos: [
+        "Os principais processos incluem desenvolvimento de software, atendimento ao cliente e gestão de projetos.",
+        "Nossa operação envolve produção, logística, vendas e suporte pós-venda como processos principais.",
+        "Focamos em processos de consultoria, implementação de soluções e manutenção contínua.",
+        "Os processos centrais são pesquisa e desenvolvimento, produção e distribuição de produtos.",
+        "Trabalhamos com processos de captação de recursos, investimento e gestão de portfólio."
+      ],
+      fluxo_trabalho: [
+        "O fluxo de trabalho ainda é muito manual e baseado em planilhas Excel, com pouca automação.",
+        "Usamos uma combinação de ferramentas digitais e processos manuais, mas com ineficiências significativas.",
+        "Temos alguns sistemas automatizados, mas muitos processos ainda dependem de intervenção manual.",
+        "O trabalho é organizado em projetos, mas com coordenação limitada entre diferentes equipes.",
+        "Mantemos uma abordagem tradicional waterfall, com pouca agilidade para mudanças."
+      ],
+      ferramentas: [
+        "Usamos principalmente Excel, email e algumas ferramentas básicas de gestão. Não temos um sistema integrado.",
+        "Temos vários sistemas isolados que não se comunicam entre si, gerando retrabalho e inconsistências.",
+        "Investimos em algumas ferramentas modernas, mas a adoção pelas equipes é limitada.",
+        "Usamos uma mistura de ferramentas legadas e soluções modernas, mas sem integração adequada.",
+        "Temos sistemas específicos para cada departamento, mas falta uma visão unificada da operação."
+      ],
+      gestao_projetos: [
+        "A gestão de projetos é caótica, com atrasos frequentes e orçamentos que sempre estouram.",
+        "Usamos metodologias tradicionais que não se adaptam bem às mudanças e imprevistos.",
+        "Temos dificuldade em estimar prazos e custos com precisão, levando a constantes revisões.",
+        "A comunicação entre equipes de projeto é deficiente, gerando desalinhamentos e retrabalho.",
+        "Faltam ferramentas adequadas e processos padronizados para gestão de projetos."
+      ],
+
+      // Pessoas e Cultura (10-14)
+      cultura: [
+        "A cultura organizacional é bastante conservadora e resistente a mudanças tecnológicas.",
+        "Temos uma cultura de estabilidade e previsibilidade, mas que limita a inovação.",
+        "A organização valoriza a experiência e o conhecimento técnico acima da adaptabilidade.",
+        "Mantemos uma cultura hierárquica e formal, com pouca abertura para novas ideias.",
+        "Somos uma empresa tradicional com valores sólidos, mas que precisa se modernizar."
+      ],
+      valores: [
+        "Nossos valores principais incluem inovação, qualidade e foco no cliente, mas eles não são realmente vivenciados no dia a dia.",
+        "Pregamos excelência, integridade e trabalho em equipe, mas a prática nem sempre reflete esses valores.",
+        "Valorizamos a inovação e a criatividade, mas a estrutura organizacional limita sua expressão.",
+        "Temos valores tradicionais como ética, profissionalismo e compromisso, mas precisamos evoluir.",
+        "Focamos em resultados e eficiência, mas às vezes em detrimento do bem-estar das pessoas."
+      ],
+      clima: [
+        "O clima organizacional está tenso, com funcionários desmotivados e alta rotatividade.",
+        "Há um ambiente competitivo interno que gera conflitos e reduz a colaboração.",
+        "Os funcionários estão sobrecarregados e com pouco reconhecimento pelo seu trabalho.",
+        "Existe uma cultura de medo de errar, que limita a inovação e a assunção de riscos.",
+        "O clima é instável devido às constantes mudanças e incertezas sobre o futuro."
+      ],
+      desafios_pessoas: [
+        "Os principais desafios são falta de liderança inspiradora e ausência de programas de desenvolvimento.",
+        "Temos dificuldade em atrair e reter talentos qualificados para as posições-chave.",
+        "A capacitação técnica não acompanha a evolução das tecnologias e necessidades do mercado.",
+        "Faltam programas de desenvolvimento de carreira e sucessão para posições estratégicas.",
+        "Há problemas de comunicação e alinhamento entre diferentes níveis hierárquicos."
+      ],
+      avaliacao: [
+        "A avaliação de desempenho é puramente burocrática, sem feedback construtivo ou planos de desenvolvimento.",
+        "Usamos um sistema anual de avaliação que não reflete o desempenho real ao longo do ano.",
+        "Os critérios de avaliação são subjetivos e não estão alinhados com os objetivos estratégicos.",
+        "Faltam ferramentas e processos para feedback contínuo e desenvolvimento profissional.",
+        "A avaliação está desvinculada das oportunidades de crescimento e reconhecimento."
+      ],
+
+      // Direção Futura (15-19)
+      objetivos: [
+        "Nossos objetivos estratégicos incluem crescimento incremental de 20% ao ano, sem uma visão clara de futuro.",
+        "Buscamos manter a posição atual no mercado, mas sem estratégias claras de crescimento.",
+        "Temos metas de curto prazo focadas em sobrevivência, mas falta uma visão de longo prazo.",
+        "Os objetivos são definidos de forma reativa, respondendo às pressões do mercado imediato.",
+        "Focamos em eficiência operacional, mas negligenciamos investimentos em inovação e crescimento."
+      ],
+      ameacas: [
+        "As principais ameaças incluem concorrência digital, mudanças tecnológicas rápidas e entrada de novos players.",
+        "Enfrentamos riscos de obsolescência tecnológica e perda de participação de mercado.",
+        "A volatilidade econômica e mudanças regulatórias representam ameaças significativas.",
+        "Temos vulnerabilidades em cibersegurança e dependência de fornecedores críticos.",
+        "A concorrência internacional e mudanças nas preferências dos consumidores são grandes ameaças."
+      ],
+      preparacao: [
+        "Estamos nos preparando pouco para o futuro, com investimento mínimo em inovação e pesquisa.",
+        "Temos iniciativas isoladas de inovação, mas sem estratégia coordenada e recursos adequados.",
+        "Faltam investimentos em capacitação digital e atualização tecnológica da equipe.",
+        "Mantemos uma postura reativa em relação às tendências do mercado e tecnologias emergentes.",
+        "Há resistência cultural a mudanças, limitando nossa capacidade de adaptação."
+      ],
+      oportunidades: [
+        "Identificamos oportunidades no mercado internacional, mas não temos estratégia definida para isso.",
+        "Há potencial em novos segmentos de mercado e diversificação de produtos/serviços.",
+        "Podemos explorar parcerias estratégicas e aquisições para acelerar o crescimento.",
+        "Existem oportunidades em digitalização de processos e novos modelos de negócio.",
+        "Podemos desenvolver novos produtos e serviços baseados em tecnologias emergentes."
+      ],
+      inovacao: [
+        "Avalio nossa capacidade de inovação como baixa, com uma cultura organizacional que resiste fortemente a mudanças.",
+        "Temos algumas iniciativas inovadoras, mas sem estrutura e recursos dedicados.",
+        "A inovação é vista como risco, não como oportunidade de crescimento.",
+        "Faltam processos e metodologias para promover e capturar ideias inovadoras.",
+        "A organização tem dificuldade em experimentar e aprender com falhas."
+      ],
+
+      // Perguntas adicionais (20-24)
+      retencao: [
+        "Temos dificuldade em reter talentos porque não oferecemos um ambiente de trabalho atrativo e oportunidades de crescimento.",
+        "Os salários estão abaixo do mercado e faltam benefícios competitivos para reter profissionais qualificados.",
+        "A cultura organizacional conservadora afasta profissionais que buscam ambientes mais dinâmicos.",
+        "Faltam oportunidades de desenvolvimento profissional e carreira dentro da empresa.",
+        "Os processos de gestão de pessoas são antiquados e não motivam a permanência dos talentos."
+      ],
+      decisoes: [
+        "Nossas decisões estratégicas são tomadas centralizadamente pelo CEO, criando gargalos no processo.",
+        "Temos um comitê executivo que decide sobre assuntos estratégicos, mas com participação limitada.",
+        "As decisões são tomadas de forma reativa, respondendo a crises em vez de planejamento estratégico.",
+        "Faltam processos estruturados para análise de dados e tomada de decisão informada.",
+        "Há conflitos entre decisões de curto e longo prazo, gerando inconsistências estratégicas."
+      ],
+      comunicacao: [
+        "A comunicação interna é deficiente, com informações que não fluem adequadamente entre os diferentes setores.",
+        "Usamos principalmente email e reuniões presenciais, mas com baixa frequência e efetividade.",
+        "Há silos entre departamentos que impedem o compartilhamento de informações e conhecimentos.",
+        "Faltam canais digitais eficientes para comunicação rápida e transparente.",
+        "A comunicação descendente funciona melhor que a ascendente, limitando o feedback das equipes."
+      ],
+      marketing: [
+        "Não temos uma estratégia clara de marketing digital e nossas vendas estão estagnadas.",
+        "Usamos abordagens tradicionais de marketing que não alcançam o público-alvo atual.",
+        "Faltam investimentos em branding e presença digital consistente.",
+        "A equipe de vendas não está alinhada com as estratégias de marketing.",
+        "Não acompanhamos métricas de performance de marketing e vendas de forma integrada."
+      ],
+      financeira: [
+        "A gestão financeira é conservadora demais e não apoia investimentos em crescimento.",
+        "Temos controle rigoroso de custos, mas isso limita investimentos estratégicos.",
+        "A alocação de recursos segue critérios tradicionais, não considerando inovação e crescimento.",
+        "Faltam processos para avaliação de retorno sobre investimentos em projetos estratégicos.",
+        "A gestão financeira está desvinculada dos objetivos estratégicos de longo prazo."
+      ]
+    };
+
+    // Mapear pergunta para categoria
+    let categoria: keyof typeof respostasPorCategoria;
+    if (perguntaIndex >= 0 && perguntaIndex <= 4) categoria = 'mercado';
+    else if (perguntaIndex >= 5 && perguntaIndex <= 9) categoria = 'estrutura';
+    else if (perguntaIndex >= 10 && perguntaIndex <= 14) categoria = 'cultura';
+    else if (perguntaIndex >= 15 && perguntaIndex <= 19) categoria = 'objetivos';
+    else categoria = 'mercado'; // fallback
+
+    // Ajustar categoria específica baseada no índice exato
+    if (perguntaIndex === 0) categoria = 'mercado';
+    else if (perguntaIndex === 1) categoria = 'receita';
+    else if (perguntaIndex === 2) categoria = 'diferenciacao';
+    else if (perguntaIndex === 3) categoria = 'perfil_cliente';
+    else if (perguntaIndex === 4) categoria = 'desafios_clientes';
+    else if (perguntaIndex === 5) categoria = 'estrutura';
+    else if (perguntaIndex === 6) categoria = 'processos';
+    else if (perguntaIndex === 7) categoria = 'fluxo_trabalho';
+    else if (perguntaIndex === 8) categoria = 'ferramentas';
+    else if (perguntaIndex === 9) categoria = 'gestao_projetos';
+    else if (perguntaIndex === 10) categoria = 'cultura';
+    else if (perguntaIndex === 11) categoria = 'valores';
+    else if (perguntaIndex === 12) categoria = 'clima';
+    else if (perguntaIndex === 13) categoria = 'desafios_pessoas';
+    else if (perguntaIndex === 14) categoria = 'avaliacao';
+    else if (perguntaIndex === 15) categoria = 'objetivos';
+    else if (perguntaIndex === 16) categoria = 'ameacas';
+    else if (perguntaIndex === 17) categoria = 'preparacao';
+    else if (perguntaIndex === 18) categoria = 'oportunidades';
+    else if (perguntaIndex === 19) categoria = 'inovacao';
+    else if (perguntaIndex === 20) categoria = 'retencao';
+    else if (perguntaIndex === 21) categoria = 'decisoes';
+    else if (perguntaIndex === 22) categoria = 'comunicacao';
+    else if (perguntaIndex === 23) categoria = 'marketing';
+    else if (perguntaIndex === 24) categoria = 'financeira';
+
+    const opcoes = respostasPorCategoria[categoria];
+    return opcoes[Math.floor(Math.random() * opcoes.length)];
+  };
+
   const iniciarDiagnostico = async () => {
     setIsLoading(true);
     setProgress(null);
@@ -238,7 +688,7 @@ export default function DiagnosticoAprofundadoPage() {
   };
 
   // Helper function para renderizar valores de forma mais amigável
-  const renderValue = (key: string, value: unknown): JSX.Element => {
+  const renderValue = (key: string, value: unknown): React.JSX.Element => {
     const keyLower = key.toLowerCase();
     
     // Tratamento especial para problemas/desafios priorizados/identificados
@@ -339,7 +789,7 @@ export default function DiagnosticoAprofundadoPage() {
 
   const processarResposta = async (respostaUsuario: string, isInitial = false) => {
     if (
-      perguntaAtual?.texto.includes("Estou pronto para compilar") &&
+      perguntaAtual?.texto?.includes("Estou pronto para compilar") &&
       respostaUsuario.toLowerCase() === "não"
     ) {
       toast.error("Geração do relatório cancelada. O diagnóstico foi reiniciado.");
@@ -353,6 +803,7 @@ export default function DiagnosticoAprofundadoPage() {
         const res = await fetch("/api/diagnostico-ia", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           sessionId: isInitial ? null : sessionId,
           resposta_usuario: respostaUsuario,
@@ -447,9 +898,16 @@ export default function DiagnosticoAprofundadoPage() {
   const renderInputField = () => {
     if (!perguntaAtual) return null;
 
+    // Adiciona o nome do problema priorizado ao início da pergunta, se disponível
+    let perguntaTexto = perguntaAtual.texto;
+    if (perguntaAtual.problema) {
+      perguntaTexto = `Focando em "${perguntaAtual.problema}": ${perguntaTexto}`;
+    }
+
     const commonProps = {
       value: resposta,
       onChange: (e: React.ChangeEvent<HTMLInputElement>) => setResposta(e.target.value),
+      onInput: (e: React.ChangeEvent<HTMLInputElement>) => setResposta(e.target.value),
       onKeyDown: handleKeyDown,
       placeholder: perguntaAtual.placeholder || "Digite sua resposta...",
       className: "w-full bg-slate-700 border-slate-600 text-white rounded-lg p-3",
@@ -604,7 +1062,7 @@ export default function DiagnosticoAprofundadoPage() {
         );
 
       case "diagnostico":
-        if (perguntaAtual?.texto.includes("Estou pronto para compilar")) {
+        if (perguntaAtual?.texto?.includes("Estou pronto para compilar")) {
           return (
             <div className="bg-slate-800 p-8 rounded-lg shadow-xl w-full max-w-2xl">
               <h1 className="text-2xl font-bold text-center mb-2">
@@ -647,6 +1105,7 @@ export default function DiagnosticoAprofundadoPage() {
             {progress && progress.totalSteps > initialSetupQuestions.length && (
               <ProgressBar currentStep={progress.currentStep} totalSteps={progress.totalSteps}/>
             )}
+
             {perguntaAtual && (
               <div className="text-center">
                 <h2 className="text-xl font-semibold mb-6">
@@ -688,6 +1147,17 @@ export default function DiagnosticoAprofundadoPage() {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* MODO TESTE - REMOVER DEPOIS */}
+            <button
+              onClick={() => {
+                iniciarDiagnosticoTeste();
+              }}
+              className="hidden md:flex items-center gap-1 px-2 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded text-yellow-400 text-xs hover:bg-yellow-500/20 transition-colors"
+              title="Modo Teste - Dados Predefinidos"
+            >
+              🐛 Teste
+            </button>
+
             {user && (
               <div className="hidden md:flex items-center gap-2 bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700/50">
                 <span className="text-gray-300 text-sm">{user.nome_empresa}</span>
@@ -758,20 +1228,6 @@ export default function DiagnosticoAprofundadoPage() {
 
       {/* Content com padding-top para compensar navbar fixa */}
       <div className="flex-1 flex flex-col items-center justify-center p-4 pt-28 md:pt-32">
-        {/* Indicador de progresso restaurado */}
-        {progressoRestaurado && fase !== 'setup' && (
-        <div className="absolute top-4 right-4 z-20 bg-green-500/20 border border-green-500/50 rounded-lg px-4 py-2 flex items-center gap-2">
-          <span className="text-green-400 text-sm font-medium">✓ Progresso restaurado</span>
-          <button
-            onClick={handleRefazerDiagnostico}
-            className="text-xs text-green-300 hover:text-green-100 underline"
-            title="Começar do zero"
-          >
-            Recomeçar
-          </button>
-        </div>
-      )}
-      
         <div className="w-full max-w-3xl relative z-10 flex items-center justify-center">
           {renderContent()}
         </div>
@@ -780,6 +1236,52 @@ export default function DiagnosticoAprofundadoPage() {
       <div className="-z-10 fixed inset-0">
         <Ondas />
       </div>
+
+      {/* Modal de Restauração de Progresso */}
+      <Dialog open={showRestoreModal} onOpenChange={setShowRestoreModal}>
+        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-center text-pink-400">
+              🔄 Progresso Encontrado
+            </DialogTitle>
+            <DialogDescription className="text-center text-slate-300">
+              Detectamos que você tem um diagnóstico em andamento. O que gostaria de fazer?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-6">
+            <div className="bg-slate-900/50 p-4 rounded-lg">
+              <h4 className="font-semibold text-green-400 mb-2">📈 Continuar de onde parou</h4>
+              <p className="text-sm text-slate-300">
+                Restaure seu progresso anterior e continue o diagnóstico do ponto onde parou.
+              </p>
+            </div>
+            
+            <div className="bg-slate-900/50 p-4 rounded-lg">
+              <h4 className="font-semibold text-orange-400 mb-2">🆕 Começar do zero</h4>
+              <p className="text-sm text-slate-300">
+                Descarte o progresso anterior e inicie um novo diagnóstico completamente.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="flex gap-3 mt-6">
+            <Button
+              variant="outline"
+              onClick={handleStartFresh}
+              className="flex-1 border-orange-500 text-orange-400 hover:bg-orange-500/10 hover:text-orange-300"
+            >
+              🆕 Começar do Zero
+            </Button>
+            <PrimaryButton
+              onClick={handleRestoreProgress}
+              className="flex-1"
+            >
+              📈 Restaurar Progresso
+            </PrimaryButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

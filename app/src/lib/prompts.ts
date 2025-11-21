@@ -10,35 +10,45 @@ export async function getTrilhasParaPrompt(): Promise<string> {
   try {
     await connectDB();
     const trilhas = await Trilha.find({ status: "ativa" })
-      .select("nome descricao tags areasAbordadas objetivos duracaoEstimada nivel metadados")
+      .select("nome descricao tags areasAbordadas objetivos duracaoEstimada nivel categoria metadados")
       .lean();
 
     if (!trilhas || trilhas.length === 0) {
       return "Nenhuma trilha cadastrada no momento.";
     }
 
-    let resultado = "\n**TRILHAS DE APRENDIZAGEM DISPONÍVEIS:**\n";
+    let resultado = "\n**TRILHAS DE APRENDIZAGEM DISPONÍVEIS ORGANIZADAS POR CATEGORIA:**\n";
     resultado += "Use EXCLUSIVAMENTE estas trilhas nas recomendações. NÃO invente trilhas.\n\n";
 
-    trilhas.forEach((trilha, index) => {
-      resultado += `${index + 1}. **${trilha.nome}** (Nível: ${trilha.nivel})\n`;
-      resultado += `   - Descrição: ${trilha.descricao}\n`;
-      resultado += `   - Áreas: ${trilha.areasAbordadas.join(", ")}\n`;
-      resultado += `   - Tags: ${trilha.tags.join(", ")}\n`;
-      resultado += `   - Duração: ${trilha.duracaoEstimada}h\n`;
-      resultado += `   - Objetivos: ${trilha.objetivos.join("; ")}\n`;
+    // Organizar trilhas por categoria
+    const categorias = ["Comunicação", "Gestão de Tempo", "Inovação", "Liderança", "Diversidade"];
+    
+    categorias.forEach((categoria) => {
+      const trilhasCategoria = trilhas.filter(t => t.categoria === categoria);
+      if (trilhasCategoria.length === 0) return;
+
+      resultado += `### ${categoria.toUpperCase()}\n`;
       
-      if (trilha.metadados?.problemasRelacionados?.length > 0) {
-        resultado += `   - Resolve: ${trilha.metadados.problemasRelacionados.join(", ")}\n`;
-      }
-      if (trilha.metadados?.competenciasDesenvolvidas?.length > 0) {
-        resultado += `   - Competências: ${trilha.metadados.competenciasDesenvolvidas.join(", ")}\n`;
-      }
-      resultado += "\n";
+      trilhasCategoria.forEach((trilha, index) => {
+        resultado += `${index + 1}. **${trilha.nome}** (Nível: ${trilha.nivel}, Categoria: ${trilha.categoria})\n`;
+        resultado += `   - Descrição: ${trilha.descricao}\n`;
+        resultado += `   - Áreas: ${trilha.areasAbordadas.join(", ")}\n`;
+        resultado += `   - Tags: ${trilha.tags.join(", ")}\n`;
+        resultado += `   - Duração: ${trilha.duracaoEstimada}h\n`;
+        resultado += `   - Objetivos: ${trilha.objetivos.join("; ")}\n`;
+        
+        if (trilha.metadados?.problemasRelacionados?.length > 0) {
+          resultado += `   - Resolve: ${trilha.metadados.problemasRelacionados.join(", ")}\n`;
+        }
+        if (trilha.metadados?.competenciasDesenvolvidas?.length > 0) {
+          resultado += `   - Competências: ${trilha.metadados.competenciasDesenvolvidas.join(", ")}\n`;
+        }
+        resultado += "\n";
+      });
     });
 
     resultado += "**IMPORTANTE:** Ao recomendar trilhas, SEMPRE cite o nome EXATO de uma das trilhas acima.\n";
-    resultado += "Escolha as trilhas que melhor se alinham com os problemas identificados.\n\n";
+    resultado += "Considere a categoria da trilha ao fazer recomendações - cada categoria aborda um conjunto específico de competências.\n\n";
 
     return resultado;
   } catch (error) {
@@ -223,13 +233,43 @@ Você é um consultor sênior da EntreNova. Sua única missão é executar a met
       ${relatorioMarkdownTemplate}
       \`\`\`
 
+- **ESTRUTURAÇÃO DE DADOS (OBRIGATÓRIA):**
+  * Além do relatório markdown, você DEVE preencher o campo 'dados_coletados' com uma estrutura JSON organizada.
+  * A estrutura deve incluir:
+    - 'problemas_priorizados': array de objetos com {nome, impacto, frequencia, alcance, causa_raiz, evidencias: [array de strings]}
+    - 'trilhas_recomendadas': array de objetos com {problema_associado, trilha_nome, nivel, duracao, justificativa, impacto_esperado, prioridade}
+  * Cada trilha recomendada deve estar associada a um problema específico.
+  * Use os dados coletados nas etapas anteriores para preencher estes campos.
+
 ---
 ### ESTRUTURA JSON DE SAÍDA (MANDATÓRIA)
 {
   "status": "em_andamento" | "finalizado",
   "proxima_pergunta": { "texto": "...", "tipo_resposta": "...", "opcoes": null, "placeholder": "..." } | null,
   "resumo_etapa": null,
-  "dados_coletados": { ... },
+  "dados_coletados": {
+    "problemas_priorizados": [
+      {
+        "nome": "string",
+        "impacto": number,
+        "frequencia": number,
+        "alcance": number,
+        "causa_raiz": "string",
+        "evidencias": ["string"]
+      }
+    ],
+    "trilhas_recomendadas": [
+      {
+        "problema_associado": "string",
+        "trilha_nome": "string",
+        "nivel": "iniciante|intermediario|avancado",
+        "duracao": "string",
+        "justificativa": "string",
+        "impacto_esperado": "string",
+        "prioridade": "alta|media|baixa"
+      }
+    ]
+  },
   "relatorio_final": null,
   "progress": { "currentStep": 1, "totalSteps": 2, "stepTitle": "Identificação de Desafios" } | null
 }

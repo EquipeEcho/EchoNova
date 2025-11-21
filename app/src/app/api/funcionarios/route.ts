@@ -17,6 +17,7 @@ export async function GET(req: Request) {
     }
 
     const funcionarios = await Funcionario.find({ empresa: empresaId })
+        .populate('trilhas', 'nome descricao')
         .sort({ createdAt: -1 });
 
     return NextResponse.json(funcionarios);
@@ -67,6 +68,7 @@ export async function POST(req: Request) {
             matricula: data.matricula,
             senha: senhaHash,
             status: data.status,
+            trilhas: data.trilhas || [],
             empresa: data.empresaId,
         });
 

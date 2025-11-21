@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Trilha from "@/models/Trilha";
+import { authenticateAndAuthorize } from "@/lib/middleware/authMiddleware";
 
 // GET - Buscar trilha por ID
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
-    const trilha = await Trilha.findById(params.id);
+    const { id } = await params;
+    const trilha = await Trilha.findById(id);
 
     if (!trilha) {
       return NextResponse.json(
@@ -31,14 +33,24 @@ export async function GET(
 // PUT - Atualizar trilha
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Autenticar e autorizar como admin
+    const authResult = await authenticateAndAuthorize(request as any, "ADMIN");
+    if (!authResult.isAuthorized) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.status }
+      );
+    }
+
     await connectDB();
+    const { id } = await params;
     const body = await request.json();
 
     const trilhaAtualizada = await Trilha.findByIdAndUpdate(
-      params.id,
+      id,
       body,
       { new: true, runValidators: true }
     );
@@ -66,12 +78,22 @@ export async function PUT(
 // DELETE - Deletar trilha
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Autenticar e autorizar como admin
+    const authResult = await authenticateAndAuthorize(request as any, "ADMIN");
+    if (!authResult.isAuthorized) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.status }
+      );
+    }
+
     await connectDB();
+    const { id } = await params;
     
-    const trilhaDeletada = await Trilha.findByIdAndDelete(params.id);
+    const trilhaDeletada = await Trilha.findByIdAndDelete(id);
 
     if (!trilhaDeletada) {
       return NextResponse.json(

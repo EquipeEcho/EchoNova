@@ -11,7 +11,11 @@ const FuncionarioSchema = new Schema(
 
     senha: { type: String, required: true },
 
-    trilhas: { type: [String], default: [] },
+    trilhas: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Trilha",
+      default: []
+    }],
 
     empresa: {
       type: mongoose.Schema.Types.ObjectId,

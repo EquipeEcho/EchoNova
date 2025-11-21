@@ -11,8 +11,8 @@ interface DiagnosticoData {
       estagio: string;
       media: number;
       resumoExecutivo: {
-        forca?: { meta: string };
-        fragilidade?: { meta: string };
+        forca?: { meta: string } | null;
+        fragilidade?: { meta: string } | null;
       };
       trilhasDeMelhoria: Array<{
         meta: string;
@@ -41,7 +41,7 @@ export function generateDiagnosticoPDF(diagnosticoData: DiagnosticoData): void {
 
   // Carregar logo EchoNova (public/img/img_logo.png) como DataURL
   const loadImageAsDataUrl = async (src: string): Promise<string> => {
-    const res = await fetch(src);
+    const res = await fetch(src, { credentials: "include" });
     if (!res.ok) throw new Error("Falha ao carregar o logo");
     const blob = await res.blob();
     return await new Promise((resolve) => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, type FC } from "react";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +31,7 @@ interface Empresa {
   email: string;
   cnpj: string;
   planoAtivo?: string;
+  tipo_usuario?: string;
   senha?: string;
   createdAt?: string; // timestamp automático do Mongoose (timestamps: true)
   data_cadastro?: string; // campo explícito no schema
@@ -40,6 +42,8 @@ interface Diagnostico {
   empresa: {
     _id: string;
     nome_empresa: string;
+    email: string;
+    cnpj: string;
   };
   perfil: {
     empresa: string;
@@ -62,6 +66,7 @@ const EmpresaForm: FC<{
   onCancel: () => void;
 }> = ({ empresa, onSave, onCancel }) => {
   const [formData, setFormData] = useState(empresa || {});
+  const isAdmin = empresa?.tipo_usuario === 'ADMIN';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -75,6 +80,14 @@ const EmpresaForm: FC<{
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {isAdmin && (
+        <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-3">
+          <p className="text-yellow-300 text-sm font-medium">⚠️ Conta de Administrador</p>
+          <p className="text-yellow-400 text-xs mt-1">
+            Esta é a conta de administrador do sistema. Você pode alterar email e senha, mas o CNPJ e tipo de usuário são protegidos.
+          </p>
+        </div>
+      )}
       <div>
         <Label htmlFor="nome_empresa" className="text-pink-300">Nome da Empresa</Label>
         <Input
@@ -106,8 +119,10 @@ const EmpresaForm: FC<{
           value={formData.cnpj || ""}
           onChange={handleChange}
           required
-          className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
+          disabled={isAdmin}
+          className={`bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30 ${isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
         />
+        {isAdmin && <p className="text-xs text-yellow-400 mt-1">CNPJ do administrador não pode ser alterado</p>}
       </div>
       <div>
         <Label htmlFor="planoAtivo" className="text-pink-300">Plano Ativo</Label>
@@ -162,6 +177,7 @@ const EmpresaForm: FC<{
  * Permite visualizar, criar, editar e excluir registros de Empresas e Diagnósticos.
  */
 export default function AdminPage() {
+  const router = useRouter();
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [diagnosticos, setDiagnosticos] = useState<Diagnostico[]>([]);
   const [loading, setLoading] = useState(true);
@@ -178,8 +194,8 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const [empresasRes, diagnosticosRes] = await Promise.all([
-        fetch("/api/admin/empresas"),
-        fetch("/api/admin/diagnosticos"),
+        fetch("/api/admin/empresas", { credentials: 'include' }),
+        fetch("/api/admin/diagnosticos", { credentials: 'include' }),
       ]);
 
       if (!empresasRes.ok || !diagnosticosRes.ok) {
@@ -200,6 +216,55 @@ export default function AdminPage() {
     }
   }, []);
 
+  // Verificar autenticação ao carregar a página
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        // Tentar fazer uma requisição para verificar se está autenticado
+        const response = await fetch("/api/admin/empresas", {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (response.status === 401 || response.status === 403) {
+          // Não autenticado, redirecionar para login
+          router.push("/admin/login");
+          return;
+        }
+
+        // Se chegou aqui, está autenticado, pode continuar carregando os dados
+        fetchData();
+      } catch (error) {
+        // Em caso de erro, redirecionar para login
+        router.push("/admin/login");
+      }
+    };
+
+    checkAuth();
+
+    // Para admin, adicionar listener para logout automático ao sair da página
+    const handleBeforeUnload = async () => {
+      try {
+        // Fazer logout silencioso quando admin sair da página
+        await fetch("/api/logout", {
+          method: "POST",
+          credentials: "include",
+        });
+      } catch (error) {
+        // Ignorar erros no logout automático
+        console.log("Logout automático falhou:", error);
+      }
+    };
+
+    // Adicionar listener para quando a página for fechada/recarregada
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [router, fetchData]);
+
   // Utilitário para formatar data com fallback
   const formatEmpresaData = (empresa: Empresa) => {
     const source = empresa.createdAt || empresa.data_cadastro || empresa._id;
@@ -217,14 +282,17 @@ export default function AdminPage() {
       " " + date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  // useEffect(() => {
+  //   fetchData();
+  // }, [fetchData]);
 
   const handleDeleteEmpresa = async (id: string) => {
     if (window.confirm("Tem certeza que deseja excluir esta empresa e todos os seus diagnósticos associados?")) {
       try {
-        const res = await fetch(`/api/admin/empresas/${id}`, { method: "DELETE" });
+        const res = await fetch(`/api/admin/empresas/${id}`, { 
+          method: "DELETE",
+          credentials: 'include'
+        });
         if (!res.ok) throw new Error("Falha ao excluir empresa.");
         toast.success('Empresa excluída');
         fetchData();
@@ -235,17 +303,16 @@ export default function AdminPage() {
     }
   };
 
-  const handleDeleteDiagnostico = async (id: string) => {
-    if (window.confirm("Tem certeza que deseja excluir este diagnóstico?")) {
-      try {
-        const res = await fetch(`/api/admin/diagnosticos/${id}`, { method: "DELETE" });
-        if (!res.ok) throw new Error("Falha ao excluir diagnóstico.");
-        toast.success('Diagnóstico excluído');
-        fetchData();
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
-        toast.error(message || 'Erro ao excluir diagnóstico');
-      }
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      toast.success("Logout realizado com sucesso");
+      router.push("/admin/login");
+    } catch (error) {
+      toast.error("Erro ao fazer logout");
     }
   };
 
@@ -268,6 +335,7 @@ export default function AdminPage() {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify(empresa),
       });
 
@@ -291,10 +359,21 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-slate-900 text-white font-sans p-4 sm:p-8">
       <header className="mb-10 pb-6 border-b border-pink-500/30 sticky top-0 bg-slate-900/90 backdrop-blur z-10 -mx-4 px-4">
-        <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-linear-to-r from-pink-400 to-purple-400 tracking-tight">
-          Painel de Administração
-        </h1>
-        <p className="text-slate-400 mt-2 text-sm max-w-2xl leading-relaxed">Gerencie empresas, diagnósticos e dados essenciais do sistema em um ambiente unificado com a identidade visual padrão.</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-linear-to-r from-pink-400 to-purple-400 tracking-tight">
+              Painel de Administração
+            </h1>
+            <p className="text-slate-400 mt-2 text-sm max-w-2xl leading-relaxed">Gerencie empresas, diagnósticos e dados essenciais do sistema em um ambiente unificado com a identidade visual padrão.</p>
+          </div>
+          <Button
+            onClick={handleLogout}
+            variant="outline"
+            className="border-red-500 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+          >
+            🚪 Sair (Logout)
+          </Button>
+        </div>
       </header>
 
       <Tabs defaultValue="empresas" className="w-full">
@@ -329,6 +408,7 @@ export default function AdminPage() {
                   const res = await fetch('/api/admin/empresas', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ nome_empresa: nome, email, cnpj, senha: 'Teste123!' }),
                   });
                   const data = await res.json();
@@ -354,25 +434,42 @@ export default function AdminPage() {
                   <th className="p-4 font-semibold">Nome da Empresa</th>
                   <th className="p-4 font-semibold">Email</th>
                   <th className="p-4 font-semibold">CNPJ</th>
-                  <th className="p-4 font-semibold">Cadastro</th>
+                  <th className="p-4 font-semibold">Tipo</th>
                   <th className="p-4 font-semibold">Plano</th>
+                  <th className="p-4 font-semibold">Cadastro</th>
                   <th className="p-4 font-semibold">Ações</th>
                 </tr>
               </thead>
               <tbody>
-                {empresas.map((empresa) => (
-                  <tr key={empresa._id} className="border-b border-slate-700/60 hover:bg-slate-900/70 transition-colors">
-                    <td className="p-4 text-slate-200">{empresa.nome_empresa}</td>
-                    <td className="p-4 text-slate-400">{empresa.email}</td>
-                    <td className="p-4 text-slate-400">{empresa.cnpj}</td>
-                    <td className="p-4 text-slate-400">{formatEmpresaData(empresa)}</td>
-                    <td className="p-4 text-slate-300">{empresa.planoAtivo || "N/A"}</td>
-                    <td className="p-4 flex gap-2">
-                      <Button size="sm" onClick={() => handleEditEmpresa(empresa)} className="border-pink-500 text-pink-400 hover:bg-pink-500/10 hover:text-white" variant="outline">Editar</Button>
-                      <Button variant="destructive" size="sm" onClick={() => handleDeleteEmpresa(empresa._id)} className="bg-red-600 hover:bg-red-700 text-white">Excluir</Button>
-                    </td>
-                  </tr>
-                ))}
+                {empresas.map((empresa) => {
+                  const isAdmin = empresa.tipo_usuario === 'ADMIN';
+                  return (
+                    <tr key={empresa._id} className={`border-b border-slate-700/60 hover:bg-slate-900/70 transition-colors ${isAdmin ? 'bg-yellow-900/20' : ''}`}>
+                      <td className="p-4 text-slate-200 font-medium">
+                        {empresa.nome_empresa}
+                        {isAdmin && <span className="ml-2 text-xs bg-yellow-600 text-yellow-100 px-2 py-1 rounded">ADMIN</span>}
+                      </td>
+                      <td className="p-4 text-slate-400">{empresa.email}</td>
+                      <td className="p-4 text-slate-400">{empresa.cnpj}</td>
+                      <td className="p-4 text-slate-300">
+                        <span className={`text-xs px-2 py-1 rounded ${isAdmin ? 'bg-yellow-600 text-yellow-100' : 'bg-blue-600 text-blue-100'}`}>
+                          {isAdmin ? 'Administrador' : 'Empresa'}
+                        </span>
+                      </td>
+                      <td className="p-4 text-slate-300">{empresa.planoAtivo || "N/A"}</td>
+                      <td className="p-4 text-slate-400">{formatEmpresaData(empresa)}</td>
+                      <td className="p-4 flex gap-2">
+                        <Button size="sm" onClick={() => handleEditEmpresa(empresa)} className="border-pink-500 text-pink-400 hover:bg-pink-500/10 hover:text-white" variant="outline">Editar</Button>
+                        {!isAdmin && (
+                          <Button variant="destructive" size="sm" onClick={() => handleDeleteEmpresa(empresa._id)} className="bg-red-600 hover:bg-red-700 text-white">Excluir</Button>
+                        )}
+                        {isAdmin && (
+                          <span className="text-xs text-yellow-400 italic">Protegido</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -418,6 +515,7 @@ export default function AdminPage() {
                       const res = await fetch('/api/admin/diagnosticos/bulk-delete', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
                         body: JSON.stringify({ ids }),
                       });
                       const data = await res.json();
@@ -457,6 +555,7 @@ export default function AdminPage() {
                     />
                   </th>
                   <th className="p-4 font-semibold">Empresa</th>
+                  <th className="p-4 font-semibold">Contato</th>
                   <th className="p-4 font-semibold">Dimensões</th>
                   <th className="p-4 font-semibold">Status</th>
                   <th className="p-4 font-semibold">Data</th>
@@ -478,7 +577,13 @@ export default function AdminPage() {
                         }}
                       />
                     </td>
-                    <td className="p-4 text-slate-200">{diag.empresa?.nome_empresa || diag.perfil.empresa}</td>
+                    <td className="p-4 text-slate-200 font-medium">{diag.empresa?.nome_empresa || diag.perfil.empresa}</td>
+                    <td className="p-4 text-slate-400">
+                      <div className="text-xs">
+                        <div>{diag.empresa?.email || "N/A"}</div>
+                        <div className="text-slate-500">CNPJ: {diag.empresa?.cnpj || "N/A"}</div>
+                      </div>
+                    </td>
                     <td className="p-4 text-slate-400">{diag.dimensoesSelecionadas.join(", ")}</td>
                     <td className="p-4 text-slate-300">{diag.status}</td>
                     <td className="p-4 text-slate-400">{new Date(diag.createdAt).toLocaleDateString()}</td>
