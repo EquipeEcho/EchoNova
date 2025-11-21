@@ -432,6 +432,7 @@ export default function DashboardClientePage() {
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [metricsUpdatedAt, setMetricsUpdatedAt] = useState<string | null>(null);
   const [showDiagnosticoModal, setShowDiagnosticoModal] = useState(false);
+  const [showFuncionariosModal, setShowFuncionariosModal] = useState(false);
 
   // Dados fictícios para os gráficos (seriam substituídos por dados reais)
   const progressoTrilhasData: ProgressoTrilha[] = [
@@ -577,6 +578,17 @@ export default function DashboardClientePage() {
           trilhasRecomendadas = parseTrilhasFromMarkdown(diagData.finalReport);
         }
         setTrilhas(trilhasRecomendadas);
+
+        // Verificar se há funcionários cadastrados
+        const funcRes = await fetch(`/api/funcionarios?empresaId=${user.id}`, {
+          credentials: 'include'
+        });
+        if (funcRes.ok) {
+          const funcData = await funcRes.json();
+          if (!funcData || funcData.length === 0) {
+            setShowFuncionariosModal(true); // Mostrar modal se não há funcionários
+          }
+        }
       } catch (err: any) {
         setError(err.message || "Erro ao carregar dados do usuário");
       } finally {
@@ -1065,7 +1077,7 @@ export default function DashboardClientePage() {
                             stroke="#1f2937"
                             strokeWidth={2}
                           >
-                            {metrics.categoriaDistribuicao.map((entry, index) => {
+                            {metrics.categoriaDistribuicao.map((entry: any, index: number) => {
                               const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088FE", "#A855F7"];
                               return <Cell key={`cell-cat-${index}`} fill={COLORS[index % COLORS.length]} />;
                             })}
@@ -1217,6 +1229,42 @@ export default function DashboardClientePage() {
                 <Button
                   variant="ghost"
                   onClick={() => setShowDiagnosticoModal(false)}
+                  className="w-full text-neutral-400 hover:text-white hover:bg-neutral-800 py-3 rounded-lg transition-all duration-300"
+                >
+                  Fechar (Dashboard limitado)
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Funcionários Obrigatórios */}
+      {showFuncionariosModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl w-full max-w-md mx-4">
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 bg-fuchsia-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Users className="h-10 w-10 text-fuchsia-400" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-4">
+                Nenhum Funcionário Cadastrado
+              </h2>
+              <p className="text-neutral-300 mb-6 leading-relaxed">
+                Para acompanhar o progresso das trilhas de aprendizagem, você precisa cadastrar seus funcionários.
+                Eles terão acesso à plataforma mediante o cadastro e poderão acompanhar suas próprias trilhas.
+              </p>
+              <div className="space-y-3">
+                <Button
+                  onClick={() => router.push("/gerenciar-funcionarios")}
+                  className="w-full bg-linear-to-r from-fuchsia-600 to-fuchsia-700 hover:from-fuchsia-700 hover:to-fuchsia-800 text-white font-bold py-3 rounded-lg transition-all duration-300 shadow-lg"
+                >
+                  <Users className="mr-2 h-5 w-5" />
+                  Cadastrar Funcionários
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowFuncionariosModal(false)}
                   className="w-full text-neutral-400 hover:text-white hover:bg-neutral-800 py-3 rounded-lg transition-all duration-300"
                 >
                   Fechar (Dashboard limitado)

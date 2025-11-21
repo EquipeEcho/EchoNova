@@ -501,16 +501,40 @@ export default function ResultadoDiagnosticoPage() {
                 {Object.entries(diagnostico.structuredData)
                   .filter(([key]) => !key.includes('problema') && !key.includes('desafio'))
                   .slice(0, 6)
-                  .map(([key, value]) => (
-                    <div key={key} className="bg-slate-800/50 p-3 rounded hover:bg-slate-800/70 transition-colors">
-                      <div className="text-slate-400 text-xs uppercase tracking-wide mb-1">
-                        {key.replace(/_/g, ' ')}
+                  .map(([key, value]) => {
+                    const renderValue = (val: any): string => {
+                      if (Array.isArray(val)) {
+                        if (val.length === 0) return 'Nenhuma';
+                        if (typeof val[0] === 'object' && val[0] !== null) {
+                          // Para arrays de objetos (como trilhas_recomendadas)
+                          if (key === 'trilhas_recomendadas') {
+                            return val.map((trilha: any) => 
+                              typeof trilha === 'object' && trilha.trilha_nome 
+                                ? trilha.trilha_nome 
+                                : String(trilha)
+                            ).join(', ');
+                          }
+                          return `${val.length} itens`;
+                        }
+                        return val.join(', ');
+                      }
+                      if (typeof val === 'object' && val !== null) {
+                        return JSON.stringify(val);
+                      }
+                      return String(val);
+                    };
+
+                    return (
+                      <div key={key} className="bg-slate-800/50 p-3 rounded hover:bg-slate-800/70 transition-colors">
+                        <div className="text-slate-400 text-xs uppercase tracking-wide mb-1">
+                          {key.replace(/_/g, ' ')}
+                        </div>
+                        <div className="text-slate-200 font-medium">
+                          {renderValue(value)}
+                        </div>
                       </div>
-                      <div className="text-slate-200 font-medium">
-                        {String(value)}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             </div>
           )}
