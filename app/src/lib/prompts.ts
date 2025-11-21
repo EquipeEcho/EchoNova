@@ -1,53 +1,8 @@
 // src/lib/prompts.ts
-import Trilha from "@/models/Trilha";
-import { connectDB } from "@/lib/mongodb";
-
-/**
- * @description Busca todas as trilhas ativas do banco e formata para o prompt da IA.
- * @returns String formatada com lista de trilhas disponíveis
- */
-export async function getTrilhasParaPrompt(): Promise<string> {
-  try {
-    await connectDB();
-    const trilhas = await Trilha.find({ status: "ativa" })
-      .select("nome descricao tags areasAbordadas objetivos duracaoEstimada nivel metadados")
-      .lean();
-
-    if (!trilhas || trilhas.length === 0) {
-      return "Nenhuma trilha cadastrada no momento.";
-    }
-
-    let resultado = "\n**TRILHAS DE APRENDIZAGEM DISPONÍVEIS:**\n";
-    resultado += "Use EXCLUSIVAMENTE estas trilhas nas recomendações. NÃO invente trilhas.\n\n";
-
-    trilhas.forEach((trilha, index) => {
-      resultado += `${index + 1}. **${trilha.nome}** (Nível: ${trilha.nivel})\n`;
-      resultado += `   - Descrição: ${trilha.descricao}\n`;
-      resultado += `   - Áreas: ${trilha.areasAbordadas.join(", ")}\n`;
-      resultado += `   - Tags: ${trilha.tags.join(", ")}\n`;
-      resultado += `   - Duração: ${trilha.duracaoEstimada}h\n`;
-      resultado += `   - Objetivos: ${trilha.objetivos.join("; ")}\n`;
-      
-      if (trilha.metadados?.problemasRelacionados?.length > 0) {
-        resultado += `   - Resolve: ${trilha.metadados.problemasRelacionados.join(", ")}\n`;
-      }
-      if (trilha.metadados?.competenciasDesenvolvidas?.length > 0) {
-        resultado += `   - Competências: ${trilha.metadados.competenciasDesenvolvidas.join(", ")}\n`;
-      }
-      resultado += "\n";
-    });
-
-    resultado += "**IMPORTANTE:** Ao recomendar trilhas, SEMPRE cite o nome EXATO de uma das trilhas acima.\n";
-    resultado += "Escolha as trilhas que melhor se alinham com os problemas identificados.\n\n";
-
-    return resultado;
-  } catch (error) {
-    console.error("Erro ao buscar trilhas para prompt:", error);
-    return "Erro ao carregar trilhas do sistema.";
-  }
-}
 
 const relatorioMarkdownTemplate = `
+# Relatório de Diagnóstico Profundo: [Nome da Empresa]
+
 ***
 
 ### Sumário Executivo
@@ -61,15 +16,15 @@ const relatorioMarkdownTemplate = `
 
 ***
 
-### Análise dos Desafios Prioritários
-#### 1. [Nome do Desafio 1]
+### Análise dos Problemas Prioritários
+#### 1. [Nome do Problema 1]
 * **Nível de Criticidade:** Impacto: [Nota]/5, Frequência: [Nota]/5, Alcance: [Nota]/5
 * **Evidências:**
   * "- [Exemplo 1 citado pelo cliente]"
   * "- [Exemplo 2 citado pelo cliente]"
 * **Análise da Causa Raiz:** [Sua análise sobre a causa raiz informada]
 
-#### 2. [Nome do Desafio 2]
+#### 2. [Nome do Problema 2]
 *... e assim por diante.*
 
 ***
@@ -89,90 +44,13 @@ const relatorioMarkdownTemplate = `
 
 ***
 
-### Trilhas de Aprendizagem Recomendadas
-
-Com base nos problemas identificados, recomendamos as seguintes trilhas de desenvolvimento disponíveis em nossa plataforma:
-
-#### Desafio: [Nome do Desafio 1]
-
-**Trilha Recomendada: [Nome EXATO da Trilha]**
-* **Nível:** [Iniciante/Intermediário/Avançado]
-* **Duração Estimada:** [X]h
-* **Justificativa:** [Explicação detalhada de como esta trilha específica resolve o problema identificado, conectando com as evidências coletadas]
-* **Impacto Esperado:** [Resultados concretos que a organização pode esperar após implementação]
-* **Prioridade:** [Alta/Média/Baixa]
-
-#### Desafio: [Nome do Desafio 2]
-
-**Trilha Recomendada: [Nome EXATO da Trilha]**
-* **Nível:** [Iniciante/Intermediário/Avançado]
-* **Duração Estimada:** [X]h
-* **Justificativa:** [Explicação detalhada de como esta trilha específica resolve o problema identificado]
-* **Impacto Esperado:** [Resultados concretos esperados]
-* **Prioridade:** [Alta/Média/Baixa]
-
-*[Continue para todos os problemas priorizados...]*
-
-***
-
-### Tabela de Correspondência Desafio → Trilha (Resumo)
-
-Não use blocos de código. Gere a tabela diretamente em HTML (sem crases triplas), exatamente no formato abaixo:
-
-<table>
-  <thead>
-    <tr>
-      <th>Desafio</th>
-      <th>Trilha Recomendada</th>
-      <th>Nível</th>
-      <th>Duração</th>
-      <th>Conteúdos-chave</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>[Desafio 1]</td>
-      <td>[Nome EXATO da Trilha]</td>
-      <td>[Nível]</td>
-      <td>[X]h</td>
-      <td>[3-5 tópicos/módulos mais relevantes]</td>
-    </tr>
-    <tr>
-      <td>[Desafio 2]</td>
-      <td>[Nome EXATO da Trilha]</td>
-      <td>[Nível]</td>
-      <td>[X]h</td>
-      <td>[3-5 tópicos/módulos mais relevantes]</td>
-    </tr>
-  </tbody>
-  </table>
-
-***
-
- 
-
-***
-
-### Recomendações Finais e Próximos Passos
-
-*Resumo das ações prioritárias e cronograma sugerido para implementação das trilhas...*
+### Recomendações e Próximos Passos
+*Com base em toda a análise, estas são as ações e trilhas de desenvolvimento recomendadas...*
 `;
 
 export const promptDiagnosticoAprofundado = `
 ### PERFIL E DIRETRIZES FUNDAMENTAIS
 Você é um consultor sênior da EntreNova. Sua única missão é executar a metodologia de "Diagnóstico Profundo" a partir dos dados iniciais fornecidos.
-
-{TRILHAS_DISPONIVEIS}
-
-**REGRA CRÍTICA SOBRE TRILHAS:**
-- Você DEVE recomendar SOMENTE trilhas que estão listadas acima na seção "TRILHAS DE APRENDIZAGEM DISPONÍVEIS".
-- NÃO crie, invente ou sugira trilhas que não existem na lista.
-- Ao mencionar uma trilha no relatório, use o nome EXATO conforme aparece na lista.
-- Para CADA problema priorizado, você DEVE recomendar pelo menos UMA trilha específica.
-- Escolha as trilhas que melhor se alinham com os problemas identificados pelo diagnóstico.
-- Se nenhuma trilha se adequar perfeitamente, escolha as mais próximas e explique claramente a correlação.
-- Inclua o nível (Iniciante/Intermediário/Avançado) e duração estimada de cada trilha recomendada.
-- A seção "Trilhas de Aprendizagem Recomendadas" é OBRIGATÓRIA e deve ser detalhada e específica.
 
 **REGRAS DE SEGURANÇA E COMPORTAMENTO (NÃO VIOLÁVEIS):**
 1.  **PONTO DE PARTIDA:** Sua interação começa na ETAPA 2. A primeira mensagem que você recebe do sistema JÁ CONTÉM os dados de perfil do cliente, que foram coletados e confirmados previamente. VOCÊ NÃO DEVE PERGUNTAR DADOS DE PERFIL NOVAMENTE.
@@ -193,7 +71,7 @@ Você é um consultor sênior da EntreNova. Sua única missão é executar a met
 - Objetivo: Mapear as "dores" e definir o foco da análise.
 - Ação:
   1.  **(Passo 1 de X):** Sua PRIMEIRA pergunta DEVE SER a pergunta aberta sobre desafios. Pergunta: "Para começarmos a análise, por favor, descreva os principais desafios, gargalos ou 'dores' que você percebe na sua organização hoje.", Placeholder: "Ex: dificuldade na comunicação, baixa motivação, processos desorganizados...". Use o 'progress' inicial aqui.
-  2.  **Após a resposta do usuário (Passo 2 de X):** Analise a resposta, liste os problemas e peça para o usuário **priorizar até 3**. Ex: "Entendido. Dos desafios que você mencionou, quais [do/dos [numero de desafios informados ou nome do desafio se apenas houver um]] são os mais críticos para o negócio neste momento?".
+  2.  **Após a resposta do usuário (Passo 2 de X):** Analise a resposta, liste os problemas e peça para o usuário **priorizar até 3**. Ex: "Entendido. Dos desafios que você mencionou, quais 3 são os mais críticos para o negócio neste momento?".
 - **CÁLCULO CRÍTICO:** Após o usuário priorizar N problemas, RECALCULE o 'totalSteps' para o resto do diagnóstico. A fórmula é: 2 (da Etapa 2) + (N * 6) + 1 (da Etapa 4).
 
 **ETAPA 3: APROFUNDAMENTO INVESTIGATIVO (N * 6 Passos por Problema)**
@@ -211,12 +89,6 @@ Você é um consultor sênior da EntreNova. Sua única missão é executar a met
 
 **ETAPA 5: GERAÇÃO DO RELATÓRIO FINAL**
 - Ação: Ao receber "Sim", mude o status para "finalizado". 'proxima_pergunta' e 'progress' devem ser 'null'. Construa o relatório em MARKDOWN no campo 'relatorio_final', usando títulos descritivos e a formatação do template.
-- **IMPORTANTE SOBRE TRILHAS:** 
-  * A seção "Trilhas de Aprendizagem Recomendadas" é MANDATÓRIA.
-  * Para CADA problema priorizado, você DEVE incluir uma subseção dedicada.
-  * Cada subseção deve conter: nome do problema, trilha recomendada (nome EXATO da lista), nível, duração, justificativa detalhada conectando a trilha com as evidências coletadas, impacto esperado e prioridade.
-  * Use os dados das trilhas disponíveis (nível, duração, objetivos, competências) para enriquecer sua recomendação.
-  * A justificativa deve explicar COMO especificamente a trilha resolve o problema identificado.
   
       **Template:**
       \`\`\`markdown

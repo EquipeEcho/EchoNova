@@ -1,21 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
 import { Ondas, Header } from "./clientFuncs";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/lib/stores/useAuthStore";
-
 export default function Home() {
-  const router = useRouter();
-  const user = useAuthStore((state) => state.user);
-
-  useEffect(() => {
-    if (user) {
-      router.push("/pos-login");
-    }
-  }, [user, router]);
-
   return (
     <main className="flex flex-col overflow-hidden min-h-screen">
       <Header />

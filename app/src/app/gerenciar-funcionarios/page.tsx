@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PasswordInput } from "@/components/ui/password-input";
 import { Headernaofix, Ondas } from "@/app/clientFuncs";
 
 interface Funcionario {
@@ -136,31 +135,38 @@ export default function GerenciarFuncionariosPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // validação básica do formulário
-    if (
-      !formData.nome ||
-      !formData.email ||
-      !formData.matricula ||
-      !formData.cargo
-    ) {
+    if (!formData.nome || !formData.email || !formData.matricula || !formData.cargo) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
 
-    // garante que temos um usuário logado com id
     if (!user?.id) {
       toast.error("Erro: usuário não identificado.");
       return;
     }
 
     try {
+      // ------------------------------------------------------
+      // CRIAR FUNCIONÁRIO
+      // ------------------------------------------------------
       if (modalOpen === "criar") {
+
+        if (!formData.senha) {
+          toast.error("A senha é obrigatória para criar um funcionário.");
+          return;
+        }
+
         const res = await fetch("/api/funcionarios", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            ...formData,
-            empresaId: user.id, // vincula ao dono logado
+            nome: formData.nome,
+            email: formData.email,
+            matricula: formData.matricula,
+            cargo: formData.cargo,
+            senha: formData.senha,
+            status: formData.status,
+            empresaId: user.id,
           }),
         });
 
@@ -170,16 +176,35 @@ export default function GerenciarFuncionariosPage() {
         }
 
         toast.success("Funcionário cadastrado com sucesso!");
-      } else if (modalOpen === "editar" && selectedFuncionario) {
+      }
+
+
+      // ------------------------------------------------------
+      // EDITAR FUNCIONÁRIO
+      // ------------------------------------------------------
+      else if (modalOpen === "editar" && selectedFuncionario) {
+
+        const updateBody: any = {
+          nome: formData.nome,
+          email: formData.email,
+          matricula: formData.matricula,
+          cargo: formData.cargo,
+          status: formData.status,
+        };
+
+        // Se o RH digitou uma senha nova, envia
+        if (formData.senha.trim().length > 0) {
+          updateBody.senha = formData.senha;
+        }
+
         const res = await fetch(
           `/api/funcionarios/${selectedFuncionario.id}?empresaId=${user.id}`,
           {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(formData), // empresaId vem pela query
+            body: JSON.stringify(updateBody),
           }
         );
-
 
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
@@ -189,13 +214,17 @@ export default function GerenciarFuncionariosPage() {
         toast.success("Funcionário atualizado com sucesso!");
       }
 
-      // recarrega a lista e fecha o modal depois de criar/editar
+      // ------------------------------------------------------
+      // FINAL
+      // ------------------------------------------------------
       await fetchFuncionarios();
       handleCloseModal();
+
     } catch (e: any) {
       toast.error(e.message || "Erro ao salvar funcionário");
     }
   };
+
 
   // ----------------------------------------------------
   // Excluir funcionário (rota singular /api/funcionarios/[id])
@@ -454,8 +483,9 @@ export default function GerenciarFuncionariosPage() {
                     <Label htmlFor="senha" className="text-neutral-300">
                       Senha *
                     </Label>
-                    <PasswordInput
+                    <Input
                       id="senha"
+                      type="password"
                       value={formData.senha}
                       onChange={(e) =>
                         setFormData({ ...formData, senha: e.target.value })

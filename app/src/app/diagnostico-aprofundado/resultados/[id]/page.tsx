@@ -2,11 +2,7 @@
 
 import { useState, useEffect } from "react"; // Removido o useRef
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
 import ReactMarkdown from "react-markdown";
-import rehypeRaw from "rehype-raw";
-import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf"; // Apenas o jsPDF é necessário
 import { Ondas } from "@/app/clientFuncs";
@@ -14,37 +10,22 @@ import { Loader } from "@/components/ui/loader";
 import { Button } from "@/components/ui/button";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { Save, ArrowLeft } from "lucide-react";
-import { useAuthStore } from "@/lib/stores/useAuthStore";
 
 interface Diagnostico {
   _id: string;
   finalReport: string;
-  empresa: {
-    _id: string;
-    nome_empresa: string;
-  } | string;
+  empresa: string;
   createdAt: string;
-  structuredData?: Record<string, unknown>;
 }
 
 export default function ResultadoDiagnosticoPage() {
   const router = useRouter();
   const params = useParams();
   const { id } = params;
-  const logout = useAuthStore((state) => state.logout);
-  const user = useAuthStore((state) => state.user);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const [diagnostico, setDiagnostico] = useState<Diagnostico | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
-
-  const handleLogout = () => {
-    logout();
-    router.push("/");
-  };
 
   useEffect(() => {
     if (id) {
@@ -75,18 +56,13 @@ export default function ResultadoDiagnosticoPage() {
    * A função interpreta manualmente os elementos do Markdown (títulos, listas, etc.)
    * e os desenha no PDF, aplicando um tema escuro e lidando com quebra de página.
    */
-  const handleDownloadPdf = async () => {
+  const handleDownloadPdf = () => {
   if (!diagnostico?.finalReport) return;
 
   toast.info("Gerando seu relatório em PDF...");
 
   try {
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    
-    // Extrai nome da empresa
-    const nomeEmpresa = typeof diagnostico.empresa === 'string' 
-      ? (user?.nome_empresa || 'Empresa')
-      : diagnostico.empresa.nome_empresa;
 
     // --- 1. CONFIGURAÇÕES E CONSTANTES ---
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -97,27 +73,6 @@ export default function ResultadoDiagnosticoPage() {
     const lineHeightBase = 5; 
 
     // --- FUNÇÕES AUXILIARES ---
-
-    // Carrega a imagem do logo como DataURL para uso no jsPDF
-    const loadImageAsDataUrl = async (src: string): Promise<string> => {
-      const res = await fetch(src);
-      if (!res.ok) throw new Error("Falha ao carregar o logo");
-      const blob = await res.blob();
-      return await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      });
-    };
-
-    let logoDataUrl: string | null = null;
-    try {
-      // Caminho para arquivos em public/ deve começar com "/"
-      logoDataUrl = await loadImageAsDataUrl("/img/img_logo.png");
-    } catch (e) {
-      console.warn("Logo não carregado, usando fallback gráfico.", e);
-      logoDataUrl = null;
-    }
 
     // FUNÇÃO AUXILIAR PARA IMPRIMIR TEXTO COM MARKDOWN INLINE (NEGITO) E QUEBRA DE LINHA CORRETA
     const printMarkdownText = (
@@ -170,149 +125,36 @@ export default function ResultadoDiagnosticoPage() {
 
     // FUNÇÃO AUXILIAR DE PAGINAÇÃO
     const addPageIfNeeded = (spaceNeeded: number) => {
-      if (y + spaceNeeded > pageHeight - margin - 15) { // Reserva espaço para rodapé
-        addFooter(); // Adiciona rodapé antes de mudar de página
+      if (y + spaceNeeded > pageHeight - margin) {
         doc.addPage();
-        doc.setFillColor(15, 23, 42); // slate-900 - tema escuro
+        doc.setFillColor(15, 23, 42); 
         doc.rect(0, 0, pageWidth, pageHeight, "F");
-        doc.setTextColor("#cbd5e1"); // slate-300 
+        doc.setTextColor("#cbd5e1"); 
         y = margin; 
       }
     };
 
-    // FUNÇÃO PARA ADICIONAR RODAPÉ
-    const addFooter = () => {
-      const footerY = pageHeight - 10;
-      
-      // Número da página à direita (apenas número)
-      const pageNum = (doc as unknown as { internal: { getCurrentPageInfo: () => { pageNumber: number } } }).internal.getCurrentPageInfo().pageNumber;
-      doc.setFontSize(10);
-      doc.setTextColor("#94a3b8"); // slate-400
-      doc.setFont("helvetica", "normal");
-      doc.text(`${pageNum}`, pageWidth - margin, footerY, { align: "right" });
-      
-      // Logo e EchoNova no centro-esquerdo
-      const centerX = pageWidth / 2;
-
-      const logoSize = 7.2; // mm (20% maior)
-      const logoX = centerX - 20; // ajusta levemente para a esquerda por conta do novo tamanho
-      const logoY = footerY - logoSize; // alinhar pela base do texto
-
-      if (logoDataUrl) {
-        try {
-          doc.addImage(logoDataUrl, 'PNG', logoX, logoY, logoSize, logoSize);
-        } catch (err) {
-          // Fallback se addImage falhar
-          doc.setFillColor(236, 72, 153); // Rosa
-          doc.circle(logoX + logoSize/2, footerY - 2, 3.6, 'F'); // 20% maior
-          doc.setFontSize(8);
-          doc.setTextColor("#ffffff");
-          doc.setFont("helvetica", "bold");
-          doc.text("E", logoX + logoSize/2, footerY - 0.5, { align: "center" });
-        }
-      } else {
-        // Fallback visual (círculo com E)
-        doc.setFillColor(236, 72, 153); // Rosa
-        doc.circle(logoX + logoSize/2, footerY - 2, 3.6, 'F'); // 20% maior
-        doc.setFontSize(8);
-        doc.setTextColor("#ffffff");
-        doc.setFont("helvetica", "bold");
-        doc.text("E", logoX + logoSize/2, footerY - 0.5, { align: "center" });
-      }
-
-      // Nome EchoNova (10pt)
-      doc.setFontSize(10);
-      doc.setTextColor("#ec4899"); // Rosa
-      doc.setFont("helvetica", "bold");
-      doc.text("EchoNova", logoX + logoSize + 2, footerY, { align: "left" });
-    };
-
     // --- 3. APLICAÇÃO DO TEMA ESCURO INICIAL ---
-    doc.setFillColor(15, 23, 42); // slate-900 - tema escuro
+    doc.setFillColor(15, 23, 42); 
     doc.rect(0, 0, pageWidth, pageHeight, "F");
-    doc.setTextColor("#cbd5e1"); // slate-300 
+    doc.setTextColor("#cbd5e1"); 
 
     // Título Principal do Documento
     doc.setFont("helvetica", "bold");
     doc.setFontSize(22);
-    doc.setTextColor("#f1f5f9"); // slate-50 
-    doc.text("Diagnóstico Aprofundado", pageWidth / 2, y, { align: "center" });
-    y += 8;
-
-    // Nome da empresa abaixo do título
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
-    doc.setTextColor("#94a3b8"); // slate-400 
-    doc.text(nomeEmpresa, pageWidth / 2, y, { align: "center" });
-    y += 5;
-    
-    // Linha decorativa
-    doc.setDrawColor(236, 72, 153); // Rosa
-    doc.setLineWidth(0.5);
-    doc.line(margin + 20, y, pageWidth - margin - 20, y);
+    doc.setTextColor("#f1f5f9"); 
+    doc.text("Relatório de Diagnóstico", pageWidth / 2, y, { align: "center" });
     y += 10; 
 
-    // --- 4. EXTRAIR MAPEAMENTO (JSON) PARA TABELA ---
-    // (Removido) Lógica de extração e renderização de tabela de trilhas
-
     // --- 4. PROCESSAMENTO DO MARKDOWN ---
-    // Pré-processa o relatório: remove o título padrão e substitui "Sua Empresa" pelo nome real
-    const preprocessReport = (report: string, empresaNome: string) => {
-      const withoutHeader = report
-        .split('\n')
-        .filter((ln) => !/^#\s*Relat[óo]rio de Diagn[óo]stico Profundo/i.test(ln.trim()))
-        .join('\n');
-      return withoutHeader.replace(/\bSua Empresa\b/gi, empresaNome);
-    };
-
-    const stripJsonBlocks = (txt: string) => txt.replace(/```json[\s\S]*?```/gi, "");
-    const stripHtmlTables = (txt: string) => txt.replace(/<table[\s\S]*?<\/table>/gi, "");
-    const stripResumoDasTrilhasHeading = (txt: string) => txt.replace(/^\s{0,3}#{1,6}.*Resumo\s+das\s+Trilhas.*$/gim, "");
-    const stripMappingTableArtifacts = (txt: string) => {
-      const lines = txt.split('\n');
-      const result: string[] = [];
-      let skipping = false;
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const trimmed = line.trim();
-        const isHeading = /tabela\s+de\s+correspond[êe]ncia/i.test(trimmed) || /resumo\s+das\s+trilhas/i.test(trimmed);
-        const isPipeHeader = /^\|/.test(trimmed) && /(Problema|Desafio)/i.test(trimmed) && /Trilha/i.test(trimmed);
-        if (!skipping && (isHeading || isPipeHeader)) {
-          skipping = true;
-          continue;
-        }
-        if (skipping) {
-          if (/^\|/.test(trimmed)) {
-            continue; // ainda dentro da tabela markdown
-          } else if (trimmed === '') {
-            skipping = false; // fim da tabela após linha em branco
-            continue;
-          } else {
-            // próxima seção normal
-            skipping = false;
-          }
-        }
-        if (!skipping) result.push(line);
-      }
-      return result.join('\n');
-    };
-    const stripJsonHeading = (txt: string) => txt
-      .replace(/^\s{0,3}#{1,6}.*Saída\s+Estruturada[\s\S]*?\(\s*JSON\s*\)\s*$/gim, "")
-      .replace(/^\s{0,3}#{1,6}.*JSON.*Saída\s+Estruturada.*$/gim, "")
-      .replace(/Saída\s+Estruturada\s*–?\s*Trilhas\s+Mapeadas\s*\(\s*JSON\s*\)/gi, "");
-    const preprocessed = preprocessReport(diagnostico.finalReport, nomeEmpresa);
-    const processedReport = stripMappingTableArtifacts(stripResumoDasTrilhasHeading(stripHtmlTables(stripJsonBlocks(stripJsonHeading(preprocessed)))));
-    const lines = processedReport.split('\n');
-    // (Removido) Extração de trilhas mapeadas
-
-    // (Removido) Funções de parsing/renderização de tabela
+    const lines = diagnostico.finalReport.split('\n');
 
     lines.forEach((line, index) => { 
       const trimmedLine = line.trim();
   let _splitText: string[];
       let spaceNeeded: number;
-      const normalTextColor = "#cbd5e1"; // slate-300
-      const boldTextColor = "#f1f5f9"; // slate-50 
+      const normalTextColor = "#cbd5e1"; 
+      const boldTextColor = "#f1f5f9"; 
 
       // Função auxiliar para estimar o buffer do próximo parágrafo
       const estimateNextTextBuffer = (nextIndex: number, defaultBuffer: number) => {
@@ -326,26 +168,20 @@ export default function ResultadoDiagnosticoPage() {
       };
 
       if (trimmedLine.startsWith('# ')) {
-        // --- Título H1 (#) - Formatação ABNT ---
+        // --- Título H1 (#) ---
         const text = trimmedLine.substring(2);
-        const titleSpace = calculateSpace(text, 18, 5);
-        
-        // Estima espaço mínimo para primeiras linhas do conteúdo (formatação ABNT)
-        const minTextBuffer = estimateNextTextBuffer(index + 1, 20); // Mínimo 20mm de conteúdo
-        const totalSpaceNeeded = titleSpace + minTextBuffer;
-        
-        addPageIfNeeded(totalSpaceNeeded);
+        spaceNeeded = calculateSpace(text, 18, 5); 
+        addPageIfNeeded(spaceNeeded);
         
         y = printMarkdownText(text, y, margin, textWidth, 18, boldTextColor, boldTextColor);
         y += 2; 
 
       } else if (trimmedLine.startsWith('### ')) {
-        // --- Título H3 (###) com Agrupamento de Conteúdo (Rosa) - Formatação ABNT ---
+        // --- Título H3 (###) com Agrupamento de Conteúdo (Rosa) ---
         const text = trimmedLine.substring(4);
         const titleSpace = calculateSpace(text, 14, 4);
         
-        // Estima espaço mínimo para primeiras linhas do conteúdo (formatação ABNT)
-        const minTextBuffer = estimateNextTextBuffer(index + 1, 15); // Mínimo 15mm de conteúdo
+        const minTextBuffer = estimateNextTextBuffer(index + 1, 0);
 
         const totalSpaceNeeded = titleSpace + minTextBuffer;
         
@@ -353,17 +189,17 @@ export default function ResultadoDiagnosticoPage() {
 
         // Desenha o Título H3
         doc.setFontSize(14);
-        doc.setTextColor("#f472b6"); // pink-400
+        doc.setTextColor("#f472b6"); 
         y = printMarkdownText(text, y, margin, textWidth, 14, "#f472b6", "#f1f5f9");
         y += 2; 
 
       } else if (trimmedLine.startsWith('#### ')) {
-        // --- Título H4 (####) com Agrupamento de Conteúdo (Azul) - Formatação ABNT ---
+        // --- Título H4 (####) com Agrupamento de Conteúdo (Azul) ---
         const text = trimmedLine.substring(5);
         const titleSpace = calculateSpace(text, 13, 3);
         
-        // Estima espaço mínimo para primeiras linhas do conteúdo (formatação ABNT)
-        const minTextBuffer = estimateNextTextBuffer(index + 1, 12); // Mínimo 12mm de conteúdo
+        // **APLICANDO AGRUPAMENTO**
+        const minTextBuffer = estimateNextTextBuffer(index + 1, 0);
 
         const totalSpaceNeeded = titleSpace + minTextBuffer;
         
@@ -371,7 +207,7 @@ export default function ResultadoDiagnosticoPage() {
         
         // Desenha o Título H4
         doc.setFontSize(13); 
-        doc.setTextColor("#60a5fa"); // blue-400
+        doc.setTextColor("#60a5fa"); // Azul
         y = printMarkdownText(text, y, margin, textWidth, 13, "#60a5fa", "#f1f5f9");
         y += 2; 
 
@@ -387,7 +223,7 @@ export default function ResultadoDiagnosticoPage() {
         // --- Linha Horizontal (***) ---
         addPageIfNeeded(6); 
         y += 3;
-        doc.setDrawColor(71, 85, 105); // slate-600
+        doc.setDrawColor(71, 85, 105); 
         doc.line(margin, y, pageWidth - margin, y);
         y += 3;
 
@@ -407,15 +243,8 @@ export default function ResultadoDiagnosticoPage() {
       }
     });
 
-    // --- 5. (Removido) Inserção de tabela de trilhas ao final ---
-
-    // --- 6. ADICIONAR RODAPÉ NA ÚLTIMA PÁGINA ---
-    addFooter();
-
-    // --- 7. SALVAR O PDF ---
-    const nomeArquivo = nomeEmpresa.toLowerCase().replace(/\s+/g, '-');
-    const dataArquivo = new Date(diagnostico.createdAt).toISOString().split('T')[0];
-    doc.save(`diagnostico-aprofundado-${nomeArquivo}-${dataArquivo}.pdf`);
+    // --- 5. SALVAR O PDF ---
+    doc.save(`diagnostico-aprofundado-${diagnostico._id}.pdf`);
     toast.success("Download do PDF iniciado!");
 
   } catch (e) {
@@ -427,176 +256,42 @@ export default function ResultadoDiagnosticoPage() {
 
   const renderContent = () => {
     if (loading) {
-      return (
-        <div className="bg-slate-800 p-12 rounded-lg shadow-xl w-full text-center">
-          <Loader text="Carregando seu diagnóstico..." />
-          <p className="text-slate-400 mt-4 text-sm">Preparando análise completa...</p>
-        </div>
-      );
+      return <Loader text="Carregando relatório..." />;
     }
     if (error) {
       return (
-        <div className="bg-slate-800 p-8 rounded-lg shadow-xl w-full text-center">
-          <div className="text-red-400 mb-4">
-            <div className="text-6xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold mb-2">Erro ao Carregar</h2>
-            <p className="text-slate-300">{error}</p>
-          </div>
-          <Button 
-            onClick={() => router.push("/pos-login")} 
-            className="mt-6"
-            variant="outline"
-          >
-            Voltar ao Painel
-          </Button>
+        <div className="text-center text-red-400">
+          <h2>Erro ao Carregar</h2>
+          <p>{error}</p>
+          <Button onClick={() => router.push("/pos-login")} className="mt-4">Voltar</Button>
         </div>
       );
     }
     if (diagnostico) {
-      const nomeEmpresa = typeof diagnostico.empresa === 'string' 
-        ? (user?.nome_empresa || 'Empresa') 
-        : diagnostico.empresa.nome_empresa;
-      
-      const dataFormatada = new Date(diagnostico.createdAt).toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-      }) + ' às ' + new Date(diagnostico.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-      
       return (
         // O layout da página permanece o mesmo, apenas a função de download mudou
-        <div className="bg-slate-800 rounded-lg shadow-xl w-full max-h-[80vh] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-pink-500 scrollbar-track-slate-700 relative">
-          {/* Header com informações */}
-          <div className="text-center mb-8 pb-6 border-b-2 border-pink-500/30 sticky top-0 bg-slate-800 z-10 -mx-8 px-8 pt-8 -mt-8">
-            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-linear-to-r from-pink-400 to-purple-400 mb-3">
-              Diagnóstico Aprofundado
-            </h1>
-            <div className={`flex ${ (nomeEmpresa?.length || 0) > 24 ? 'flex-col' : 'flex-col sm:flex-row'} items-center justify-center gap-2 sm:gap-4 text-slate-400 text-sm mt-4`}>
-              <div className="flex items-center gap-2 text-center">
-                <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
-                <span className="font-medium text-slate-300">{nomeEmpresa}</span>
-              </div>
-              {((nomeEmpresa?.length || 0) <= 24) && (
-                <div className="hidden sm:block w-1 h-1 bg-slate-600 rounded-full"></div>
-              )}
-              <div className="flex items-center gap-2 text-center">
-                <span>📅</span>
-                <span>{dataFormatada}</span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Conteúdo com padding */}
-          <div className="px-8 pb-8">
-          {/* Card de Resumo Rápido - se houver dados estruturados */}
-          {diagnostico.structuredData && (
-            <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-6 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h2 className="text-lg font-bold text-pink-400 mb-4 flex items-center gap-2">
-                <span>📊</span>
-                Dados Coletados
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                {Object.entries(diagnostico.structuredData)
-                  .filter(([key]) => !key.includes('problema') && !key.includes('desafio'))
-                  .slice(0, 6)
-                  .map(([key, value]) => (
-                    <div key={key} className="bg-slate-800/50 p-3 rounded hover:bg-slate-800/70 transition-colors">
-                      <div className="text-slate-400 text-xs uppercase tracking-wide mb-1">
-                        {key.replace(/_/g, ' ')}
-                      </div>
-                      <div className="text-slate-200 font-medium">
-                        {String(value)}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
-
-          {/* Relatório Completo */}
-          <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 prose prose-invert prose-lg max-w-none mb-8 
-            [&>h1]:text-4xl [&>h1]:font-bold [&>h1]:text-slate-100 [&>h1]:mb-6 [&>h1]:pb-3 [&>h1]:border-b [&>h1]:border-pink-500/30
-            [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:text-pink-400 [&>h2]:mt-8 [&>h2]:mb-4
-            [&>h3]:text-xl [&>h3]:font-bold [&>h3]:text-pink-300 [&>h3]:mt-6 [&>h3]:mb-3
-            [&>h4]:text-lg [&>h4]:font-semibold [&>h4]:text-blue-300 [&>h4]:mt-5 [&>h4]:mb-2
-            [&>p]:text-slate-300 [&>p]:leading-relaxed [&>p]:mb-4
-            [&>ul]:text-slate-300 [&>ul]:mb-4 [&>ul]:ml-6
-            [&>ul>li]:mb-2 [&>ul>li]:leading-relaxed
-            [&>ul>li::marker]:text-pink-400
-            [&>strong]:text-slate-100 [&>strong]:font-semibold
-            [&>em]:text-pink-300 [&>em]:italic
-            [&>hr]:border-slate-600 [&>hr]:my-8
-            [&>blockquote]:border-l-4 [&>blockquote]:border-pink-500 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:text-slate-400
-            [&_h3:has(+_h4:contains('Trilha'))]:text-purple-400
-            [&_h4:contains('Trilha')]:text-emerald-400 [&_h4:contains('Trilha')]:bg-emerald-900/20 [&_h4:contains('Trilha')]:p-3 [&_h4:contains('Trilha')]:rounded-lg [&_h4:contains('Trilha')]:border [&_h4:contains('Trilha')]:border-emerald-700/30
-            [&_table]:w-full [&_table]:my-6 [&_table]:border-collapse [&_thead_th]:bg-slate-800/60 [&_th]:text-slate-300 [&_th]:px-4 [&_th]:py-2 [&_td]:px-4 [&_td]:py-2 [&_td]:border-t [&_td]:border-slate-700
-          ">
-            {(() => {
-              const empresaNome = typeof diagnostico.empresa === 'string' 
-                ? (user?.nome_empresa || 'Empresa')
-                : diagnostico.empresa.nome_empresa;
-              const stripJsonBlocks = (txt: string) => txt.replace(/```json[\s\S]*?```/gi, "");
-              const stripJsonHeading = (txt: string) => txt
-                .replace(/^\s{0,3}#{1,6}.*Saída\s+Estruturada[\s\S]*?\(\s*JSON\s*\)\s*$/gim, "")
-                .replace(/^\s{0,3}#{1,6}.*JSON.*Saída\s+Estruturada.*$/gim, "")
-                .replace(/Saída\s+Estruturada\s*–?\s*Trilhas\s+Mapeadas\s*\(\s*JSON\s*\)/gi, "");
-              const stripHtmlTables = (txt: string) => txt.replace(/<table[\s\S]*?<\/table>/gi, "");
-              const stripResumoDasTrilhasHeading = (txt: string) => txt.replace(/^\s{0,3}#{1,6}.*Resumo\s+das\s+Trilhas.*$/gim, "");
-              const stripMappingTableArtifacts = (txt: string) => {
-                const lines = txt.split('\n');
-                const result: string[] = [];
-                let skipping = false;
-                for (let i = 0; i < lines.length; i++) {
-                  const line = lines[i];
-                  const trimmed = line.trim();
-                  const isHeading = /tabela\s+de\s+correspond[êe]ncia/i.test(trimmed) || /resumo\s+das\s+trilhas/i.test(trimmed);
-                  const isPipeHeader = /^\|/.test(trimmed) && /(Problema|Desafio)/i.test(trimmed) && /Trilha/i.test(trimmed);
-                  if (!skipping && (isHeading || isPipeHeader)) {
-                    skipping = true;
-                    continue;
-                  }
-                  if (skipping) {
-                    if (/^\|/.test(trimmed)) {
-                      continue;
-                    } else if (trimmed === '') {
-                      skipping = false;
-                      continue;
-                    } else {
-                      skipping = false;
-                    }
-                  }
-                  if (!skipping) result.push(line);
-                }
-                return result.join('\n');
-              };
-              const processed = stripJsonBlocks(stripJsonHeading((diagnostico.finalReport || '')
-                .split('\n')
-                .filter((ln) => !/^#\s*Relat[óo]rio de Diagn[óo]stico Profundo/i.test(ln.trim()))
-                .join('\n')
-                .replace(/\bSua Empresa\b/gi, empresaNome)));
-              const processedWithoutTables = stripMappingTableArtifacts(stripResumoDasTrilhasHeading(stripHtmlTables(processed)));
-              return <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{processedWithoutTables}</ReactMarkdown>;
-            })()}
+        <div className="bg-slate-800 p-8 rounded-lg shadow-xl w-full">
+          <h1 className="text-3xl font-bold text-center mb-6 border-b border-slate-600 pb-4">
+            Resultado do Diagnóstico
+          </h1>
+          {/* A ref não é mais necessária aqui */}
+          <div className="prose prose-invert prose-lg max-w-none mb-8">
+            <ReactMarkdown>{diagnostico.finalReport}</ReactMarkdown>
           </div>
           <div className="mt-10 pt-6 border-t border-slate-700 flex flex-col sm:flex-row justify-center gap-4">
-            <PrimaryButton 
-              size="lg" 
-              onClick={handleDownloadPdf}
-              className="group"
-            >
-              <Save className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
-              Baixar PDF
+            <PrimaryButton size="lg" onClick={handleDownloadPdf}>
+              <Save className="mr-2 h-4 w-4" />
+              Salvar em PDF
             </PrimaryButton>
             <Button
               size="lg"
               variant="outline"
-              className="border-pink-500 text-pink-500 hover:bg-pink-500/10 hover:text-white group"
+              className="border-pink-500 text-pink-500 hover:bg-pink-500/10 hover:text-white"
               onClick={() => router.push("/pos-login")}
             >
-              <ArrowLeft className="mr-2 h-5 w-5 group-hover:-translate-x-1 transition-transform" />
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Voltar ao Painel
             </Button>
-          </div>
           </div>
         </div>
       );
@@ -605,73 +300,8 @@ export default function ResultadoDiagnosticoPage() {
   };
 
   return (
-    <main className="min-h-screen text-white flex flex-col relative overflow-hidden">
-      {/* Header de Navegação */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-sm border-b border-slate-800">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <div className="logo-container hover:scale-100">
-            <Link href="/pos-login">
-              <Image
-                src="/img/logo.png"
-                alt="EchoNova"
-                width={120}
-                height={40}
-                className="h-8 w-auto object-contain sm:h-10 md:h-12 lg:h-14"
-                priority
-              />
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-4">
-            {user && (
-              <div className="hidden md:flex items-center gap-2 bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700/50">
-                <span className="text-gray-300 text-sm">{user.nome_empresa}</span>
-              </div>
-            )}
-
-            <div className="relative">
-              <Button
-                variant="ghost"
-                className="relative h-10 w-10 rounded-full hover:bg-slate-800 p-0 cursor-pointer"
-                onClick={toggleMenu}
-              >
-                <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-medium">
-                  {user?.nome_empresa?.charAt(0) || "U"}
-                </div>
-              </Button>
-
-              {isMenuOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-2 z-50">
-                  <div className="px-4 py-2 border-b border-slate-700">
-                    <p className="text-sm font-medium text-white truncate">
-                      {user?.nome_empresa || "Empresa"}
-                    </p>
-                    <p className="text-xs text-gray-400 truncate">
-                      {user?.email || "email@exemplo.com"}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
-                  >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    Sair
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Conteúdo Principal */}
-      <section className="flex-1 flex items-center justify-center p-4 pt-28 md:pt-32">
-        <div className="w-full max-w-5xl relative z-10">{renderContent()}</div>
-      </section>
-      
+    <main className="min-h-screen text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <div className="w-full max-w-3xl relative z-10">{renderContent()}</div>
       <div className="-z-10">
         <Ondas />
       </div>

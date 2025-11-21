@@ -5,7 +5,7 @@ import { jwtVerify } from "jose";
 import mongoose from "mongoose"; // --- NOVO IMPORTE ---
 import { connectDB } from "@/lib/mongodb";
 import { getChatProvider } from "@/lib/ai/providerFactory";
-import { promptDiagnosticoAprofundado, getTrilhasParaPrompt } from "@/lib/prompts";
+import { promptDiagnosticoAprofundado } from "@/lib/prompts";
 import AiSession from "@/models/AiSession";
 import DiagnosticoAprofundado from "@/models/DiagnosticoAprofundado";
 import type { HistoryMessage, IaResponse } from "@/lib/ai/ChatProvider";
@@ -69,16 +69,7 @@ export async function POST(req: NextRequest) {
       console.log(`MCP: Continuando sessão ${sessionId} para a empresa ${empresaId}`);
     }
 
-    // Buscar trilhas ativas do banco de dados
-    const trilhasFormatadas = await getTrilhasParaPrompt();
-    
-    // Injetar trilhas no prompt
-    const promptComTrilhas = promptDiagnosticoAprofundado.replace(
-      "{TRILHAS_DISPONIVEIS}",
-      trilhasFormatadas
-    );
-
-    const iaResponse = await provider.sendMessage(resposta_usuario, historico, promptComTrilhas);
+    const iaResponse = await provider.sendMessage(resposta_usuario, historico, promptDiagnosticoAprofundado);
     const iaTextForHistory = getTextForHistory(iaResponse);
 
     session.conversationHistory.push(
@@ -93,11 +84,6 @@ export async function POST(req: NextRequest) {
 
     if (iaResponse.status === "finalizado") {
       console.log(`MCP: Finalizando e salvando diagnóstico da sessão: ${session._id}`);
-      // Alguns provedores retornam dados_coletados = null na finalização.
-      // Garantimos um objeto vazio para cumprir a validação do schema.
-      const structuredData = (iaResponse as any).dados_coletados
-        ?? (iaResponse as any).dadosColetados
-        ?? {};
       
       const novoDiagnostico = new DiagnosticoAprofundado({
         // --- CORREÇÃO (Causa Raiz do Erro 404) ---
@@ -106,7 +92,7 @@ export async function POST(req: NextRequest) {
         empresa: new mongoose.Types.ObjectId(empresaId),
         sessionId: session._id.toString(),
         conversationHistory: session.conversationHistory,
-        structuredData,
+        structuredData: iaResponse.dados_coletados,
         finalReport: iaResponse.relatorio_final,
       });
       await novoDiagnostico.save();

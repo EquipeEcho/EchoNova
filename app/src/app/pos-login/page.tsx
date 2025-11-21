@@ -16,7 +16,6 @@ export default function PosLoginPage() {
   const [userInfo, setUserInfo] = useState<UserInfo>(null);
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const { user: authUser, logout } = useAuthStore();
 
@@ -28,7 +27,7 @@ export default function PosLoginPage() {
     let redirected = false;
 
     const checkAuthState = async () => {
-      if (redirected || isLoggingOut) return;
+      if (redirected) return;
 
       await new Promise(resolve => setTimeout(resolve, 200));
       const currentState = useAuthStore.getState();
@@ -116,15 +115,13 @@ export default function PosLoginPage() {
       }
     };
 
-    if (!isLoggingOut) {
-      if (authUser) {
-        checkAuthState();
-      } else {
-        const timer = setTimeout(checkAuthState, 400);
-        return () => clearTimeout(timer);
-      }
+    if (authUser) {
+      checkAuthState();
+    } else {
+      const timer = setTimeout(checkAuthState, 400);
+      return () => clearTimeout(timer);
     }
-  }, [authUser, router, isLoggingOut]);
+  }, [authUser, router]);
 
   const handleStartDiagnostico = () => {
     router.push("/diagnostico-aprofundado");
@@ -140,9 +137,8 @@ export default function PosLoginPage() {
   };
 
   const handleLogout = () => {
-    setIsLoggingOut(true);
-    setIsMenuOpen(false);
     logout();
+    setIsMenuOpen(false);
     router.push("/");
   };
 
@@ -272,16 +268,6 @@ export default function PosLoginPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => router.push("/perfil")}
-                    className="w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
-                  >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Meu Perfil
-                  </button>
-                  <button
-                    type="button"
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
                   >
@@ -297,7 +283,7 @@ export default function PosLoginPage() {
         </div>
       </header>
 
-      <section className="flex-1 main-bg flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8 relative pt-32 md:pt-36 lg:pt-40">
+      <section className="flex-1 main-bg flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8 relative pt-16">
         <div className="max-w-4xl w-full">
           <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight text-white mb-6 sm:mb-8 md:mb-10 animate-fade-in-up text-center">
             Diagnóstico Aprofundado
@@ -339,32 +325,18 @@ export default function PosLoginPage() {
                 Iniciar Novo Diagnóstico
               </Button>
 
-              {/* Botão Dashboard RH */}
-              <Link href="/dashboard-cliente" className="w-full">
-                <Button 
-                  variant="outline"
-                  className="w-full border-cyan-500 text-cyan-500 hover:bg-cyan-500/10 hover:text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
-                >
-                  <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                  Acessar Dashboard RH
-                </Button>
-              </Link>
-
-              {/* Botão Gerenciar Funcionários */}
               <Button
                 onClick={() => router.push("/gerenciar-funcionarios")}
-                className="w-full bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
+                className="w-full bg-linear-to-r from-fuchsia-700 to-fuchsia-800 hover:from-fuchsia-800 hover:to-fuchsia-900 text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
               >
                 Gerenciar Funcionários
               </Button>
 
-              {/* Botão Ver Último Relatório - Condicional */}
+              {/* --- NOVO BOTÃO CONDICIONAL --- */}
               {ultimoDiagnosticoId && (
                 <Button
                   onClick={handleViewLastReport}
-                  variant="outline"
+                  variant="outline" // Estilo diferente para ser secundário
                   className="w-full border-fuchsia-500 text-fuchsia-500 hover:bg-fuchsia-500/10 hover:text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
                 >
                   <History className="mr-2 h-5 w-5" />

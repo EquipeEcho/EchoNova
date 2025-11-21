@@ -4,7 +4,6 @@ import { Headernaofix, Ondas } from "../clientFuncs";
 import { Button } from "@/components/ui/button";
 import { CheckIcon, CreditCardIcon, UserIcon, BuildingIcon } from "lucide-react";
 import { toast } from "sonner";
-import { PasswordInput } from "@/components/ui/password-input";
 // NOTE: Avoid useSearchParams() here because it triggers prerender-time warnings
 // (it expects a browser environment). Instead we read window.location.search on mount.
 import {
@@ -660,8 +659,9 @@ export default function PagamentoPage() {
 
                   <div>
                     <label htmlFor="senha" className="block text-gray-300 mb-2">Senha</label>
-                    <PasswordInput
+                    <input
                       id="senha"
+                      type="password"
                       name="senha"
                       onChange={(e) => handleInputChange('senha', e.target.value)}
                       className={`w-full p-3 bg-slate-800 border rounded-lg text-white focus:outline-none transition-colors ${errors.senha ? 'border-red-500 focus:border-red-400' : 'border-slate-600 focus:border-emerald-400'
@@ -673,8 +673,9 @@ export default function PagamentoPage() {
 
                   <div>
                     <label htmlFor="confirmar" className="block text-gray-300 mb-2">Confirmar Senha</label>
-                    <PasswordInput
+                    <input
                       id="confirmar"
+                      type="password"
                       name="confirmar"
                       onChange={(e) => handleInputChange('confirmar', e.target.value)}
                       className={`w-full p-3 bg-slate-800 border rounded-lg text-white focus:outline-none transition-colors ${errors.confirmar ? 'border-red-500 focus:border-red-400' : 'border-slate-600 focus:border-emerald-400'

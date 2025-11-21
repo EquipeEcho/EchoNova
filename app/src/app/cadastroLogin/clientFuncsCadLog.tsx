@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { PasswordInput } from "@/components/ui/password-input";
 
 export function CadastroLoginPag() {
   const [loginEmail, setLoginEmail] = useState("");
@@ -120,8 +119,9 @@ export function CadastroLoginPag() {
               >
                 Senha:
               </Label>
-              <PasswordInput
+              <Input
                 id="login-password"
+                type="password"
                 placeholder="••••••••"
                 value={loginSenha}
                 onChange={(e) => setLoginSenha(e.target.value)}

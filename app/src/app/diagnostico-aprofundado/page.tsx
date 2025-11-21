@@ -5,13 +5,10 @@ import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { useAuthStore } from "@/lib/stores/useAuthStore";
-import Link from "next/link";
-import Image from "next/image";
 
 // Componentes da UI
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NumberInput } from "@/components/ui/number-input";
 import { Loader } from "@/components/ui/loader";
 import {
   Select,
@@ -31,7 +28,6 @@ interface SetupData {
   nomeEmpresa: string;
   nomeRepresentante: string;
   setor: string;
-  setorOutro: string;
   numFuncionarios: string;
   numUnidades: string;
   politicaLgpd: string;
@@ -84,20 +80,11 @@ const initialSetupQuestions = [
 export default function DiagnosticoAprofundadoPage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
   const [isClient, setIsClient] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
-
-  const handleLogout = () => {
-    logout();
-    router.push("/");
-  };
 
   const [fase, setFase] = useState<FaseDiagnostico>("setup");
   const [setupStep, setSetupStep] = useState(0);
@@ -105,7 +92,6 @@ export default function DiagnosticoAprofundadoPage() {
     nomeEmpresa: "",
     nomeRepresentante: "",
     setor: "",
-    setorOutro: "",
     numFuncionarios: "",
     numUnidades: "",
     politicaLgpd: "",
@@ -121,72 +107,6 @@ export default function DiagnosticoAprofundadoPage() {
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<ProgressState | null>(null);
   const [dadosColetados, setDadosColetados] = useState<Record<string, unknown> | null>(null); // Estado para o resumo
-  const [progressoRestaurado, setProgressoRestaurado] = useState(false); // Indica se o progresso foi restaurado
-
-  // Chave de armazenamento local
-  const STORAGE_KEY = 'diagnostico_aprofundado_state';
-
-  // Carregar dados salvos ao montar o componente
-  useEffect(() => {
-    if (!isClient) return;
-    
-    try {
-      const savedState = localStorage.getItem(STORAGE_KEY);
-      if (savedState) {
-        const parsed = JSON.parse(savedState);
-        
-        // Verificar se o estado não está muito antigo (mais de 24 horas)
-        const ageInHours = (Date.now() - (parsed.timestamp || 0)) / (1000 * 60 * 60);
-        if (ageInHours > 24) {
-          localStorage.removeItem(STORAGE_KEY);
-          console.log('⏰ Estado expirado removido');
-          return;
-        }
-        
-        // Restaurar estados
-        if (parsed.fase) setFase(parsed.fase);
-        if (parsed.setupStep !== undefined) setSetupStep(parsed.setupStep);
-        if (parsed.setupData) setSetupData(parsed.setupData);
-        if (parsed.sessionId) setSessionId(parsed.sessionId);
-        if (parsed.perguntaAtual) setPerguntaAtual(parsed.perguntaAtual);
-        if (parsed.progress) setProgress(parsed.progress);
-        if (parsed.dadosColetados) setDadosColetados(parsed.dadosColetados);
-        
-        setProgressoRestaurado(true);
-        console.log('📦 Estado do diagnóstico restaurado do localStorage');
-        toast.success('Progresso anterior restaurado! Você pode continuar de onde parou.');
-      }
-    } catch (error) {
-      console.error('Erro ao restaurar estado do diagnóstico:', error);
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  }, [isClient]);
-
-  // Salvar dados automaticamente quando houver mudanças
-  useEffect(() => {
-    if (!isClient) return;
-    
-    // Não salvar se estiver no estado inicial
-    if (fase === 'setup' && setupStep === 0 && !sessionId) return;
-    
-    try {
-      const stateToSave = {
-        fase,
-        setupStep,
-        setupData,
-        sessionId,
-        perguntaAtual,
-        progress,
-        dadosColetados,
-        timestamp: Date.now(),
-      };
-      
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-      console.log('💾 Estado do diagnóstico salvo automaticamente');
-    } catch (error) {
-      console.error('Erro ao salvar estado do diagnóstico:', error);
-    }
-  }, [isClient, fase, setupStep, setupData, sessionId, perguntaAtual, progress, dadosColetados])
 
   useEffect(() => {
     if (isClient && user) {
@@ -204,13 +124,6 @@ export default function DiagnosticoAprofundadoPage() {
       toast.error("Por favor, preencha o campo para continuar.");
       return;
     }
-    
-    // Validação especial para setor "Outros"
-    if (currentField === "setor" && setupData.setor === "Outros" && !setupData.setorOutro.trim()) {
-      toast.error("Por favor, especifique qual é o setor de atuação.");
-      return;
-    }
-    
     if (setupStep < initialSetupQuestions.length - 1) {
       setSetupStep((prev) => prev + 1);
     } else {
@@ -221,12 +134,11 @@ export default function DiagnosticoAprofundadoPage() {
   const iniciarDiagnostico = async () => {
     setIsLoading(true);
     setProgress(null);
-    const setorFinal = setupData.setor === "Outros" ? setupData.setorOutro : setupData.setor;
     const setupResumo = `
             Os dados iniciais da empresa já foram coletados e CONFIRMADOS pelo usuário. São eles:
             - Nome da Empresa: ${setupData.nomeEmpresa}
             - Representante: ${setupData.nomeRepresentante}
-            - Setor: ${setorFinal}
+            - Setor: ${setupData.setor}
             - Nº de Funcionários: ${setupData.numFuncionarios}
             - Nº de Unidades: ${setupData.numUnidades}
             - Respeitar LGPD: ${setupData.politicaLgpd}
@@ -235,106 +147,6 @@ export default function DiagnosticoAprofundadoPage() {
         `;
     setFase("diagnostico");
     await processarResposta(setupResumo, true);
-  };
-
-  // Helper function para renderizar valores de forma mais amigável
-  const renderValue = (key: string, value: unknown): JSX.Element => {
-    const keyLower = key.toLowerCase();
-    
-    // Tratamento especial para problemas/desafios priorizados/identificados
-    if ((keyLower.includes('problema') || keyLower.includes('desafio')) && 
-        (keyLower.includes('priorizado') || keyLower.includes('identificado') || keyLower.includes('prioritario'))) {
-      
-      if (Array.isArray(value)) {
-        // Se for array de objetos (formato detalhado)
-        if (value.length > 0 && typeof value[0] === 'object') {
-          return (
-            <div className="space-y-3">
-              {value.map((problema, index) => {
-                const prob = problema as Record<string, unknown>;
-                const nome = prob.nome || prob.problema || `Problema ${index + 1}`;
-                
-                return (
-                  <div key={index} className="bg-slate-800/30 p-3 rounded border border-slate-700/30">
-                    <h4 className="font-bold text-pink-300 mb-2">📌 {String(nome)}</h4>
-                    <ul className="space-y-1 text-sm">
-                      {Object.entries(prob)
-                        .filter(([k]) => k !== 'nome' && k !== 'problema' && k !== 'priorizado')
-                        .map(([k, v]) => (
-                          <li key={k} className="flex gap-2">
-                            <span className="text-slate-400 capitalize min-w-[120px]">
-                              {k.replace(/_/g, ' ')}:
-                            </span>
-                            <span className="text-slate-200">{String(v)}</span>
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-                );
-              })}
-            </div>
-          );
-        }
-        
-        // Se for array de strings simples
-        return (
-          <ul className="list-disc list-inside space-y-1">
-            {value.map((item, index) => (
-              <li key={index} className="text-slate-200 font-medium">📌 {String(item)}</li>
-            ))}
-          </ul>
-        );
-      }
-    }
-
-    // Tratamento para arrays genéricos
-    if (Array.isArray(value)) {
-      // Se for array de objetos
-      if (value.length > 0 && typeof value[0] === 'object') {
-        return (
-          <div className="space-y-2">
-            {value.map((item, index) => (
-              <div key={index} className="bg-slate-800/20 p-2 rounded text-sm">
-                {Object.entries(item as Record<string, unknown>).map(([k, v]) => (
-                  <div key={k}>
-                    <span className="text-slate-400 capitalize">{k.replace(/_/g, ' ')}:</span>{' '}
-                    <span className="text-slate-200">{String(v)}</span>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        );
-      }
-      
-      // Array de valores simples
-      return (
-        <ul className="list-disc list-inside space-y-1">
-          {value.map((item, index) => (
-            <li key={index} className="text-slate-200">{String(item)}</li>
-          ))}
-        </ul>
-      );
-    }
-
-    // Tratamento para objetos aninhados (como empresa:{nome, setor...})
-    if (typeof value === 'object' && value !== null) {
-      return (
-        <ul className="space-y-1">
-          {Object.entries(value).map(([subKey, subValue]) => (
-            <li key={subKey}>
-              <span className="font-semibold capitalize text-slate-400">
-                {subKey.replace(/_/g, ' ')}:
-              </span>{' '}
-              <span className="text-slate-200">{String(subValue)}</span>
-            </li>
-          ))}
-        </ul>
-      );
-    }
-
-    // Tratamento para strings e outros tipos
-    return <p className="text-slate-200">{String(value)}</p>;
   };
 
   const processarResposta = async (respostaUsuario: string, isInitial = false) => {
@@ -367,7 +179,6 @@ export default function DiagnosticoAprofundadoPage() {
 
       if (!sessionId) setSessionId(data.sessionId);
       
-      console.log("Dados coletados recebidos:", data.dados_coletados); // Debug
       setDadosColetados(data.dados_coletados); // Salva os dados para o resumo
 
       if (data.progress) {
@@ -379,8 +190,6 @@ export default function DiagnosticoAprofundadoPage() {
 
       if (data.status === "finalizado" && data.finalDiagnosticId) {
         toast.success("Diagnóstico concluído! Redirecionando para os resultados...");
-        // Limpar dados salvos quando finalizar
-        localStorage.removeItem(STORAGE_KEY);
         router.push(
           `/diagnostico-aprofundado/resultados/${data.finalDiagnosticId}`
         );
@@ -408,7 +217,6 @@ export default function DiagnosticoAprofundadoPage() {
       nomeEmpresa: user?.nome_empresa || "",
       nomeRepresentante: "",
       setor: "",
-      setorOutro: "",
       numFuncionarios: "",
       numUnidades: "",
       politicaLgpd: "",
@@ -422,11 +230,6 @@ export default function DiagnosticoAprofundadoPage() {
     setError(null);
     setProgress(null);
     setDadosColetados(null); // Limpa o resumo
-    
-    // Limpar dados salvos
-    setProgressoRestaurado(false);
-    localStorage.removeItem(STORAGE_KEY);
-    console.log('🗑️ Estado do diagnóstico limpo');
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -471,7 +274,7 @@ export default function DiagnosticoAprofundadoPage() {
           </div>
         );
       case "numero":
-        return <NumberInput {...commonProps} />;
+        return <Input type="number" {...commonProps} />;
       default:
         return <Input type="text" {...commonProps} />;
     }
@@ -501,41 +304,21 @@ export default function DiagnosticoAprofundadoPage() {
                 {currentQuestion.label}
               </h3>
               {currentQuestion.type === "selecao" || currentQuestion.type === "sim_nao" ? (
-                <>
-                  <Select
-                    value={setupData[currentQuestion.id as keyof SetupData]}
-                    onValueChange={(value) => handleSetupChange(currentQuestion.id as keyof SetupData, value)}
-                  >
-                    <SelectTrigger className="w-full bg-slate-700 border-slate-600 text-white">
-                      <SelectValue placeholder="Selecione uma opção" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-800 text-white border-slate-700">
-                      {currentQuestion.opcoes?.map((opt) => (
-                        <SelectItem key={opt} value={opt} className="cursor-pointer hover:bg-slate-700">
-                          {opt}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  
-                  {/* Campo condicional para especificar setor quando "Outros" é selecionado */}
-                  {currentQuestion.id === "setor" && setupData.setor === "Outros" && (
-                    <div className="mt-4">
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Especifique o setor de atuação:
-                      </label>
-                      <Input
-                        type="text"
-                        value={setupData.setorOutro}
-                        onChange={(e) => handleSetupChange("setorOutro", e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        className="w-full bg-slate-700 border-slate-600 text-white rounded-lg p-3"
-                        placeholder="Ex: Agronegócio, Consultoria, etc."
-                        autoFocus={isClient}
-                      />
-                    </div>
-                  )}
-                </>
+                <Select
+                  value={setupData[currentQuestion.id as keyof SetupData]}
+                  onValueChange={(value) => handleSetupChange(currentQuestion.id as keyof SetupData, value)}
+                >
+                  <SelectTrigger className="w-full bg-slate-700 border-slate-600 text-white">
+                    <SelectValue placeholder="Selecione uma opção" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800 text-white border-slate-700">
+                    {currentQuestion.opcoes?.map((opt) => (
+                      <SelectItem key={opt} value={opt} className="cursor-pointer hover:bg-slate-700">
+                        {opt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               ) : (
                 <Input
                   type={currentQuestion.type === "numero" ? "number" : "text"}
@@ -564,19 +347,14 @@ export default function DiagnosticoAprofundadoPage() {
               Por favor, revise as informações antes de iniciar o diagnóstico.
             </p>
             <div className="bg-slate-900/50 p-6 rounded-lg space-y-4">
-              {initialSetupQuestions.map(({ id, label }) => {
-                const value = setupData[id as keyof SetupData];
-                const displayValue = id === "setor" && value === "Outros" && setupData.setorOutro
-                  ? `${value} (${setupData.setorOutro})`
-                  : value;
-                
-                return (
-                  <div key={id} className="flex justify-between items-center">
-                    <span className="font-semibold text-slate-300">{label}:</span>
-                    <span className="text-white">{displayValue}</span>
-                  </div>
-                );
-              })}
+              {initialSetupQuestions.map(({ id, label }) => (
+                <div key={id} className="flex justify-between items-center">
+                  <span className="font-semibold text-slate-300">{label}:</span>
+                  <span className="text-white">
+                    {setupData[id as keyof SetupData]}
+                  </span>
+                </div>
+              ))}
             </div>
             <div className="grid grid-cols-2 gap-4 mt-8">
               <Button
@@ -610,7 +388,23 @@ export default function DiagnosticoAprofundadoPage() {
                   <div key={key} className="border-b border-slate-700/50 pb-2 last:border-b-0">
                     <h3 className="font-bold text-pink-400 capitalize mb-1">{key.replace(/_/g, ' ')}</h3>
                     <div className="pl-2 text-slate-300">
-                      {renderValue(key, value)}
+                          {typeof value === 'string' ? (
+                        <p>{String(value)}</p>
+                      ) : Array.isArray(value) ? (
+                        <ul className="list-disc list-inside">
+                          {value.map((item) => <li key={String(item)}>{String(item)}</li>)}
+                        </ul>
+                      ) : typeof value === 'object' && value !== null ? (
+                        <ul className="space-y-1">
+                          {Object.entries(value).map(([subKey, subValue]) => (
+                             <li key={subKey}>
+                               <span className="font-semibold capitalize text-slate-400">{subKey.replace(/_/g, ' ')}:</span> {String(subValue)}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p>{String(value)}</p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -661,114 +455,11 @@ export default function DiagnosticoAprofundadoPage() {
   };
 
   return (
-    <main className="min-h-screen text-white flex flex-col relative overflow-hidden">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-sm border-b border-slate-800">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <div className="logo-container hover:scale-100">
-            <Link href="/pos-login">
-              <Image
-                src="/img/logo.png"
-                alt="EchoNova"
-                width={120}
-                height={40}
-                className="h-8 w-auto object-contain sm:h-10 md:h-12 lg:h-14"
-                priority
-              />
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-4">
-            {user && (
-              <div className="hidden md:flex items-center gap-2 bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700/50">
-                <span className="text-gray-300 text-sm">{user.nome_empresa}</span>
-              </div>
-            )}
-
-            <div className="relative">
-              <Button
-                variant="ghost"
-                className="relative h-10 w-10 rounded-full hover:bg-slate-800 p-0 cursor-pointer"
-                onClick={toggleMenu}
-              >
-                <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-medium">
-                  {user?.nome_empresa?.charAt(0) || "U"}
-                </div>
-              </Button>
-
-              {isMenuOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-2 z-50">
-                  <div className="px-4 py-2 border-b border-slate-700">
-                    <p className="text-sm font-medium text-white truncate">
-                      {user?.nome_empresa || "Empresa"}
-                    </p>
-                    <p className="text-xs text-gray-400 truncate">
-                      {user?.email || "email@exemplo.com"}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => router.push("/perfil")}
-                    className="w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
-                  >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Meu Perfil
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (confirm("Tem certeza que deseja cancelar o diagnóstico e voltar à página inicial?")) {
-                        router.push("/pos-login");
-                      }
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
-                  >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                    </svg>
-                    Voltar ao Início
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
-                  >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    Sair
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Content com padding-top para compensar navbar fixa */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4 pt-28 md:pt-32">
-        {/* Indicador de progresso restaurado */}
-        {progressoRestaurado && fase !== 'setup' && (
-        <div className="absolute top-4 right-4 z-20 bg-green-500/20 border border-green-500/50 rounded-lg px-4 py-2 flex items-center gap-2">
-          <span className="text-green-400 text-sm font-medium">✓ Progresso restaurado</span>
-          <button
-            onClick={handleRefazerDiagnostico}
-            className="text-xs text-green-300 hover:text-green-100 underline"
-            title="Começar do zero"
-          >
-            Recomeçar
-          </button>
-        </div>
-      )}
-      
-        <div className="w-full max-w-3xl relative z-10 flex items-center justify-center">
-          {renderContent()}
-        </div>
+    <main className="min-h-screen text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <div className="w-full max-w-3xl relative z-10 flex items-center justify-center">
+        {renderContent()}
       </div>
-      
-      <div className="-z-10 fixed inset-0">
+      <div className="-z-10">
         <Ondas />
       </div>
     </main>

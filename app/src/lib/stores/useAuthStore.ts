@@ -1,41 +1,82 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
-// 1. Definimos a interface (o "formato") dos dados do nosso usuário.
-interface User {
+/*  
+  ============================================================
+  TIPOS DE USUÁRIO SUPORTADOS
+  ============================================================
+
+  1. EMPRESA ADMIN
+     - tipo_usuario = "ADMIN"
+     - acessa painel do dono da plataforma
+
+  2. EMPRESA USER (RH)
+     - tipo_usuario = "USER"
+     - acessa painel da empresa (RH)
+
+  3. FUNCIONÁRIO
+     - role = "FUNCIONARIO"
+     - acessa página do colaborador (/pagina-funcionarios)
+*/
+
+// Dados mínimos para qualquer usuário logado
+interface BaseUser {
   id: string;
-  nome_empresa: string;
   email: string;
-  planoAtivo: string | null;
 }
 
-// 2. Definimos a interface do nosso "store" (o estado e as ações).
+// Dados específicos da Empresa (ADMIN e USER)
+interface EmpresaUser extends BaseUser {
+  nome_empresa: string;
+  cnpj: string;
+  tipo_usuario: "ADMIN" | "USER";
+  planoAtivo: string | null; // essencial, avancado, escalado ou null
+}
+
+// Dados específicos do Funcionário
+interface FuncionarioUser extends BaseUser {
+  nome: string;
+  matricula: string;
+  cargo: string;
+  empresa: string; // nome da empresa
+  empresaId: string; // ObjectId da empresa
+  role: "FUNCIONARIO";
+}
+
+// União dos tipos possíveis (empresa ou funcionário)
+type User = EmpresaUser | FuncionarioUser;
+
 interface AuthState {
-  user: User | null; // O usuário pode ser um objeto User ou nulo (se não estiver logado).
-  login: (userData: User) => void; // Ação para fazer login.
-  logout: () => void; // Ação para fazer logout.
+  user: User | null;
+  login: (userData: User) => void;
+  logout: () => void;
 }
 
-// 3. Criamos o store com Zustand.
 export const useAuthStore = create<AuthState>()(
-  // A função `persist` do Zustand salva automaticamente o estado no localStorage.
-  // Isso significa que, se o usuário recarregar a página, ele continuará logado!
   persist(
     (set) => ({
       // Estado inicial
       user: null,
 
-      // Ação de login: recebe os dados do usuário e os armazena no estado.
-      login: (userData) => set({ user: userData }),
+      // Salva todos os dados do usuário (RH, ADMIN ou FUNCIONÁRIO)
+      login: (userData) => {
+        set({ user: userData });
+      },
 
-      // Ação de logout: limpa os dados do usuário do estado.
-      logout: () => set({ user: null }),
+      // Remove qualquer tipo de usuário
+      logout: () => {
+        set({ user: null });
+      },
     }),
+
     {
-      name: 'auth-storage', // Nome da chave no localStorage.
-      storage: createJSONStorage(() => localStorage), // Especifica que queremos usar o localStorage.
-      // Adiciona um atraso para garantir que o localStorage esteja disponível
-      partialize: (state) => ({ user: state.user }),
+      name: "auth-storage",
+      storage: createJSONStorage(() => localStorage),
+
+      // O que salvar no localStorage
+      partialize: (state) => ({
+        user: state.user,
+      }),
     }
   )
 );

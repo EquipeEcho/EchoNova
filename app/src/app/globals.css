@@ -20,43 +20,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
   /* Evitar scroll horizontal */
   overflow-x: hidden;
-  /* Scrollbar customizada global */
-  scrollbar-width: thin;
-  scrollbar-color: rgb(236, 72, 153) rgb(51, 65, 85);
-}
-
-/* Scrollbar global para navegadores Webkit */
-body::-webkit-scrollbar,
-*::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-body::-webkit-scrollbar-track,
-*::-webkit-scrollbar-track {
-  @apply bg-slate-700 rounded;
-}
-
-body::-webkit-scrollbar-thumb,
-*::-webkit-scrollbar-thumb {
-  @apply bg-pink-500 rounded;
-}
-
-body::-webkit-scrollbar-thumb:hover,
-*::-webkit-scrollbar-thumb:hover {
-  @apply bg-pink-400;
-}
-
-/* ===== INPUT NUMÉRICO: ESCONDER SETAS NATIVAS E PREPARAR CUSTOM ===== */
-/* Chrome, Safari, Edge, Opera */
-input[type=number]::-webkit-outer-spin-button,
-input[type=number]::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-/* Firefox */
-input[type=number] {
-  -moz-appearance: textfield;
 }
 
 /* ===== COMPONENTE DA LOGO ===== */
@@ -173,31 +136,6 @@ input[type=number] {
   font-style: italic;
   transform: rotate(-5deg);
   display: inline-block;
-}
-
-/* ===== SCROLLBAR CUSTOMIZADA ===== */
-/* Para navegadores Webkit (Chrome, Safari, Edge) */
-.scrollbar-thin::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-track {
-  @apply bg-slate-700 rounded;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  @apply bg-pink-500 rounded hover:bg-pink-600;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  @apply bg-pink-400;
-}
-
-/* Para Firefox */
-.scrollbar-thin {
-  scrollbar-width: thin;
-  scrollbar-color: rgb(236, 72, 153) rgb(51, 65, 85);
 }
 /*
 ---break---

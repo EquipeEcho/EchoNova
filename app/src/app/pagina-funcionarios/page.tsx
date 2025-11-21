@@ -1,3 +1,4 @@
+// src/app/pagina-funcionarios/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -5,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuthStore } from "@/lib/stores/useAuthStore";
 import { Button } from "@/components/ui/button";
-import { PasswordInput } from "@/components/ui/password-input";
 import { Headernaofix, Ondas } from "@/app/clientFuncs";
 
 interface Trilha {
@@ -83,15 +83,31 @@ export default function FuncionarioPage() {
     confirmarSenha: "",
   });
 
+  // ------------------------------------------------------
+  // Carrega dados do funcionário a partir do usuário logado
+  // ------------------------------------------------------
   useEffect(() => {
-    const fetchFuncionario = async () => {
+    const init = async () => {
       try {
+        // se não tiver user, manda pra home
+        if (!user) {
+          router.push("/");
+          return;
+        }
+
+        // se não for funcionário (empresa ADMIN/USER), não entra aqui
+        if ((user as any).role !== "FUNCIONARIO") {
+          router.push("/");
+          return;
+        }
+
+        // Placeholder das trilhas/microcursos, mas usando dados REAIS
         const data: FuncionarioData = {
-          nome: "João Silva",
-          email: "joao.silva@empresa.com",
-          matricula: "12345",
-          cargo: "Analista de Vendas",
-          empresa: "Empresa XYZ Ltda",
+          nome: (user as any).nome,
+          email: user.email,
+          matricula: (user as any).matricula,
+          cargo: (user as any).cargo,
+          empresa: (user as any).empresa,
           trilhas: [
             {
               id: "1",
@@ -198,28 +214,22 @@ export default function FuncionarioPage() {
             },
           ],
         };
-        await new Promise((r) => setTimeout(r, 400));
+
+        await new Promise((r) => setTimeout(r, 300)); // só pra dar um "carregando"
         setFuncionario(data);
       } catch (e: any) {
-        toast.error(e.message);
+        toast.error(e.message || "Erro ao carregar dados do funcionário.");
       } finally {
         setLoading(false);
       }
     };
-        if (user) {
-      fetchFuncionario();
-    }
-  }, [user]);
 
-  useEffect(() => {
-    if (funcionario) {
-      setProfileForm({
-        nome: funcionario.nome,
-        email: funcionario.email,
-      });
-    }
-  }, [funcionario]);
+    init();
+  }, [user, router]);
 
+  // ------------------------------------------------------
+  // Logout do funcionário (limpa store e volta pra /)
+  // ------------------------------------------------------
   const handleLogout = () => {
     logout();
     router.push("/");
@@ -253,44 +263,49 @@ export default function FuncionarioPage() {
       ? "Intermediário"
       : "Avançado";
 
-  const handleSaveProfile = async () => {
-    if (editForm.novaSenha && editForm.novaSenha !== editForm.confirmarSenha) {
-      toast.error("As senhas não coincidem");
-      return;
-    }
-
-    try {
-      // Aqui você faria a chamada à API para atualizar os dados
-      toast.success("Perfil atualizado com sucesso!");
-      setTab("Perfil");
-      if (funcionario) {
-        setFuncionario({
-          ...funcionario,
-                    nome: profileForm.nome,
-          email: profileForm.email,
-        });
-      }
-    } catch (e: any) {
-      toast.error(e.message);
-    }
-  };
-
+  // ------------------------------------------------------
+  // Alterar senha do funcionário (usa PUT /api/funcionarios/[id])
+  // ------------------------------------------------------
   const handleSavePassword = async () => {
     if (!editForm.senhaAtual) {
-      toast.error("Informe a senha atual");
+      toast.error("Informe a senha atual.");
       return;
     }
     if (!editForm.novaSenha) {
-      toast.error("Informe a nova senha");
+      toast.error("Informe a nova senha.");
       return;
     }
     if (editForm.novaSenha !== editForm.confirmarSenha) {
-      toast.error("As senhas não coincidem");
+      toast.error("As senhas não coincidem.");
+      return;
+    }
+
+    if (!user || (user as any).role !== "FUNCIONARIO") {
+      toast.error("Usuário não autenticado.");
       return;
     }
 
     try {
-      // Aqui você faria a chamada à API para atualizar a senha
+      const funcionarioId = (user as any).id;
+      const empresaId = (user as any).empresaId;
+
+      const res = await fetch(
+        `/api/funcionarios/${funcionarioId}?empresaId=${empresaId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            // backend ignora a senha atual e só troca pra nova
+            senha: editForm.novaSenha,
+          }),
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Erro ao alterar senha.");
+      }
+
       toast.success("Senha alterada com sucesso!");
       setEditForm({
         senhaAtual: "",
@@ -299,7 +314,7 @@ export default function FuncionarioPage() {
       });
       setTab("Perfil");
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(e.message || "Erro ao alterar senha.");
     }
   };
 
@@ -352,7 +367,7 @@ export default function FuncionarioPage() {
             </div>
           </div>
 
-          {/* Conteúdo por aba */}
+          {/* Perfil */}
           {tab === "Perfil" && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -387,6 +402,7 @@ export default function FuncionarioPage() {
             </div>
           )}
 
+          {/* Alterar Senha */}
           {tab === "Alterar Senha" && (
             <div className="max-w-2xl mx-auto">
               <h2 className="text-2xl font-semibold text-white mb-6">
@@ -397,7 +413,8 @@ export default function FuncionarioPage() {
                   <label className="block text-sm font-medium text-neutral-300 mb-2">
                     Senha Atual
                   </label>
-                  <PasswordInput
+                  <input
+                    type="password"
                     value={editForm.senhaAtual}
                     onChange={(e) =>
                       setEditForm({ ...editForm, senhaAtual: e.target.value })
@@ -411,7 +428,8 @@ export default function FuncionarioPage() {
                   <label className="block text-sm font-medium text-neutral-300 mb-2">
                     Nova Senha
                   </label>
-                  <PasswordInput
+                  <input
+                    type="password"
                     value={editForm.novaSenha}
                     onChange={(e) =>
                       setEditForm({ ...editForm, novaSenha: e.target.value })
@@ -425,7 +443,8 @@ export default function FuncionarioPage() {
                   <label className="block text-sm font-medium text-neutral-300 mb-2">
                     Confirmar Nova Senha
                   </label>
-                  <PasswordInput
+                  <input
+                    type="password"
                     value={editForm.confirmarSenha}
                     onChange={(e) =>
                       setEditForm({
@@ -456,6 +475,7 @@ export default function FuncionarioPage() {
             </div>
           )}
 
+          {/* Trilhas */}
           {tab === "Trilhas" && (
             <div>
               <h2 className="text-2xl font-semibold text-white mb-6 text-center">
@@ -534,8 +554,7 @@ export default function FuncionarioPage() {
             </div>
           )}
 
-         
-
+          {/* Microcursos Concluídos */}
           {tab === "Microcursos" && (
             <div>
               <h2 className="text-2xl font-semibold text-white mb-6 text-center">
@@ -579,6 +598,7 @@ export default function FuncionarioPage() {
             </div>
           )}
 
+          {/* Explorar Microcursos */}
           {tab === "Explorar Microcursos" && (
             <div>
               <h2 className="text-2xl font-semibold text-white mb-2 text-center">
