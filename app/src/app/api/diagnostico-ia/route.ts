@@ -98,19 +98,16 @@ export async function POST(req: NextRequest) {
       const structuredData = (iaResponse as any).dados_coletados
         ?? (iaResponse as any).dadosColetados
         ?? {};
-      
+      // Garante que o relatório final nunca seja nulo ou vazio
+      const finalReport = iaResponse.relatorio_final || "Relatório não gerado. Entre em contato com o suporte.";
       const novoDiagnostico = new DiagnosticoAprofundado({
-        // --- CORREÇÃO (Causa Raiz do Erro 404) ---
-        // Convertemos explicitamente a string do ID para um ObjectId do Mongoose.
-        // Isso garante que a referência seja salva corretamente no banco.
         empresa: new mongoose.Types.ObjectId(empresaId),
         sessionId: session._id.toString(),
         conversationHistory: session.conversationHistory,
         structuredData,
-        finalReport: iaResponse.relatorio_final,
+        finalReport,
       });
       await novoDiagnostico.save();
-      
       // Armazenamos o ID para retornar ao frontend
       finalDiagnosticId = novoDiagnostico._id.toString();
 

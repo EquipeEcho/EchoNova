@@ -391,9 +391,13 @@ export default function DiagnosticoAprofundadoPage() {
         setFase("diagnostico");
       }
     } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
-      setError(message);
-      toast.error(message);
+        let message = err instanceof Error ? err.message : String(err);
+        // Se for resposta do backend, tente extrair detalhes
+        if (typeof err === 'object' && err !== null && 'details' in err) {
+          message += `\n${(err as any).details}`;
+        }
+        setError(message);
+        toast.error(message);
     } finally {
       setIsLoading(false);
       setResposta("");
@@ -451,6 +455,11 @@ export default function DiagnosticoAprofundadoPage() {
       className: "w-full bg-slate-700 border-slate-600 text-white rounded-lg p-3",
       autoFocus: isClient
     };
+
+    // Fallback: se não houver opções, sempre mostrar campo de texto
+    if (!perguntaAtual.tipo_resposta || (!perguntaAtual.opcoes && (!['numero','selecao','multipla_escolha','sim_nao'].includes(perguntaAtual.tipo_resposta)))) {
+      return <Input type="text" {...commonProps} />;
+    }
 
     switch (perguntaAtual.tipo_resposta) {
       case "selecao":

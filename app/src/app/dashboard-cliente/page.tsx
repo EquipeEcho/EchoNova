@@ -864,7 +864,20 @@ export default function DashboardClientePage() {
               <Button
                 variant="outline"
                 className="border-fuchsia-500 text-fuchsia-500 hover:bg-fuchsia-500/10 hover:text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
-                onClick={() => router.push("/resultados")}
+                onClick={async () => {
+                  try {
+                    const res = await fetch("/api/diagnostico-aprofundado/ultimo");
+                    if (!res.ok) throw new Error("Nenhum diagnóstico encontrado");
+                    const data = await res.json();
+                    if (data._id) {
+                      router.push(`/diagnostico-aprofundado/resultados/${data._id}`);
+                    } else {
+                      toast.error("Diagnóstico não encontrado");
+                    }
+                  } catch (err) {
+                    toast.error("Diagnóstico não encontrado");
+                  }
+                }}
               >
                 <Target className="mr-2 h-5 w-5" />
                 Ver Resultados

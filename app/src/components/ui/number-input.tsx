@@ -26,8 +26,11 @@ export function NumberInput({ className: inputClassName, step, min, max, onChang
     if (!el) return;
     el.value = String(next);
     // Dispara evento 'input' para que o React onChange capture
-    const evt = new Event("input", { bubbles: true });
-    el.dispatchEvent(evt);
+    const evtInput = new Event("input", { bubbles: true });
+    el.dispatchEvent(evtInput);
+    // Dispara também evento 'change' para garantir atualização imediata
+    const evtChange = new Event("change", { bubbles: true });
+    el.dispatchEvent(evtChange);
   };
 
   const handleStep = (dir: 1 | -1) => {
