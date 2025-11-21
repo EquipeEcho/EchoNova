@@ -316,6 +316,26 @@ export default function AdminPage() {
     }
   };
 
+  // Função para excluir diagnóstico individual
+  const handleDeleteDiagnostico = async (id: string) => {
+    if (window.confirm("Tem certeza que deseja excluir este diagnóstico? Esta ação é irreversível.")) {
+      try {
+        const res = await fetch(`/api/admin/diagnosticos/${id}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.error || "Falha ao excluir diagnóstico.");
+        }
+        toast.success("Diagnóstico excluído");
+        fetchData();
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        toast.error(message || "Erro ao excluir diagnóstico");
+      }
+    }
+  };
   const handleAddNewEmpresa = () => {
     setEditingEmpresa({});
     setIsDialogOpen(true);

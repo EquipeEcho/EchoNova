@@ -136,8 +136,8 @@ export default function TrilhaPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-neutral-950 via-purple-950/20 to-neutral-950">
-        <Headernaofix />
+      <div className="min-h-screen bg-linear-to-br from-neutral-950 via-purple-950/20 to-neutral-950">
+        <Headernaofix Link="/" />
         <div className="flex items-center justify-center h-[80vh]">
           <div className="text-white text-xl">Carregando trilha...</div>
         </div>
@@ -150,8 +150,8 @@ export default function TrilhaPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-950 via-purple-950/20 to-neutral-950 relative">
-      <Headernaofix />
+    <div className="min-h-screen bg-linear-to-br from-neutral-950 via-purple-950/20 to-neutral-950 relative">
+      <Headernaofix Link="/" />
       
       <div className="container mx-auto px-4 py-8 max-w-5xl relative z-10">
         {/* Header da Trilha */}
@@ -164,7 +164,7 @@ export default function TrilhaPage() {
             ← Voltar
           </Button>
 
-          <div className="bg-gradient-to-br from-neutral-900/90 to-purple-900/30 border border-purple-700/30 rounded-2xl p-8 backdrop-blur">
+          <div className="bg-linear-to-br from-neutral-900/90 to-purple-900/30 border border-purple-700/30 rounded-2xl p-8 backdrop-blur">
             <div className="flex flex-wrap gap-3 mb-4">
               <span className="px-3 py-1 rounded-full text-xs font-semibold border border-fuchsia-700/40 text-fuchsia-300 bg-fuchsia-900/20">
                 {trilha.categoria}
