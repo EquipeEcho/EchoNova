@@ -27,38 +27,42 @@ export async function POST(
       );
     }
 
-    // Verifica se a trilha está atribuída ao funcionário
-    const trilhaIndex = funcionario.trilhas.findIndex(
-      (t: any) => t.toString() === trilhaId
+    // Verifica se a trilha está no histórico
+    const trilhaConcluida = funcionario.trilhasConcluidas?.find(
+      (tc: any) => tc.trilha.toString() === trilhaId
     );
 
-    if (trilhaIndex === -1) {
+    if (!trilhaConcluida) {
       return NextResponse.json(
-        { error: "Trilha não encontrada nas atribuições do funcionário" },
+        { error: "Trilha não encontrada no histórico" },
         { status: 404 }
       );
     }
 
-    // Move a trilha para o histórico de concluídas
-    funcionario.trilhasConcluidas = funcionario.trilhasConcluidas || [];
-    funcionario.trilhasConcluidas.push({
-      trilha: trilhaId,
-      dataConclusao: new Date(),
-    });
-    
-    // Remove a trilha da lista de trilhas ativas
-    funcionario.trilhas.splice(trilhaIndex, 1);
+    // Verifica se a trilha já não está ativa
+    const jaAtiva = funcionario.trilhas.some(
+      (t: any) => t.toString() === trilhaId
+    );
+
+    if (jaAtiva) {
+      return NextResponse.json(
+        { error: "Trilha já está ativa" },
+        { status: 400 }
+      );
+    }
+
+    // Adiciona a trilha de volta às trilhas ativas
+    funcionario.trilhas.push(trilhaId);
     await funcionario.save();
 
     return NextResponse.json({
-      message: "Trilha concluída com sucesso",
-      trilhasRestantes: funcionario.trilhas.length,
-      trilhasConcluidas: funcionario.trilhasConcluidas.length,
+      message: "Trilha adicionada novamente às suas trilhas ativas",
+      trilhasAtivas: funcionario.trilhas.length,
     });
   } catch (error: any) {
-    console.error("Erro ao concluir trilha:", error);
+    console.error("Erro ao refazer trilha:", error);
     return NextResponse.json(
-      { error: error.message || "Erro ao concluir trilha" },
+      { error: error.message || "Erro ao refazer trilha" },
       { status: 500 }
     );
   }

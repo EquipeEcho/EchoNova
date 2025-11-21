@@ -55,14 +55,26 @@ interface FuncionarioData {
   cargo: string;
   empresa: string;
   trilhas: Trilha[];
+  trilhasConcluidas: TrilhaConcluida[];
   conquistas: Conquista[];
   microcursosConcluidos: Microcurso[];
   microcursosDisponiveis: MicrocursoDisponivel[];
 }
 
+interface TrilhaConcluida {
+  id: string;
+  nome: string;
+  descricao: string;
+  dataConclusao: string;
+  categoria?: string;
+  nivel?: string;
+  duracaoEstimada?: number;
+}
+
 const TABS = [
   "Perfil",
   "Trilhas",
+  "Histórico",
   "Microcursos",
   "Explorar Microcursos",
   "Alterar Senha",
@@ -124,6 +136,15 @@ export default function FuncionarioPage() {
             nivel: t.nivel,
             duracaoEstimada: t.duracaoEstimada,
             thumbnail: t.thumbnail,
+          })),
+          trilhasConcluidas: (data.trilhasConcluidas || []).map((tc: any) => ({
+            id: tc.trilha._id,
+            nome: tc.trilha.nome,
+            descricao: tc.trilha.descricao,
+            dataConclusao: tc.dataConclusao,
+            categoria: tc.trilha.categoria,
+            nivel: tc.trilha.nivel,
+            duracaoEstimada: tc.trilha.duracaoEstimada,
           })),
           conquistas: [],
           microcursosConcluidos: [],
@@ -255,16 +276,79 @@ export default function FuncionarioPage() {
 
       toast.success("Trilha concluída com sucesso! 🎉");
 
-      // Remove a trilha da lista
+      // Remove a trilha da lista e adiciona ao histórico
       if (funcionario) {
-        setFuncionario({
-          ...funcionario,
-          trilhas: funcionario.trilhas.filter((t) => t.id !== trilhaId),
-        });
+        const trilhaConcluida = funcionario.trilhas.find((t) => t.id === trilhaId);
+        if (trilhaConcluida) {
+          setFuncionario({
+            ...funcionario,
+            trilhas: funcionario.trilhas.filter((t) => t.id !== trilhaId),
+            trilhasConcluidas: [
+              ...funcionario.trilhasConcluidas,
+              {
+                id: trilhaConcluida.id,
+                nome: trilhaConcluida.nome,
+                descricao: trilhaConcluida.descricao,
+                dataConclusao: new Date().toISOString(),
+                categoria: trilhaConcluida.categoria,
+                nivel: trilhaConcluida.nivel,
+                duracaoEstimada: trilhaConcluida.duracaoEstimada,
+              },
+            ],
+          });
+        }
       }
     } catch (e: any) {
       console.error("Erro ao concluir trilha:", e);
       toast.error(e.message || "Erro ao concluir trilha");
+    }
+  };
+
+  const handleRefazerTrilha = async (trilhaId: string) => {
+    if (!user) return;
+
+    try {
+      const res = await fetch(
+        `/api/funcionarios/${user.id}/trilhas/${trilhaId}/refazer`,
+        {
+          method: "POST",
+          credentials: "include",
+        }
+      );
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Erro ao refazer trilha");
+      }
+
+      toast.success("Trilha adicionada novamente! Você pode refazê-la na aba Trilhas 📚");
+
+      // Recarrega os dados do funcionário
+      if (funcionario) {
+        const trilhaRefazer = funcionario.trilhasConcluidas.find((t) => t.id === trilhaId);
+        if (trilhaRefazer) {
+          setFuncionario({
+            ...funcionario,
+            trilhas: [
+              ...funcionario.trilhas,
+              {
+                id: trilhaRefazer.id,
+                nome: trilhaRefazer.nome,
+                descricao: trilhaRefazer.descricao,
+                progresso: 0,
+                status: "não_iniciado" as const,
+                categoria: trilhaRefazer.categoria,
+                nivel: trilhaRefazer.nivel,
+                duracaoEstimada: trilhaRefazer.duracaoEstimada,
+              },
+            ],
+            trilhasConcluidas: funcionario.trilhasConcluidas.filter((t) => t.id !== trilhaId),
+          });
+        }
+      }
+    } catch (e: any) {
+      console.error("Erro ao refazer trilha:", e);
+      toast.error(e.message || "Erro ao refazer trilha");
     }
   };
 
@@ -527,7 +611,78 @@ export default function FuncionarioPage() {
             </div>
           )}
 
-         
+          {tab === "Histórico" && (
+            <div>
+              <h2 className="text-2xl font-semibold text-white mb-6 text-center">
+                Trilhas Concluídas
+              </h2>
+              {funcionario.trilhasConcluidas.length === 0 ? (
+                <Empty text="Você ainda não concluiu nenhuma trilha." />
+              ) : (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {funcionario.trilhasConcluidas.map((t) => (
+                    <div
+                      key={t.id}
+                      className="group bg-neutral-900/70 border border-green-700/50 rounded-xl p-5 hover:border-green-500 transition"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="text-white font-semibold text-lg pr-2">
+                          {t.nome}
+                        </h3>
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-green-500/20 text-green-400 border-green-600/40">
+                          ✓ Concluída
+                        </span>
+                      </div>
+                      <p className="text-sm text-neutral-400 mb-3 line-clamp-3">
+                        {t.descricao}
+                      </p>
+                      
+                      {/* Info adicional da trilha */}
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {t.categoria && (
+                          <span className="text-xs px-2 py-1 rounded-full border border-fuchsia-700/40 text-fuchsia-300 bg-fuchsia-900/20">
+                            {t.categoria}
+                          </span>
+                        )}
+                        {t.nivel && (
+                          <span className="text-xs px-2 py-1 rounded-full border border-cyan-700/40 text-cyan-300 bg-cyan-900/20">
+                            {t.nivel}
+                          </span>
+                        )}
+                        {t.duracaoEstimada && (
+                          <span className="text-xs px-2 py-1 rounded-full border border-purple-700/40 text-purple-300 bg-purple-900/20">
+                            {t.duracaoEstimada}h
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="mb-4 text-xs text-green-400">
+                        <span className="font-semibold">Concluída em:</span>{" "}
+                        {new Date(t.dataConclusao).toLocaleDateString("pt-BR")}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          className="flex-1 bg-fuchsia-700 hover:bg-fuchsia-600 text-white text-sm"
+                          onClick={() =>
+                            router.push(`/funcionario/trilha/${t.id}`)
+                          }
+                        >
+                          Ver Conteúdo
+                        </Button>
+                        <Button
+                          className="flex-1 bg-cyan-700 hover:bg-cyan-600 text-white text-sm"
+                          onClick={() => handleRefazerTrilha(t.id)}
+                        >
+                          Refazer
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {tab === "Microcursos" && (
             <div>

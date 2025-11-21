@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Funcionario from "@/models/Funcionario";
 import Trilha from "@/models/Trilha";
+import Empresa from "@/models/Empresa";
 
 export async function GET(
   req: Request,
@@ -24,7 +25,15 @@ export async function GET(
         path: "trilhas",
         model: Trilha,
       })
-      .populate("empresa", "nome_empresa");
+      .populate({
+        path: "trilhasConcluidas.trilha",
+        model: Trilha,
+      })
+      .populate({
+        path: "empresa",
+        model: Empresa,
+        select: "nome_empresa"
+      });
 
     if (!funcionario) {
       return NextResponse.json(
@@ -40,6 +49,7 @@ export async function GET(
       matricula: funcionario.matricula,
       empresa: funcionario.empresa,
       trilhas: funcionario.trilhas || [],
+      trilhasConcluidas: funcionario.trilhasConcluidas || [],
     });
   } catch (error: any) {
     console.error("Erro ao buscar trilhas do funcionário:", error);

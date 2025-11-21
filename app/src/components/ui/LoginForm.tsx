@@ -181,9 +181,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
                 className="bg-gray-800 border-gray-700 text-white"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                autoComplete="off"
-                data-form-type="other"
-                data-lpignore="true"
+                autoComplete="username"
                 readOnly={!isReady}
                 onFocus={(e) => { if (isReady) e.target.removeAttribute('readonly'); }}
               />

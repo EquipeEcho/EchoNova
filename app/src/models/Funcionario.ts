@@ -17,6 +17,17 @@ const FuncionarioSchema = new Schema(
       default: []
     }],
 
+    trilhasConcluidas: [{
+      trilha: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Trilha",
+      },
+      dataConclusao: {
+        type: Date,
+        default: Date.now,
+      },
+    }],
+
     empresa: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Empresa",
@@ -25,7 +36,10 @@ const FuncionarioSchema = new Schema(
 
     data_cadastro: { type: Date, default: Date.now },
   },
-  { timestamps: true }
+  { 
+    timestamps: true,
+    strictPopulate: false
+  }
 );
 
 // matricula única por empresa
