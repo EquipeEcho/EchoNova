@@ -20,7 +20,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ trilha }, { status: 200 });
+    return NextResponse.json(trilha, { status: 200 });
   } catch (error) {
     console.error("Erro ao buscar trilha:", error);
     return NextResponse.json(
