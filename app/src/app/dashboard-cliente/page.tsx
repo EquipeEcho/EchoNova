@@ -428,6 +428,11 @@ export default function DashboardClientePage() {
   const [trilhas, setTrilhas] = useState<Trilha[]>([]);
   const router = useRouter();
   const { user: authUser, logout } = useAuthStore();
+  const [metrics, setMetrics] = useState<any>(null);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+  const [metricsUpdatedAt, setMetricsUpdatedAt] = useState<string | null>(null);
+  const [showDiagnosticoModal, setShowDiagnosticoModal] = useState(false);
+  const [showFuncionariosModal, setShowFuncionariosModal] = useState(false);
 
   // Dados fictícios para os gráficos (seriam substituídos por dados reais)
   const progressoTrilhasData: ProgressoTrilha[] = [
@@ -460,7 +465,7 @@ export default function DashboardClientePage() {
   const metricCards = [
     {
       title: "Trilhas Ativas",
-      value: "5",
+      value: metrics ? metrics.totalTrilhasAtivas : "-",
       icon: <BookOpen className="h-8 w-8 text-blue-400" />,
       color: "bg-blue-500",
       description: "Soma das trilhas não concluídas",
@@ -520,22 +525,11 @@ export default function DashboardClientePage() {
       try {
         setLoading(true);
         const user = authUser || useAuthStore.getState().user;
-        
+
         if (!user) {
           router.push("/");
           return;
         }
-/*
-      const res = await fetch(`/api/funcionarios?empresaId=${user.id}`);
-
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.error || "Erro ao buscar funcionários");
-        }
-
-      const dados = await res.json();
-
-      setFuncionarios(dados);*/
 
         // Buscar dados reais do usuário
         const response = await fetch(`/api/empresa/${user.id}`, {
