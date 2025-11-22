@@ -7,7 +7,7 @@ export async function GET() {
     await connectDB();
     
     const funcionarios = await Funcionario.find({})
-      .select("_id nome email matricula cargo")
+      .select("_id nome email matricula cargo ultimaAlteracaoSenha")
       .lean();
     
     return NextResponse.json({

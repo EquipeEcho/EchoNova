@@ -50,6 +50,7 @@ export async function GET(
       empresa: funcionario.empresa,
       trilhas: funcionario.trilhas || [],
       trilhasConcluidas: funcionario.trilhasConcluidas || [],
+      ultimaAlteracaoSenha: funcionario.ultimaAlteracaoSenha,
     });
   } catch (error: any) {
     console.error("Erro ao buscar trilhas do funcionário:", error);

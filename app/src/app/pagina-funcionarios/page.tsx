@@ -98,6 +98,12 @@ export default function FuncionarioPage() {
     novaSenha: "",
     confirmarSenha: "",
   });
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordModalForm, setPasswordModalForm] = useState({
+    senhaAtual: "",
+    novaSenha: "",
+    confirmarSenha: "",
+  });
 
   useEffect(() => {
     const fetchFuncionario = async () => {
@@ -152,6 +158,12 @@ export default function FuncionarioPage() {
         };
 
         setFuncionario(funcionarioData);
+
+        // Verificar se deve mostrar modal de alteração de senha
+        // Se ultimaAlteracaoSenha for null ou undefined, significa que nunca alterou a senha padrão
+        if (data.ultimaAlteracaoSenha == null) {
+          setShowPasswordModal(true);
+        }
       } catch (e: any) {
         console.error("Erro ao buscar funcionário:", e);
         toast.error(e.message || "Erro ao carregar dados");
@@ -254,6 +266,68 @@ export default function FuncionarioPage() {
       setTab("Perfil");
     } catch (e: any) {
       toast.error(e.message);
+    }
+  };
+
+  const handleSavePasswordModal = async () => {
+    if (!passwordModalForm.novaSenha) {
+      toast.error("Informe a nova senha");
+      return;
+    }
+    if (passwordModalForm.novaSenha !== passwordModalForm.confirmarSenha) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+    if (passwordModalForm.novaSenha.length < 6) {
+      toast.error("A senha deve ter pelo menos 6 caracteres");
+      return;
+    }
+
+    try {
+      if (!user) return;
+
+      // Buscar dados atuais do funcionário para verificar se é primeira alteração
+      const trilhasRes = await fetch(`/api/funcionarios/${user.id}/trilhas`, {
+        credentials: "include",
+      });
+      
+      if (!trilhasRes.ok) {
+        throw new Error("Erro ao verificar status da senha");
+      }
+      
+      const funcionarioData = await trilhasRes.json();
+      const isFirstChange = funcionarioData.ultimaAlteracaoSenha === null;
+
+      const requestBody: any = {
+        novaSenha: passwordModalForm.novaSenha,
+      };
+
+      // Só incluir senhaAtual se não for a primeira alteração
+      if (!isFirstChange) {
+        requestBody.senhaAtual = passwordModalForm.senhaAtual || "";
+      }
+
+      const res = await fetch(`/api/funcionarios/${user.id}/change-password`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Erro ao alterar senha");
+      }
+
+      toast.success("Senha alterada com sucesso! Bem-vindo à plataforma.");
+      setShowPasswordModal(false);
+      setPasswordModalForm({
+        senhaAtual: "",
+        novaSenha: "",
+        confirmarSenha: "",
+      });
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao alterar senha");
     }
   };
 
@@ -838,6 +912,80 @@ export default function FuncionarioPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Modal Obrigatório de Alteração de Senha */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl w-full max-w-md mx-4">
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-10 w-10 text-amber-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-4">
+                Alteração de Senha Necessária
+              </h2>
+              <p className="text-neutral-300 mb-6 leading-relaxed">
+                Para sua segurança, é necessário alterar a senha padrão antes de continuar.
+                Escolha uma senha forte e segura para proteger sua conta.
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-300 mb-2">
+                    Nova Senha
+                  </label>
+                  <PasswordInput
+                    value={passwordModalForm.novaSenha}
+                    onChange={(e) =>
+                      setPasswordModalForm({ ...passwordModalForm, novaSenha: e.target.value })
+                    }
+                    placeholder="Digite sua nova senha"
+                    className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-amber-600 transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-neutral-300 mb-2">
+                    Confirmar Nova Senha
+                  </label>
+                  <PasswordInput
+                    value={passwordModalForm.confirmarSenha}
+                    onChange={(e) =>
+                      setPasswordModalForm({ ...passwordModalForm, confirmarSenha: e.target.value })
+                    }
+                    placeholder="Confirme sua nova senha"
+                    className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-amber-600 transition"
+                  />
+                </div>
+                <Button
+                  onClick={handleSavePasswordModal}
+                  className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-lg transition-all duration-300 shadow-lg"
+                >
+                  Alterar Senha e Continuar
+                </Button>
+              </div>
+              <p className="text-xs text-neutral-500 mt-4">
+                A senha deve ter pelo menos 6 caracteres
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="fixed bottom-0 left-0 w-full -z-10 opacity-20">
+        <Ondas />
       </div>
     </div>
   );

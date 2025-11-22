@@ -11,6 +11,8 @@ const FuncionarioSchema = new Schema(
 
     senha: { type: String, required: true },
 
+    ultimaAlteracaoSenha: { type: Date, default: null }, // null = nunca alterada (ainda usa senha padrão)
+
     trilhas: [{
       trilha: {
         type: mongoose.Schema.Types.ObjectId,
