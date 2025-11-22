@@ -435,23 +435,23 @@ export default function AdminPage() {
         </div>
 
         {/* Abas para desktop */}
-        <TabsList className="hidden lg:grid w-full grid-cols-6 max-w-6xl bg-slate-800/60 border border-slate-700/60 rounded-lg gap-1 p-1">
-          <TabsTrigger value="empresas" className="data-[state=active]:bg-pink-600 data-[state=active]:text-white text-slate-300 rounded-md transition-colors text-sm py-2 px-3">
+        <TabsList className="hidden lg:flex w-full bg-slate-800/60 border border-slate-700/60 rounded-lg gap-1 p-1">
+          <TabsTrigger value="empresas" className="data-[state=active]:bg-pink-600 data-[state=active]:text-white text-slate-300 rounded-md transition-colors text-sm py-3 px-4 flex-1">
             Empresas ({empresas.length})
           </TabsTrigger>
-          <TabsTrigger value="diagnosticos" className="data-[state=active]:bg-pink-600 data-[state=active]:text-white text-slate-300 rounded-md transition-colors text-sm py-2 px-3">
+          <TabsTrigger value="diagnosticos" className="data-[state=active]:bg-pink-600 data-[state=active]:text-white text-slate-300 rounded-md transition-colors text-sm py-3 px-4 flex-1">
             Diagnósticos ({diagnosticos.length})
           </TabsTrigger>
-          <TabsTrigger value="trilhas-empresa" className="data-[state=active]:bg-pink-600 data-[state=active]:text-white text-slate-300 rounded-md transition-colors text-sm py-2 px-3">
+          <TabsTrigger value="trilhas-empresa" className="data-[state=active]:bg-pink-600 data-[state=active]:text-white text-slate-300 rounded-md transition-colors text-sm py-3 px-4 flex-1">
             Trilhas por Empresa
           </TabsTrigger>
-          <TabsTrigger value="simplificado" className="data-[state=active]:bg-pink-600 data-[state=active]:text-white text-slate-300 rounded-md transition-colors text-sm py-2 px-3">
+          <TabsTrigger value="simplificado" className="data-[state=active]:bg-pink-600 data-[state=active]:text-white text-slate-300 rounded-md transition-colors text-sm py-3 px-4 flex-1">
             Questionário Simplificado
           </TabsTrigger>
-          <TabsTrigger value="completo" className="data-[state=active]:bg-pink-600 data-[state=active]:text-white text-slate-300 rounded-md transition-colors text-sm py-2 px-3">
+          <TabsTrigger value="completo" className="data-[state=active]:bg-pink-600 data-[state=active]:text-white text-slate-300 rounded-md transition-colors text-sm py-3 px-4 flex-1">
             Diagnóstico Completo
           </TabsTrigger>
-          <TabsTrigger value="estatisticas" className="data-[state=active]:bg-pink-600 data-[state=active]:text-white text-slate-300 rounded-md transition-colors text-sm py-2 px-3">
+          <TabsTrigger value="estatisticas" className="data-[state=active]:bg-pink-600 data-[state=active]:text-white text-slate-300 rounded-md transition-colors text-sm py-3 px-4 flex-1">
             Estatísticas
           </TabsTrigger>
         </TabsList>
