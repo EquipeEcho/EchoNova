@@ -38,6 +38,13 @@ export default function Home() {
             Começar Diagnóstico
           </button>
         </Link>
+
+        {/* Texto discreto para relatórios de exemplo */}
+        <div className="mt-4 animate-fade-in-up-delay-3">
+          <Link href="/relatorios-exemplo" className="text-gray-300 hover:text-pink-400 transition-colors duration-300 text-sm xs:text-base underline underline-offset-4 hover:underline-offset-8">
+            Ver Relatório de Exemplo
+          </Link>
+        </div>
         <div className="-z-10">
           <Ondas />
         </div>
