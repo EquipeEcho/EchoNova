@@ -43,6 +43,11 @@ const DiagnosticoSchema = new Schema(
     dataProcessamento: {
       type: Date,
     },
+    leadScore: {
+      type: String,
+      enum: ["frio", "morno", "quente"],
+      required: false,
+    },
     observacoes: {
       type: String,
       default: "",

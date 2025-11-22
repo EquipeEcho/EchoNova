@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
-import { LogOut } from "lucide-react";
+import { LogOut, BookOpen } from "lucide-react";
 
 // Tipagem para os dados que vamos manipular
 interface Empresa {
@@ -49,10 +49,16 @@ interface Diagnostico {
   };
   perfil: {
     empresa: string;
+    email: string;
+    cnpj: string;
+    setor: string;
+    porte: string;
+    setorOutro?: string;
   };
   dimensoesSelecionadas: string[];
   status: string;
   createdAt: string;
+  leadScore?: "frio" | "morno" | "quente";
   resultados?: Record<string, {
     trilhasDeMelhoria: { meta: string; trilha: string; explicacao?: string }[];
   }>;
@@ -385,22 +391,33 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-slate-900 text-white font-sans p-4 sm:p-8">
         <header className="mb-8 pb-4 border-b border-pink-500/30 sticky top-0 bg-slate-900/95 backdrop-blur z-10 -mx-4 px-4 sm:-mx-8 sm:px-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-linear-to-r from-pink-400 to-purple-400 tracking-tight">
               Painel de Administração
             </h1>
             <p className="text-slate-400 mt-2 text-sm max-w-2xl leading-relaxed">Gerencie empresas, diagnósticos e dados essenciais do sistema em um ambiente unificado com a identidade visual padrão.</p>
           </div>
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            size="sm"
-            className="border-red-500/60 text-red-400 hover:bg-red-500/10 hover:text-red-300 hover:border-red-400 transition-colors ml-4"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sair
-          </Button>
+          <div className="flex gap-3 flex-wrap">
+            <Button
+              onClick={() => router.push('/admin/trilhas')}
+              variant="outline"
+              size="sm"
+              className="border-purple-500/60 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 hover:border-purple-400 transition-colors"
+            >
+              <BookOpen className="w-4 h-4 mr-2" />
+              Gerenciar Trilhas
+            </Button>
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              size="sm"
+              className="border-red-500/60 text-red-400 hover:bg-red-500/10 hover:text-red-300 hover:border-red-400 transition-colors"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -427,6 +444,9 @@ export default function AdminPage() {
               <SelectItem value="completo" className="text-slate-200 focus:bg-pink-600 focus:text-white">
                 ✅ Diagnóstico Completo
               </SelectItem>
+              <SelectItem value="leads" className="text-slate-200 focus:bg-pink-600 focus:text-white">
+                🔥 Leads ({diagnosticos.filter(d => d.leadScore).length})
+              </SelectItem>
               <SelectItem value="estatisticas" className="text-slate-200 focus:bg-pink-600 focus:text-white">
                 📊 Estatísticas
               </SelectItem>
@@ -450,6 +470,9 @@ export default function AdminPage() {
           </TabsTrigger>
           <TabsTrigger value="completo" className="data-[state=active]:bg-pink-600 data-[state=active]:text-white text-slate-300 rounded-md transition-colors text-sm py-3 px-4 flex-1">
             Diagnóstico Completo
+          </TabsTrigger>
+          <TabsTrigger value="leads" className="data-[state=active]:bg-pink-600 data-[state=active]:text-white text-slate-300 rounded-md transition-colors text-sm py-3 px-4 flex-1">
+            Leads ({diagnosticos.filter(d => d.leadScore).length})
           </TabsTrigger>
           <TabsTrigger value="estatisticas" className="data-[state=active]:bg-pink-600 data-[state=active]:text-white text-slate-300 rounded-md transition-colors text-sm py-3 px-4 flex-1">
             Estatísticas
@@ -776,6 +799,121 @@ export default function AdminPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="leads">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-white mb-4">Classificação de Leads</h2>
+            <p className="text-slate-400 mb-6">Leads classificados automaticamente pela IA baseado na urgência e necessidade de soluções.</p>
+          </div>
+
+          {/* Leads Quentes */}
+          <div className="mb-8">
+            <h3 className="text-xl font-bold text-red-400 mb-4 flex items-center gap-2">
+              🔥 Leads Quentes ({diagnosticos.filter(d => d.leadScore === 'quente').length})
+            </h3>
+            <p className="text-slate-400 mb-4">Empresas com alta urgência - muitos problemas identificados, prontas para soluções.</p>
+            <div className="overflow-x-auto bg-slate-800/60 border border-red-500/30 rounded-lg shadow-sm">
+              <table className="w-full text-sm text-left min-w-[500px]">
+                <thead className="text-xs text-slate-300 uppercase bg-red-900/20 border-b border-red-500/30">
+                  <tr>
+                    <th className="p-3 sm:p-4 font-semibold">Empresa</th>
+                    <th className="p-3 sm:p-4 font-semibold">Email</th>
+                    <th className="p-3 sm:p-4 font-semibold">Setor</th>
+                    <th className="p-3 sm:p-4 font-semibold">Data</th>
+                    <th className="p-3 sm:p-4 font-semibold">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {diagnosticos.filter(d => d.leadScore === 'quente').map((diag) => (
+                    <tr key={diag._id} className="border-b border-slate-700/60 hover:bg-red-900/10 transition-colors">
+                      <td className="p-3 sm:p-4 text-slate-200 font-medium">{diag.empresa?.nome_empresa || diag.perfil.empresa}</td>
+                      <td className="p-3 sm:p-4 text-slate-400">{diag.empresa?.email || "N/A"}</td>
+                      <td className="p-3 sm:p-4 text-slate-400">{diag.perfil?.setor || "N/A"}</td>
+                      <td className="p-3 sm:p-4 text-slate-400">{new Date(diag.createdAt).toLocaleDateString()}</td>
+                      <td className="p-3 sm:p-4">
+                        <Button size="sm" className="border-red-500 text-red-400 hover:bg-red-500/10 hover:text-white" variant="outline">
+                          Contatar
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Leads Mornos */}
+          <div className="mb-8">
+            <h3 className="text-xl font-bold text-yellow-400 mb-4 flex items-center gap-2">
+              🌡️ Leads Mornos ({diagnosticos.filter(d => d.leadScore === 'morno').length})
+            </h3>
+            <p className="text-slate-400 mb-4">Empresas com interesse moderado - algumas necessidades identificadas.</p>
+            <div className="overflow-x-auto bg-slate-800/60 border border-yellow-500/30 rounded-lg shadow-sm">
+              <table className="w-full text-sm text-left min-w-[500px]">
+                <thead className="text-xs text-slate-300 uppercase bg-yellow-900/20 border-b border-yellow-500/30">
+                  <tr>
+                    <th className="p-3 sm:p-4 font-semibold">Empresa</th>
+                    <th className="p-3 sm:p-4 font-semibold">Email</th>
+                    <th className="p-3 sm:p-4 font-semibold">Setor</th>
+                    <th className="p-3 sm:p-4 font-semibold">Data</th>
+                    <th className="p-3 sm:p-4 font-semibold">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {diagnosticos.filter(d => d.leadScore === 'morno').map((diag) => (
+                    <tr key={diag._id} className="border-b border-slate-700/60 hover:bg-yellow-900/10 transition-colors">
+                      <td className="p-3 sm:p-4 text-slate-200 font-medium">{diag.empresa?.nome_empresa || diag.perfil.empresa}</td>
+                      <td className="p-3 sm:p-4 text-slate-400">{diag.empresa?.email || "N/A"}</td>
+                      <td className="p-3 sm:p-4 text-slate-400">{diag.perfil?.setor || "N/A"}</td>
+                      <td className="p-3 sm:p-4 text-slate-400">{new Date(diag.createdAt).toLocaleDateString()}</td>
+                      <td className="p-3 sm:p-4">
+                        <Button size="sm" className="border-yellow-500 text-yellow-400 hover:bg-yellow-500/10 hover:text-white" variant="outline">
+                          Seguir
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Leads Frios */}
+          <div className="mb-8">
+            <h3 className="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2">
+              ❄️ Leads Frios ({diagnosticos.filter(d => d.leadScore === 'frio').length})
+            </h3>
+            <p className="text-slate-400 mb-4">Empresas com baixa urgência - poucos problemas identificados, foco em nutrição a longo prazo.</p>
+            <div className="overflow-x-auto bg-slate-800/60 border border-blue-500/30 rounded-lg shadow-sm">
+              <table className="w-full text-sm text-left min-w-[500px]">
+                <thead className="text-xs text-slate-300 uppercase bg-blue-900/20 border-b border-blue-500/30">
+                  <tr>
+                    <th className="p-3 sm:p-4 font-semibold">Empresa</th>
+                    <th className="p-3 sm:p-4 font-semibold">Email</th>
+                    <th className="p-3 sm:p-4 font-semibold">Setor</th>
+                    <th className="p-3 sm:p-4 font-semibold">Data</th>
+                    <th className="p-3 sm:p-4 font-semibold">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {diagnosticos.filter(d => d.leadScore === 'frio').map((diag) => (
+                    <tr key={diag._id} className="border-b border-slate-700/60 hover:bg-blue-900/10 transition-colors">
+                      <td className="p-3 sm:p-4 text-slate-200 font-medium">{diag.empresa?.nome_empresa || diag.perfil.empresa}</td>
+                      <td className="p-3 sm:p-4 text-slate-400">{diag.empresa?.email || "N/A"}</td>
+                      <td className="p-3 sm:p-4 text-slate-400">{diag.perfil?.setor || "N/A"}</td>
+                      <td className="p-3 sm:p-4 text-slate-400">{new Date(diag.createdAt).toLocaleDateString()}</td>
+                      <td className="p-3 sm:p-4">
+                        <Button size="sm" className="border-blue-500 text-blue-400 hover:bg-blue-500/10 hover:text-white" variant="outline">
+                          Nutrir
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </TabsContent>
 
