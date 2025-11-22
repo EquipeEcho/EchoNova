@@ -11,8 +11,8 @@ interface DiagnosticoData {
       estagio: string;
       media: number;
       resumoExecutivo: {
-        forca?: { meta: string };
-        fragilidade?: { meta: string };
+        forca?: { meta: string } | null;
+        fragilidade?: { meta: string } | null;
       };
       trilhasDeMelhoria: Array<{
         meta: string;
@@ -41,7 +41,7 @@ export function generateDiagnosticoPDF(diagnosticoData: DiagnosticoData): void {
 
   // Carregar logo EchoNova (public/img/img_logo.png) como DataURL
   const loadImageAsDataUrl = async (src: string): Promise<string> => {
-    const res = await fetch(src);
+    const res = await fetch(src, { credentials: "include" });
     if (!res.ok) throw new Error("Falha ao carregar o logo");
     const blob = await res.blob();
     return await new Promise((resolve) => {
@@ -282,7 +282,7 @@ export function generateDiagnosticoPDF(diagnosticoData: DiagnosticoData): void {
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
 
-    const footerY = pageHeight - 10;
+    const footerY = pageHeight - 15; // Logo mais acima
     const centerX = pageWidth / 2;
     const logoSize = 7.2; // mm (20% maior)
     const logoX = centerX - 20; // ajustado por conta do novo tamanho
@@ -315,17 +315,11 @@ export function generateDiagnosticoPDF(diagnosticoData: DiagnosticoData): void {
     doc.setFont("helvetica", "bold");
     doc.text("EchoNova", logoX + logoSize + 2, footerY, { align: "left" });
 
-    // Numeração de página e frase padrão
+    // Apenas número da página no canto inferior direito
     doc.setFontSize(8);
     doc.setTextColor(156, 163, 175);
     doc.setFont("helvetica", "normal");
-    doc.text(`Página ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
-    doc.text(
-      "Este documento foi gerado automaticamente pela plataforma EchoNova",
-      pageWidth / 2,
-      pageHeight - 5,
-      { align: "center" }
-    );
+    doc.text(`${i}`, pageWidth - 10, pageHeight - 5, { align: "right" });
   }
 
   // Salvar PDF

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Diagnostico from "@/models/Diagnostico";
+import { authenticateAndAuthorize } from "@/lib/middleware/authMiddleware";
 import type { NextRequest } from "next/server"; // Importar como tipo
 
 /**
@@ -9,8 +10,17 @@ import type { NextRequest } from "next/server"; // Importar como tipo
  * @param params Contém os parâmetros da rota, como o ID do diagnóstico.
  */
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    // Autenticar e autorizar como admin
+    const authResult = await authenticateAndAuthorize(req, "ADMIN");
+    if (!authResult.isAuthorized) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.status }
+      );
+    }
+
     await connectDB();
     const { id } = await params; // Acesso direto ao ID
 

@@ -48,6 +48,7 @@ export default function NovaTrilhaPage() {
   const [objetivos, setObjetivos] = useState("");
   const [duracaoEstimada, setDuracaoEstimada] = useState("");
   const [nivel, setNivel] = useState<"Iniciante" | "Intermediário" | "Avançado">("Iniciante");
+  const [categoria, setCategoria] = useState<"Comunicação" | "Gestão de Tempo" | "Inovação" | "Liderança" | "Diversidade">("Comunicação");
   const [status, setStatus] = useState<"ativa" | "inativa" | "rascunho">("rascunho");
   const [modulos, setModulos] = useState<Modulo[]>([]);
 
@@ -102,6 +103,7 @@ export default function NovaTrilhaPage() {
         objetivos: objetivos.split("\n").filter((o) => o.trim()),
         duracaoEstimada: Number(duracaoEstimada) || 0,
         nivel,
+        categoria,
         status,
         modulos,
         metadados: {
@@ -114,6 +116,7 @@ export default function NovaTrilhaPage() {
       const res = await fetch("/api/trilhas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify(trilhaData),
       });
 
@@ -188,7 +191,7 @@ export default function NovaTrilhaPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="nivel" className="text-white">
                     Nível
@@ -201,6 +204,24 @@ export default function NovaTrilhaPage() {
                       <SelectItem value="Iniciante">Iniciante</SelectItem>
                       <SelectItem value="Intermediário">Intermediário</SelectItem>
                       <SelectItem value="Avançado">Avançado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="categoria" className="text-white">
+                    Categoria *
+                  </Label>
+                  <Select value={categoria} onValueChange={(v: any) => setCategoria(v)}>
+                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Comunicação">Comunicação</SelectItem>
+                      <SelectItem value="Gestão de Tempo">Gestão de Tempo</SelectItem>
+                      <SelectItem value="Inovação">Inovação</SelectItem>
+                      <SelectItem value="Liderança">Liderança</SelectItem>
+                      <SelectItem value="Diversidade">Diversidade</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -350,7 +371,7 @@ export default function NovaTrilhaPage() {
                   type="button"
                   onClick={addModulo}
                   variant="outline"
-                  className="border-fuchsia-500 text-fuchsia-500 hover:bg-fuchsia-500/10"
+                  className="border-purple-500/60 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 transition-colors"
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Adicionar Módulo
@@ -377,7 +398,7 @@ export default function NovaTrilhaPage() {
                         size="sm"
                         variant="ghost"
                         onClick={() => removeModulo(index)}
-                        className="text-red-400 hover:bg-red-500/10"
+                        className="text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -458,14 +479,14 @@ export default function NovaTrilhaPage() {
               type="button"
               variant="outline"
               onClick={() => router.push("/admin/trilhas")}
-              className="border-slate-600 text-gray-300 hover:bg-slate-700"
+              className="border-purple-500/60 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 transition-colors"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="bg-fuchsia-600 hover:bg-fuchsia-700 text-white"
+              className="bg-pink-600 hover:bg-pink-700 text-white shadow-lg shadow-pink-600/30 transition-colors"
             >
               <Save className="mr-2 h-4 w-4" />
               {loading ? "Salvando..." : "Salvar Trilha"}

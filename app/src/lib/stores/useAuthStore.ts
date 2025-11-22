@@ -4,9 +4,15 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 // 1. Definimos a interface (o "formato") dos dados do nosso usuário.
 interface User {
   id: string;
-  nome_empresa: string;
+  nome?: string;
+  nome_empresa?: string;
   email: string;
-  planoAtivo: string | null;
+  planoAtivo?: string | null;
+  tipo?: string;
+  empresaId?: string;
+  empresaNome?: string;
+  matricula?: string;
+  cargo?: string;
 }
 
 // 2. Definimos a interface do nosso "store" (o estado e as ações).
@@ -29,7 +35,11 @@ export const useAuthStore = create<AuthState>()(
       login: (userData) => set({ user: userData }),
 
       // Ação de logout: limpa os dados do usuário do estado.
-      logout: () => set({ user: null }),
+      logout: () => {
+        set({ user: null });
+        // Limpar também o localStorage manualmente para garantir
+        localStorage.removeItem('auth-storage');
+      },
     }),
     {
       name: 'auth-storage', // Nome da chave no localStorage.

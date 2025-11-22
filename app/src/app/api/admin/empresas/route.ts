@@ -2,13 +2,23 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Empresa from "@/models/Empresa";
 import bcrypt from "bcryptjs";
+import { authenticateAndAuthorize } from "@/lib/middleware/authMiddleware";
 
 /**
  * @description Rota para buscar todas as empresas.
  * Usada no painel de administração para listar todos os registros.
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Autenticar e autorizar como admin
+    const authResult = await authenticateAndAuthorize(request as any, "ADMIN");
+    if (!authResult.isAuthorized) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.status }
+      );
+    }
+
     await connectDB();
     const empresas = await Empresa.find({}).sort({ nome_empresa: 1 });
     return NextResponse.json({ success: true, data: empresas });
@@ -24,6 +34,15 @@ export async function GET() {
  */
 export async function POST(req: Request) {
     try {
+        // Autenticar e autorizar como admin
+        const authResult = await authenticateAndAuthorize(req as any, "ADMIN");
+        if (!authResult.isAuthorized) {
+          return NextResponse.json(
+            { error: authResult.error },
+            { status: authResult.status }
+          );
+        }
+
         await connectDB();
         const body = await req.json();
 

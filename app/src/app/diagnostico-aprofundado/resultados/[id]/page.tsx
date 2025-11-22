@@ -51,7 +51,9 @@ export default function ResultadoDiagnosticoPage() {
       const fetchDiagnostico = async () => {
         setLoading(true);
         try {
-          const res = await fetch(`/api/diagnostico-aprofundado/${id}`);
+          const res = await fetch(`/api/diagnostico-aprofundado/${id}`, {
+            credentials: "include",
+          });
           if (!res.ok) {
             const errorData = await res.json();
             throw new Error(errorData.error || "Falha ao carregar diagnóstico.");
@@ -499,16 +501,40 @@ export default function ResultadoDiagnosticoPage() {
                 {Object.entries(diagnostico.structuredData)
                   .filter(([key]) => !key.includes('problema') && !key.includes('desafio'))
                   .slice(0, 6)
-                  .map(([key, value]) => (
-                    <div key={key} className="bg-slate-800/50 p-3 rounded hover:bg-slate-800/70 transition-colors">
-                      <div className="text-slate-400 text-xs uppercase tracking-wide mb-1">
-                        {key.replace(/_/g, ' ')}
+                  .map(([key, value]) => {
+                    const renderValue = (val: any): string => {
+                      if (Array.isArray(val)) {
+                        if (val.length === 0) return 'Nenhuma';
+                        if (typeof val[0] === 'object' && val[0] !== null) {
+                          // Para arrays de objetos (como trilhas_recomendadas)
+                          if (key === 'trilhas_recomendadas') {
+                            return val.map((trilha: any) => 
+                              typeof trilha === 'object' && trilha.trilha_nome 
+                                ? trilha.trilha_nome 
+                                : String(trilha)
+                            ).join(', ');
+                          }
+                          return `${val.length} itens`;
+                        }
+                        return val.join(', ');
+                      }
+                      if (typeof val === 'object' && val !== null) {
+                        return JSON.stringify(val);
+                      }
+                      return String(val);
+                    };
+
+                    return (
+                      <div key={key} className="bg-slate-800/50 p-3 rounded hover:bg-slate-800/70 transition-colors">
+                        <div className="text-slate-400 text-xs uppercase tracking-wide mb-1">
+                          {key.replace(/_/g, ' ')}
+                        </div>
+                        <div className="text-slate-200 font-medium">
+                          {renderValue(value)}
+                        </div>
                       </div>
-                      <div className="text-slate-200 font-medium">
-                        {String(value)}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             </div>
           )}
@@ -527,8 +553,6 @@ export default function ResultadoDiagnosticoPage() {
             [&>em]:text-pink-300 [&>em]:italic
             [&>hr]:border-slate-600 [&>hr]:my-8
             [&>blockquote]:border-l-4 [&>blockquote]:border-pink-500 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:text-slate-400
-            [&_h3:has(+_h4:contains('Trilha'))]:text-purple-400
-            [&_h4:contains('Trilha')]:text-emerald-400 [&_h4:contains('Trilha')]:bg-emerald-900/20 [&_h4:contains('Trilha')]:p-3 [&_h4:contains('Trilha')]:rounded-lg [&_h4:contains('Trilha')]:border [&_h4:contains('Trilha')]:border-emerald-700/30
             [&_table]:w-full [&_table]:my-6 [&_table]:border-collapse [&_thead_th]:bg-slate-800/60 [&_th]:text-slate-300 [&_th]:px-4 [&_th]:py-2 [&_td]:px-4 [&_td]:py-2 [&_td]:border-t [&_td]:border-slate-700
           ">
             {(() => {

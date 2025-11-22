@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Ondas } from "../clientFuncs";
 import { toast } from "sonner";
 import { generateDiagnosticoPDF } from "@/lib/pdfGenerator";
+import { ArrowRightIcon } from "lucide-react";
 
 // Interface mesclada que suporta todos os campos de ambos os arquivos.
 interface DiagnosticoData {
@@ -48,6 +49,7 @@ const enviarEmail = async (dados: DiagnosticoData) => {
     const emailResponse = await fetch("/api/send-diagnostico", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({
         nome: dados.perfil.empresa,
         email: dados.perfil.email,
@@ -121,7 +123,9 @@ export default function Resultados() {
   const carregarDoBanco = useCallback(async (id: string) => {
     console.log("[Resultados] Carregando diagnóstico do banco com ID:", id);
     try {
-      const response = await fetch(`/api/diagnosticos/${id}`);
+      const response = await fetch(`/api/diagnosticos/${id}`, {
+        credentials: "include",
+      });
       const data = await response.json();
 
       if (response.ok) {
@@ -382,6 +386,7 @@ aprofundado e um plano de ação detalhado, entre em contato.
                 className="flex-1 px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
               >
                 ⭐ Ver Planos e Começar Jornada
+                <ArrowRightIcon className="w-4 h-4" />
               </button>
               <button
                 type="button"

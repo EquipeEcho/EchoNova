@@ -3,6 +3,7 @@
 # Diretórios de dependências
 /node_modules
 /jspm_packages
+temp/
 
 # Logs
 npm-debug.log*

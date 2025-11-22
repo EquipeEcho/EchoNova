@@ -10,35 +10,46 @@ export async function getTrilhasParaPrompt(): Promise<string> {
   try {
     await connectDB();
     const trilhas = await Trilha.find({ status: "ativa" })
-      .select("nome descricao tags areasAbordadas objetivos duracaoEstimada nivel metadados")
+      .select("nome descricao tags areasAbordadas objetivos duracaoEstimada nivel categoria metadados")
       .lean();
 
     if (!trilhas || trilhas.length === 0) {
       return "Nenhuma trilha cadastrada no momento.";
     }
 
-    let resultado = "\n**TRILHAS DE APRENDIZAGEM DISPONÍVEIS:**\n";
+    let resultado = "\n**TRILHAS DE APRENDIZAGEM DISPONÍVEIS ORGANIZADAS POR CATEGORIA:**\n";
     resultado += "Use EXCLUSIVAMENTE estas trilhas nas recomendações. NÃO invente trilhas.\n\n";
 
-    trilhas.forEach((trilha, index) => {
-      resultado += `${index + 1}. **${trilha.nome}** (Nível: ${trilha.nivel})\n`;
-      resultado += `   - Descrição: ${trilha.descricao}\n`;
-      resultado += `   - Áreas: ${trilha.areasAbordadas.join(", ")}\n`;
-      resultado += `   - Tags: ${trilha.tags.join(", ")}\n`;
-      resultado += `   - Duração: ${trilha.duracaoEstimada}h\n`;
-      resultado += `   - Objetivos: ${trilha.objetivos.join("; ")}\n`;
+    // Organizar trilhas por categoria
+    const categorias = ["Comunicação", "Gestão de Tempo", "Inovação", "Liderança", "Diversidade"];
+    
+    categorias.forEach((categoria) => {
+      const trilhasCategoria = trilhas.filter(t => t.categoria === categoria);
+      if (trilhasCategoria.length === 0) return;
+
+      resultado += `### ${categoria.toUpperCase()}\n`;
       
-      if (trilha.metadados?.problemasRelacionados?.length > 0) {
-        resultado += `   - Resolve: ${trilha.metadados.problemasRelacionados.join(", ")}\n`;
-      }
-      if (trilha.metadados?.competenciasDesenvolvidas?.length > 0) {
-        resultado += `   - Competências: ${trilha.metadados.competenciasDesenvolvidas.join(", ")}\n`;
-      }
-      resultado += "\n";
+      trilhasCategoria.forEach((trilha, index) => {
+        resultado += `${index + 1}. **${trilha.nome}** (Nível: ${trilha.nivel}, Categoria: ${trilha.categoria})\n`;
+        resultado += `   - Descrição: ${trilha.descricao}\n`;
+        resultado += `   - Áreas: ${trilha.areasAbordadas.join(", ")}\n`;
+        resultado += `   - Tags: ${trilha.tags.join(", ")}\n`;
+        resultado += `   - Duração: ${trilha.duracaoEstimada}h\n`;
+        resultado += `   - Objetivos: ${trilha.objetivos.join("; ")}\n`;
+        
+        if (trilha.metadados?.problemasRelacionados?.length > 0) {
+          resultado += `   - Resolve: ${trilha.metadados.problemasRelacionados.join(", ")}\n`;
+        }
+        if (trilha.metadados?.competenciasDesenvolvidas?.length > 0) {
+          resultado += `   - Competências: ${trilha.metadados.competenciasDesenvolvidas.join(", ")}\n`;
+        }
+        resultado += "\n";
+      });
     });
 
     resultado += "**IMPORTANTE:** Ao recomendar trilhas, SEMPRE cite o nome EXATO de uma das trilhas acima.\n";
-    resultado += "Escolha as trilhas que melhor se alinham com os problemas identificados.\n\n";
+    resultado += "**PROIBIDO:** NÃO crie, invente ou sugira trilhas que não existem na lista.\n";
+    resultado += "Considere a categoria da trilha ao fazer recomendações - cada categoria aborda um conjunto específico de competências.\n\n";
 
     return resultado;
   } catch (error) {
@@ -167,12 +178,15 @@ Você é um consultor sênior da EntreNova. Sua única missão é executar a met
 **REGRA CRÍTICA SOBRE TRILHAS:**
 - Você DEVE recomendar SOMENTE trilhas que estão listadas acima na seção "TRILHAS DE APRENDIZAGEM DISPONÍVEIS".
 - NÃO crie, invente ou sugira trilhas que não existem na lista.
+- NÃO use nomes de trilhas que não estejam explicitamente listadas acima.
 - Ao mencionar uma trilha no relatório, use o nome EXATO conforme aparece na lista.
-- Para CADA problema priorizado, você DEVE recomendar pelo menos UMA trilha específica.
+- Para CADA problema priorizado, você DEVE recomendar pelo menos UMA trilha específica da lista existente.
 - Escolha as trilhas que melhor se alinham com os problemas identificados pelo diagnóstico.
 - Se nenhuma trilha se adequar perfeitamente, escolha as mais próximas e explique claramente a correlação.
 - Inclua o nível (Iniciante/Intermediário/Avançado) e duração estimada de cada trilha recomendada.
 - A seção "Trilhas de Aprendizagem Recomendadas" é OBRIGATÓRIA e deve ser detalhada e específica.
+ - SEVERIDADE → NÍVEL: quando um problema for classificado como leve/médio/grave, mapeie para o nível da trilha: leve → Iniciante, médio → Intermediário, grave → Avançado. Problemas graves podem receber 2-3 trilhas por categoria; leves, 1 trilha.
+ - SEMPRE identifique a categoria de cada trilha recomendada (Comunicação, Gestão de Tempo, Inovação, Liderança, Diversidade) e gere a lista de categorias únicas a serem associadas à empresa.
 
 **REGRAS DE SEGURANÇA E COMPORTAMENTO (NÃO VIOLÁVEIS):**
 1.  **PONTO DE PARTIDA:** Sua interação começa na ETAPA 2. A primeira mensagem que você recebe do sistema JÁ CONTÉM os dados de perfil do cliente, que foram coletados e confirmados previamente. VOCÊ NÃO DEVE PERGUNTAR DADOS DE PERFIL NOVAMENTE.
@@ -223,13 +237,48 @@ Você é um consultor sênior da EntreNova. Sua única missão é executar a met
       ${relatorioMarkdownTemplate}
       \`\`\`
 
+- **ESTRUTURAÇÃO DE DADOS (OBRIGATÓRIA):**
+  * Além do relatório markdown, você DEVE preencher o campo 'dados_coletados' com uma estrutura JSON organizada.
+  * A estrutura deve incluir:
+    - 'problemas_priorizados': array de objetos com {nome, impacto, frequencia, alcance, causa_raiz, evidencias: [array de strings], gravidade: 'leve'|'medio'|'grave'}
+    - 'trilhas_recomendadas': array de objetos com {problema_associado, trilha_nome, categoria, nivel, duracao, justificativa, impacto_esperado, prioridade, gravidade}
+    - 'categorias_para_associar': array de strings com os nomes das categorias únicas presentes em 'trilhas_recomendadas'
+  * Cada trilha recomendada deve estar associada a um problema específico.
+  * Use os dados coletados nas etapas anteriores para preencher estes campos.
+
 ---
 ### ESTRUTURA JSON DE SAÍDA (MANDATÓRIA)
 {
   "status": "em_andamento" | "finalizado",
   "proxima_pergunta": { "texto": "...", "tipo_resposta": "...", "opcoes": null, "placeholder": "..." } | null,
   "resumo_etapa": null,
-  "dados_coletados": { ... },
+  "dados_coletados": {
+    "problemas_priorizados": [
+      {
+        "nome": "string",
+        "impacto": number,
+        "frequencia": number,
+        "alcance": number,
+        "causa_raiz": "string",
+        "evidencias": ["string"],
+        "gravidade": "leve|medio|grave"
+      }
+    ],
+    "trilhas_recomendadas": [
+      {
+        "problema_associado": "string",
+        "trilha_nome": "string",
+        "categoria": "Comunicação|Gestão de Tempo|Inovação|Liderança|Diversidade",
+        "nivel": "Iniciante|Intermediário|Avançado",
+        "duracao": "string",
+        "justificativa": "string",
+        "impacto_esperado": "string",
+        "prioridade": "alta|media|baixa",
+        "gravidade": "leve|medio|grave"
+      }
+    ],
+    "categorias_para_associar": ["Comunicação"]
+  },
   "relatorio_final": null,
   "progress": { "currentStep": 1, "totalSteps": 2, "stepTitle": "Identificação de Desafios" } | null
 }

@@ -170,27 +170,8 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         {loginType === "funcionario" && (
           <>
             <div>
-              <Label htmlFor="email-func-login" className="text-neutral-400">
-                Email (opcional)
-              </Label>
-              <Input
-                id="email-func-login"
-                name="email-funcionario"
-                type="email"
-                placeholder="email@empresa.com"
-                className="bg-gray-800 border-gray-700 text-white"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="off"
-                data-form-type="other"
-                data-lpignore="true"
-                readOnly={!isReady}
-                onFocus={(e) => { if (isReady) e.target.removeAttribute('readonly'); }}
-              />
-            </div>
-            <div>
               <Label htmlFor="matricula-login" className="text-neutral-400">
-                Matrícula (opcional)
+                Matrícula
               </Label>
               <Input
                 id="matricula-login"
@@ -203,6 +184,24 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
                 autoComplete="off"
                 data-form-type="other"
                 data-lpignore="true"
+                readOnly={!isReady}
+                onFocus={(e) => { if (isReady) e.target.removeAttribute('readonly'); }}
+              />
+            </div>
+            <div className="text-center text-neutral-400 text-sm">ou</div>
+            <div>
+              <Label htmlFor="email-func-login" className="text-neutral-400">
+                Email
+              </Label>
+              <Input
+                id="email-func-login"
+                name="email-funcionario"
+                type="email"
+                placeholder="email@empresa.com"
+                className="bg-gray-800 border-gray-700 text-white"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="username"
                 readOnly={!isReady}
                 onFocus={(e) => { if (isReady) e.target.removeAttribute('readonly'); }}
               />

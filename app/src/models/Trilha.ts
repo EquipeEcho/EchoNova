@@ -43,6 +43,12 @@ const TrilhaSchema = new Schema(
       enum: ["Iniciante", "Intermediário", "Avançado"],
       required: true,
     },
+    // Categoria principal da trilha
+    categoria: {
+      type: String,
+      enum: ["Comunicação", "Gestão de Tempo", "Inovação", "Liderança", "Diversidade"],
+      required: true,
+    },
     // Módulos/Conteúdos da trilha
     modulos: [
       {

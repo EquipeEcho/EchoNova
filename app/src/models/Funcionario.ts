@@ -11,7 +11,33 @@ const FuncionarioSchema = new Schema(
 
     senha: { type: String, required: true },
 
-    trilhas: { type: [String], default: [] },
+    ultimaAlteracaoSenha: { type: Date, default: null }, // null = nunca alterada (ainda usa senha padrão)
+
+    trilhas: [{
+      trilha: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Trilha",
+      },
+      status: {
+        type: String,
+        // Temporariamente sem validação para correção de dados
+        default: "não_iniciado",
+      },
+      dataInicio: {
+        type: Date,
+      },
+    }],
+
+    trilhasConcluidas: [{
+      trilha: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Trilha",
+      },
+      dataConclusao: {
+        type: Date,
+        default: Date.now,
+      },
+    }],
 
     empresa: {
       type: mongoose.Schema.Types.ObjectId,
@@ -21,7 +47,10 @@ const FuncionarioSchema = new Schema(
 
     data_cadastro: { type: Date, default: Date.now },
   },
-  { timestamps: true }
+  { 
+    timestamps: true,
+    strictPopulate: false
+  }
 );
 
 // matricula única por empresa

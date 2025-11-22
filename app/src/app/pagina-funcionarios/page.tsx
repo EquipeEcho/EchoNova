@@ -16,6 +16,10 @@ interface Trilha {
   status: "não_iniciado" | "em_andamento" | "concluido";
   dataInicio?: string;
   dataConclusao?: string;
+  categoria?: string;
+  nivel?: string;
+  duracaoEstimada?: number;
+  thumbnail?: string;
 }
 
 interface Conquista {
@@ -51,14 +55,26 @@ interface FuncionarioData {
   cargo: string;
   empresa: string;
   trilhas: Trilha[];
+  trilhasConcluidas: TrilhaConcluida[];
   conquistas: Conquista[];
   microcursosConcluidos: Microcurso[];
   microcursosDisponiveis: MicrocursoDisponivel[];
 }
 
+interface TrilhaConcluida {
+  id: string;
+  nome: string;
+  descricao: string;
+  dataConclusao: string;
+  categoria?: string;
+  nivel?: string;
+  duracaoEstimada?: number;
+}
+
 const TABS = [
   "Perfil",
   "Trilhas",
+  "Histórico",
   "Microcursos",
   "Explorar Microcursos",
   "Alterar Senha",
@@ -82,135 +98,92 @@ export default function FuncionarioPage() {
     novaSenha: "",
     confirmarSenha: "",
   });
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordModalForm, setPasswordModalForm] = useState({
+    senhaAtual: "",
+    novaSenha: "",
+    confirmarSenha: "",
+  });
+
+  // Calcular estatísticas do dashboard
+  const trilhasConcluidas = funcionario?.trilhasConcluidas.length || 0;
+  const horasEstudadas = funcionario?.trilhasConcluidas.reduce((total, t) => total + (t.duracaoEstimada || 0), 0) || 0;
 
   useEffect(() => {
     const fetchFuncionario = async () => {
       try {
+        if (!user || user.tipo !== "funcionario") {
+          toast.error("Acesso não autorizado");
+          router.push("/");
+          return;
+        }
 
-        const data: FuncionarioData = {
-          nome: "João Silva",
-          email: "joao.silva@empresa.com",
-          matricula: "12345",
-          cargo: "Analista de Vendas",
-          empresa: "Empresa XYZ Ltda",
-          trilhas: [
-            {
-              id: "1",
-              nome: "Técnicas de Vendas Avançadas",
-              descricao: "Domine estratégias modernas de vendas consultivas",
-              progresso: 65,
-              status: "em_andamento",
-              dataInicio: "2025-10-01",
-            },
-            {
-              id: "2",
-              nome: "Atendimento ao Cliente",
-              descricao: "Aprenda a encantar seus clientes",
-              progresso: 100,
-              status: "concluido",
-              dataInicio: "2025-09-01",
-              dataConclusao: "2025-09-30",
-            },
-            {
-              id: "3",
-              nome: "Negociação Eficaz",
-              descricao: "Técnicas de negociação win-win",
-              progresso: 0,
-              status: "não_iniciado",
-            },
-          ],
+        // Busca dados reais do funcionário
+        const res = await fetch(`/api/funcionarios/${user.id}/trilhas`, {
+          credentials: "include",
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          toast.error(errorData.error || "Erro ao buscar dados");
+          router.push("/");
+          return;
+        }
+
+        const data = await res.json();
+        
+        const funcionarioData: FuncionarioData = {
+          nome: data.nome,
+          email: data.email,
+          matricula: data.matricula,
+          cargo: data.cargo,
+          empresa: data.empresa?.nome_empresa || user.empresaNome || "Empresa",
+          trilhas: (data.trilhas || []).map((t: any) => ({
+            id: t.trilha._id,
+            nome: t.trilha.nome,
+            descricao: t.trilha.descricao,
+            progresso: 0,
+            status: t.status === "em_andamento" ? "em_andamento" : "não_iniciado",
+            categoria: t.trilha.categoria,
+            nivel: t.trilha.nivel,
+            duracaoEstimada: t.trilha.duracaoEstimada,
+            thumbnail: t.trilha.thumbnail,
+            dataInicio: t.dataInicio,
+          })),
+          trilhasConcluidas: (data.trilhasConcluidas || []).map((tc: any) => ({
+            id: tc.trilha._id,
+            nome: tc.trilha.nome,
+            descricao: tc.trilha.descricao,
+            dataConclusao: tc.dataConclusao,
+            categoria: tc.trilha.categoria,
+            nivel: tc.trilha.nivel,
+            duracaoEstimada: tc.trilha.duracaoEstimada,
+          })),
+
           conquistas: [],
-          microcursosConcluidos: [
-            {
-              id: "m1",
-              titulo: "Argumentação de Valor",
-              categoria: "Vendas",
-              concluidoEm: "2025-09-12",
-              certificadoUrl: "#",
-            },
-            {
-              id: "m2",
-              titulo: "Gestão do Tempo",
-              categoria: "Produtividade",
-              concluidoEm: "2025-09-20",
-              certificadoUrl: "#",
-            },
-            {
-              id: "m3",
-              titulo: "Técnicas de Escuta Ativa",
-              categoria: "Atendimento",
-              concluidoEm: "2025-10-05",
-            },
-          ],
-          microcursosDisponiveis: [
-            {
-              id: "md1",
-              titulo: "Prospecção Digital",
-              descricao:
-                "Aprenda técnicas modernas de prospecção usando ferramentas digitais e redes sociais.",
-              categoria: "Vendas",
-              duracao: "45 min",
-              nivel: "intermediario",
-            },
-            {
-              id: "md2",
-              titulo: "Comunicação Assertiva",
-              descricao:
-                "Desenvolva habilidades de comunicação clara e efetiva no ambiente corporativo.",
-              categoria: "Soft Skills",
-              duracao: "30 min",
-              nivel: "iniciante",
-            },
-            {
-              id: "md3",
-              titulo: "Análise de Métricas de Vendas",
-              descricao:
-                "Entenda e utilize indicadores para melhorar seus resultados em vendas.",
-              categoria: "Análise",
-              duracao: "60 min",
-              nivel: "avancado",
-            },
-            {
-              id: "md4",
-              titulo: "Inteligência Emocional",
-              descricao:
-                "Aprenda a gerenciar suas emoções e desenvolver empatia nas relações profissionais.",
-              categoria: "Desenvolvimento Pessoal",
-              duracao: "40 min",
-              nivel: "iniciante",
-            },
-            {
-              id: "md5",
-              titulo: "Fechamento de Vendas",
-              descricao:
-                "Técnicas comprovadas para aumentar sua taxa de conversão e fechar mais negócios.",
-              categoria: "Vendas",
-              duracao: "50 min",
-              nivel: "intermediario",
-            },
-            {
-              id: "md6",
-              titulo: "Gestão de Conflitos",
-              descricao:
-                "Estratégias para lidar com situações difíceis e resolver conflitos de forma construtiva.",
-              categoria: "Liderança",
-              duracao: "35 min",
-              nivel: "intermediario",
-            },
-          ],
+          microcursosConcluidos: [],
+          microcursosDisponiveis: [],
         };
-        await new Promise((r) => setTimeout(r, 400));
-        setFuncionario(data);
+
+        setFuncionario(funcionarioData);
+
+        // Verificar se deve mostrar modal de alteração de senha
+        // Se ultimaAlteracaoSenha for null ou undefined, significa que nunca alterou a senha padrão
+        if (data.ultimaAlteracaoSenha == null) {
+          setShowPasswordModal(true);
+        }
       } catch (e: any) {
-        toast.error(e.message);
+        console.error("Erro ao buscar funcionário:", e);
+        toast.error(e.message || "Erro ao carregar dados");
+        router.push("/");
       } finally {
         setLoading(false);
       }
     };
-        if (user) {
+    if (user) {
       fetchFuncionario();
     }
-  }, [user]);
+  }, [user, router]);
 
   useEffect(() => {
     if (funcionario) {
@@ -304,6 +277,204 @@ export default function FuncionarioPage() {
     }
   };
 
+  const handleSavePasswordModal = async () => {
+    if (!passwordModalForm.novaSenha) {
+      toast.error("Informe a nova senha");
+      return;
+    }
+    if (passwordModalForm.novaSenha !== passwordModalForm.confirmarSenha) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+    if (passwordModalForm.novaSenha.length < 6) {
+      toast.error("A senha deve ter pelo menos 6 caracteres");
+      return;
+    }
+
+    try {
+      if (!user) return;
+
+      // Buscar dados atuais do funcionário para verificar se é primeira alteração
+      const trilhasRes = await fetch(`/api/funcionarios/${user.id}/trilhas`, {
+        credentials: "include",
+      });
+      
+      if (!trilhasRes.ok) {
+        toast.error("Erro ao verificar status da senha");
+        return;
+      }
+      
+      const funcionarioData = await trilhasRes.json();
+      const isFirstChange = funcionarioData.ultimaAlteracaoSenha === null;
+
+      const requestBody: any = {
+        novaSenha: passwordModalForm.novaSenha,
+      };
+
+      // Só incluir senhaAtual se não for a primeira alteração
+      if (!isFirstChange) {
+        requestBody.senhaAtual = passwordModalForm.senhaAtual || "";
+      }
+
+      const res = await fetch(`/api/funcionarios/${user.id}/change-password`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        toast.error(errorData.error || "Erro ao alterar senha");
+        return;
+      }
+
+      toast.success("Senha alterada com sucesso! Bem-vindo à plataforma.");
+      setShowPasswordModal(false);
+      setPasswordModalForm({
+        senhaAtual: "",
+        novaSenha: "",
+        confirmarSenha: "",
+      });
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao alterar senha");
+    }
+  };
+
+  const handleConcluirTrilha = async (trilhaId: string) => {
+    if (!user) return;
+
+    try {
+      const res = await fetch(
+        `/api/funcionarios/${user.id}/trilhas/${trilhaId}/concluir`,
+        {
+          method: "POST",
+          credentials: "include",
+        }
+      );
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        toast.error(errorData.error || "Erro ao concluir trilha");
+        return;
+      }
+
+      toast.success("Trilha concluída com sucesso! 🎉");
+
+      // Remove a trilha da lista e adiciona ao histórico
+      if (funcionario) {
+        const trilhaConcluida = funcionario.trilhas.find((t) => t.id === trilhaId);
+        if (trilhaConcluida) {
+          setFuncionario({
+            ...funcionario,
+            trilhas: funcionario.trilhas.filter((t) => t.id !== trilhaId),
+            trilhasConcluidas: [
+              ...funcionario.trilhasConcluidas,
+              {
+                id: trilhaConcluida.id,
+                nome: trilhaConcluida.nome,
+                descricao: trilhaConcluida.descricao,
+                dataConclusao: new Date().toISOString(),
+                categoria: trilhaConcluida.categoria,
+                nivel: trilhaConcluida.nivel,
+                duracaoEstimada: trilhaConcluida.duracaoEstimada,
+              },
+            ],
+          });
+        }
+      }
+    } catch (e: any) {
+      console.error("Erro ao concluir trilha:", e);
+      toast.error(e.message || "Erro ao concluir trilha");
+    }
+  };
+
+  const handleRefazerTrilha = async (trilhaId: string) => {
+    if (!user) return;
+
+    try {
+      const res = await fetch(
+        `/api/funcionarios/${user.id}/trilhas/${trilhaId}/refazer`,
+        {
+          method: "POST",
+          credentials: "include",
+        }
+      );
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        toast.error(errorData.error || "Erro ao refazer trilha");
+        return;
+      }
+
+      toast.success("Trilha adicionada novamente! Você pode refazê-la na aba Trilhas 📚");
+
+      // Recarrega os dados do funcionário
+      if (funcionario) {
+        const trilhaRefazer = funcionario.trilhasConcluidas.find((t) => t.id === trilhaId);
+        if (trilhaRefazer) {
+          setFuncionario({
+            ...funcionario,
+            trilhas: [
+              ...funcionario.trilhas,
+              {
+                id: trilhaRefazer.id,
+                nome: trilhaRefazer.nome,
+                descricao: trilhaRefazer.descricao,
+                progresso: 0,
+                status: "não_iniciado" as const,
+                categoria: trilhaRefazer.categoria,
+                nivel: trilhaRefazer.nivel,
+                duracaoEstimada: trilhaRefazer.duracaoEstimada,
+              },
+            ],
+            trilhasConcluidas: funcionario.trilhasConcluidas.filter((t) => t.id !== trilhaId),
+          });
+        }
+      }
+    } catch (e: any) {
+      console.error("Erro ao refazer trilha:", e);
+      toast.error(e.message || "Erro ao refazer trilha");
+    }
+  };
+
+  const handleIniciarTrilha = async (trilhaId: string) => {
+    if (!user) return;
+
+    try {
+      const res = await fetch(
+        `/api/funcionarios/${user.id}/trilhas/${trilhaId}/iniciar`,
+        {
+          method: "POST",
+          credentials: "include",
+        }
+      );
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        toast.error(errorData.error || "Erro ao iniciar trilha");
+        return;
+      }
+
+      toast.success("Trilha iniciada com sucesso! 🎯");
+
+      // Atualiza o status da trilha localmente
+      if (funcionario) {
+        setFuncionario({
+          ...funcionario,
+          trilhas: funcionario.trilhas.map((t) =>
+            t.id === trilhaId
+              ? { ...t, status: "em_andamento" as const, dataInicio: new Date().toISOString() }
+              : t
+          ),
+        });
+      }
+    } catch (e: any) {
+      console.error("Erro ao iniciar trilha:", e);
+      toast.error(e.message || "Erro ao iniciar trilha");
+    }
+  };
+
   if (loading)
     return (
       <div className="relative min-h-screen bg-linear-to-br from-gray-950 via-fuchsia-950 to-gray-900 flex items-center justify-center">
@@ -328,6 +499,70 @@ export default function FuncionarioPage() {
       <Ondas />
       <div className="relative z-10 max-w-7xl mx-auto px-2 py-15">
         <div className="bg-neutral-900/80 backdrop-blur-sm border border-neutral-700 rounded-2xl shadow-2xl p-6 md:p-10 lg:p-12">
+          {/* Dashboard */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold bg-linear-to-r from-fuchsia-400 to-pink-400 bg-clip-text text-transparent mb-6">
+              Bem-vindo, {funcionario?.nome}!
+            </h1>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm text-neutral-400">Trilhas Concluídas</p>
+                    <p className="text-2xl font-bold text-white">{trilhasConcluidas}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm text-neutral-400">Horas Estudadas</p>
+                    <p className="text-2xl font-bold text-white">{horasEstudadas}h</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm text-neutral-400">Trilhas em Andamento</p>
+                    <p className="text-2xl font-bold text-white">{funcionario?.trilhas.filter(t => t.status === "em_andamento").length || 0}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm text-neutral-400">Total de Trilhas</p>
+                    <p className="text-2xl font-bold text-white">{(funcionario?.trilhas.length || 0) + (funcionario?.trilhasConcluidas.length || 0)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Tabs */}
           <div className="flex flex-wrap gap-2 mb-8">
             {TABS.filter((t) => t !== "Alterar Senha").map((t) => (
@@ -483,9 +718,29 @@ export default function FuncionarioPage() {
                           {statusLabel(t.status)}
                         </span>
                       </div>
-                      <p className="text-sm text-neutral-400 mb-5 line-clamp-3">
+                      <p className="text-sm text-neutral-400 mb-3 line-clamp-3">
                         {t.descricao}
                       </p>
+                      
+                      {/* Info adicional da trilha */}
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {t.categoria && (
+                          <span className="text-xs px-2 py-1 rounded-full border border-fuchsia-700/40 text-fuchsia-300 bg-fuchsia-900/20">
+                            {t.categoria}
+                          </span>
+                        )}
+                        {t.nivel && (
+                          <span className="text-xs px-2 py-1 rounded-full border border-cyan-700/40 text-cyan-300 bg-cyan-900/20">
+                            {t.nivel}
+                          </span>
+                        )}
+                        {t.duracaoEstimada && (
+                          <span className="text-xs px-2 py-1 rounded-full border border-purple-700/40 text-purple-300 bg-purple-900/20">
+                            {t.duracaoEstimada}h
+                          </span>
+                        )}
+                      </div>
+
                       <div className="mb-5">
                         <div className="flex justify-between text-xs mb-1">
                           <span className="text-neutral-500">Progresso</span>
@@ -516,18 +771,29 @@ export default function FuncionarioPage() {
                           </div>
                         )}
                       </div>
-                      <Button
-                        className="w-full mt-5 bg-fuchsia-700 hover:bg-fuchsia-600 text-white text-sm"
-                        onClick={() =>
-                          router.push(`/funcionario/trilha/${t.id}`)
-                        }
-                      >
-                        {t.status === "não_iniciado"
-                          ? "Iniciar"
-                          : t.status === "concluido"
-                          ? "Revisar"
-                          : "Continuar"}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          className="flex-1 bg-fuchsia-700 hover:bg-fuchsia-600 text-white text-sm"
+                          onClick={async () => {
+                            if (t.status === "não_iniciado") {
+                              await handleIniciarTrilha(t.id);
+                            }
+                            router.push(`/funcionario/trilha/${t.id}`);
+                          }}
+                        >
+                          {t.status === "não_iniciado"
+                            ? "Iniciar"
+                            : t.status === "concluido"
+                            ? "Revisar"
+                            : "Continuar"}
+                        </Button>
+                        <Button
+                          className="flex-1 bg-green-700 hover:bg-green-600 text-white text-sm"
+                          onClick={() => handleConcluirTrilha(t.id)}
+                        >
+                          Concluir
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -535,7 +801,78 @@ export default function FuncionarioPage() {
             </div>
           )}
 
-         
+          {tab === "Histórico" && (
+            <div>
+              <h2 className="text-2xl font-semibold text-white mb-6 text-center">
+                Trilhas Concluídas
+              </h2>
+              {funcionario.trilhasConcluidas.length === 0 ? (
+                <Empty text="Você ainda não concluiu nenhuma trilha." />
+              ) : (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {funcionario.trilhasConcluidas.map((t) => (
+                    <div
+                      key={t.id}
+                      className="group bg-neutral-900/70 border border-green-700/50 rounded-xl p-5 hover:border-green-500 transition"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="text-white font-semibold text-lg pr-2">
+                          {t.nome}
+                        </h3>
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-green-500/20 text-green-400 border-green-600/40">
+                          ✓ Concluída
+                        </span>
+                      </div>
+                      <p className="text-sm text-neutral-400 mb-3 line-clamp-3">
+                        {t.descricao}
+                      </p>
+                      
+                      {/* Info adicional da trilha */}
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {t.categoria && (
+                          <span className="text-xs px-2 py-1 rounded-full border border-fuchsia-700/40 text-fuchsia-300 bg-fuchsia-900/20">
+                            {t.categoria}
+                          </span>
+                        )}
+                        {t.nivel && (
+                          <span className="text-xs px-2 py-1 rounded-full border border-cyan-700/40 text-cyan-300 bg-cyan-900/20">
+                            {t.nivel}
+                          </span>
+                        )}
+                        {t.duracaoEstimada && (
+                          <span className="text-xs px-2 py-1 rounded-full border border-purple-700/40 text-purple-300 bg-purple-900/20">
+                            {t.duracaoEstimada}h
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="mb-4 text-xs text-green-400">
+                        <span className="font-semibold">Concluída em:</span>{" "}
+                        {new Date(t.dataConclusao).toLocaleDateString("pt-BR")}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          className="flex-1 bg-fuchsia-700 hover:bg-fuchsia-600 text-white text-sm"
+                          onClick={() =>
+                            router.push(`/funcionario/trilha/${t.id}`)
+                          }
+                        >
+                          Ver Conteúdo
+                        </Button>
+                        <Button
+                          className="flex-1 bg-cyan-700 hover:bg-cyan-600 text-white text-sm"
+                          onClick={() => handleRefazerTrilha(t.id)}
+                        >
+                          Refazer
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {tab === "Microcursos" && (
             <div>
@@ -691,6 +1028,80 @@ export default function FuncionarioPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Modal Obrigatório de Alteração de Senha */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl w-full max-w-md mx-4">
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-10 w-10 text-amber-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-4">
+                Alteração de Senha Necessária
+              </h2>
+              <p className="text-neutral-300 mb-6 leading-relaxed">
+                Para sua segurança, é necessário alterar a senha padrão antes de continuar.
+                Escolha uma senha forte e segura para proteger sua conta.
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-300 mb-2">
+                    Nova Senha
+                  </label>
+                  <PasswordInput
+                    value={passwordModalForm.novaSenha}
+                    onChange={(e) =>
+                      setPasswordModalForm({ ...passwordModalForm, novaSenha: e.target.value })
+                    }
+                    placeholder="Digite sua nova senha"
+                    className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-amber-600 transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-neutral-300 mb-2">
+                    Confirmar Nova Senha
+                  </label>
+                  <PasswordInput
+                    value={passwordModalForm.confirmarSenha}
+                    onChange={(e) =>
+                      setPasswordModalForm({ ...passwordModalForm, confirmarSenha: e.target.value })
+                    }
+                    placeholder="Confirme sua nova senha"
+                    className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-amber-600 transition"
+                  />
+                </div>
+                <Button
+                  onClick={handleSavePasswordModal}
+                  className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-lg transition-all duration-300 shadow-lg"
+                >
+                  Alterar Senha e Continuar
+                </Button>
+              </div>
+              <p className="text-xs text-neutral-500 mt-4">
+                A senha deve ter pelo menos 6 caracteres
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="fixed bottom-0 left-0 w-full -z-10 opacity-20">
+        <Ondas />
       </div>
     </div>
   );

@@ -19,9 +19,9 @@ export function CadastroLoginPag() {
   async function handleLogin(_e: React.FormEvent) {
   
   // Captura o estado atual dos campos
-  const emailValue = loginEmail
-  const cnpjValue = loginCNPJ
-  const senhaValue = loginSenha
+  const emailValue = loginEmail;
+  const cnpjValue = loginCNPJ;
+  const senhaValue = loginSenha;
 
   console.log("📤 Enviando login:", {
     email: emailValue,
@@ -39,10 +39,33 @@ export function CadastroLoginPag() {
     return;
   }
 
+  // Validação de senha forte
+  if (senhaValue.length < 8) {
+    toast.error("A senha deve ter no mínimo 8 caracteres.");
+    return;
+  }
+  if (!/[A-Z]/.test(senhaValue)) {
+    toast.error("A senha deve conter pelo menos uma letra maiúscula.");
+    return;
+  }
+  if (!/[a-z]/.test(senhaValue)) {
+    toast.error("A senha deve conter pelo menos uma letra minúscula.");
+    return;
+  }
+  if (!/[0-9]/.test(senhaValue)) {
+    toast.error("A senha deve conter pelo menos um número.");
+    return;
+  }
+  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(senhaValue)) {
+    toast.error("A senha deve conter pelo menos um símbolo.");
+    return;
+  }
+
   try {
     const res = await fetch("/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({
         email: emailValue,
         cnpj: cnpjValue,

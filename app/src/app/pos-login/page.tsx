@@ -20,8 +20,9 @@ export default function PosLoginPage() {
   const router = useRouter();
   const { user: authUser, logout } = useAuthStore();
 
-  // --- NOVO ESTADO ---
-  // Armazena o ID do último diagnóstico, se existir.
+  // Estado para trilhas do funcionário
+  // (removido, pois não existia antes da sessão)
+  // Estado para diagnóstico (apenas para empresa)
   const [ultimoDiagnosticoId, setUltimoDiagnosticoId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,16 +31,16 @@ export default function PosLoginPage() {
     const checkAuthState = async () => {
       if (redirected || isLoggingOut) return;
 
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
       const currentState = useAuthStore.getState();
 
       if (!authUser && !currentState.user) {
-        const localStorageData = localStorage.getItem('auth-storage');
+        const localStorageData = localStorage.getItem("auth-storage");
         if (localStorageData) {
           try {
             const parsedData = JSON.parse(localStorageData);
             if (parsedData.state?.user) {
-              await new Promise(resolve => setTimeout(resolve, 100));
+              await new Promise((resolve) => setTimeout(resolve, 100));
               const updatedState = useAuthStore.getState();
               if (!updatedState.user) {
                 redirected = true;
@@ -72,14 +73,25 @@ export default function PosLoginPage() {
         return;
       }
 
+      // Se for funcionário, redireciona para página de funcionários
+      if (user.tipo === "funcionario") {
+        redirected = true;
+        router.push("/pagina-funcionarios");
+        return;
+      }
+
+      // Se for empresa, busca empresa e diagnóstico
       try {
-        // --- LÓGICA DE BUSCA DOS DOIS DADOS EM PARALELO ---
+        const empresaId = user.empresaId || user.id;
         const [empresaRes, ultimoDiagRes] = await Promise.all([
-          fetch(`/api/empresa/${user.id}`),
-          fetch(`/api/diagnostico-aprofundado/ultimo`) // Busca o último diagnóstico
+          fetch(`/api/empresa/${empresaId}`, {
+            credentials: "include",
+          }),
+          fetch(`/api/diagnostico-aprofundado/ultimo`, {
+            credentials: "include",
+          }),
         ]);
 
-        // Processa dados da empresa
         if (!empresaRes.ok) {
           const errorData = await empresaRes.json();
           throw new Error(errorData.error || "Erro ao buscar dados do usuário");
@@ -88,24 +100,19 @@ export default function PosLoginPage() {
         const userData = {
           nome: empresaData.empresa.nome_empresa,
           email: empresaData.empresa.email,
-          plano: empresaData.empresa.planoAtivo || "Nenhum"
+          plano: empresaData.empresa.planoAtivo || "Nenhum",
         };
         setUserInfo(userData);
 
-        // Processa o resultado do último diagnóstico
         if (ultimoDiagRes.ok) {
           const diagData = await ultimoDiagRes.json();
-          setUltimoDiagnosticoId(diagData._id); // Salva o ID do diagnóstico
+          setUltimoDiagnosticoId(diagData._id);
         } else if (ultimoDiagRes.status === 404) {
-          console.log("Nenhum diagnóstico aprofundado anterior encontrado.");
-          setUltimoDiagnosticoId(null); // Garante que o estado é nulo
+          setUltimoDiagnosticoId(null);
         }
-
       } catch (error) {
         console.error("Erro ao carregar informações da página:", error);
         if (!redirected) {
-          // Apenas redireciona se o erro for crítico (como falha ao buscar dados da empresa)
-          // Se for só o 404 do diagnóstico, a página deve carregar normalmente.
           if ((error as Error).message.includes("dados do usuário")) {
             redirected = true;
             router.push("/");
@@ -129,7 +136,6 @@ export default function PosLoginPage() {
   const handleStartDiagnostico = () => {
     router.push("/diagnostico-aprofundado");
   };
-
 
   // --- NOVA FUNÇÃO ---
   // Navega para a página de resultados do último diagnóstico.
@@ -233,10 +239,14 @@ export default function PosLoginPage() {
             {userInfo && (
               <div className="hidden md:flex items-center gap-2 bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700/50 cursor-pointer hover:bg-slate-700/50 transition-colors">
                 <span className="text-gray-300 text-sm">Plano:</span>
-                <div className={`px-3 py-1 rounded-full bg-linear-to-r ${getPlanoColor(userInfo?.plano || "")} text-white text-xs font-bold flex items-center gap-1`}>
-                      <span>{getPlanoIcon(userInfo?.plano || "")}</span>
-                      <span>{userInfo?.plano || "Nenhum"}</span>
-                    </div>
+                <div
+                  className={`px-3 py-1 rounded-full bg-linear-to-r ${getPlanoColor(
+                    userInfo?.plano || ""
+                  )} text-white text-xs font-bold flex items-center gap-1`}
+                >
+                  <span>{getPlanoIcon(userInfo?.plano || "")}</span>
+                  <span>{userInfo?.plano || "Nenhum"}</span>
+                </div>
               </div>
             )}
 
@@ -264,7 +274,11 @@ export default function PosLoginPage() {
                   <div className="px-4 py-2 border-b border-slate-700">
                     <div className="flex items-center gap-2">
                       <span className="text-gray-300 text-sm">Plano:</span>
-                      <div className={`px-2 py-0.5 rounded-full bg-linear-to-r ${getPlanoColor(userInfo?.plano || "")} text-white text-xs font-bold flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity`}>
+                      <div
+                        className={`px-2 py-0.5 rounded-full bg-linear-to-r ${getPlanoColor(
+                          userInfo?.plano || ""
+                        )} text-white text-xs font-bold flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity`}
+                      >
                         <span>{getPlanoIcon(userInfo?.plano || "")}</span>
                         <span>{userInfo?.plano || "Nenhum"}</span>
                       </div>
@@ -275,8 +289,19 @@ export default function PosLoginPage() {
                     onClick={() => router.push("/perfil")}
                     className="w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
                   >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
                     </svg>
                     Meu Perfil
                   </button>
@@ -285,10 +310,21 @@ export default function PosLoginPage() {
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
                   >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                      />
                     </svg>
-                      Sair
+                    Sair
                   </button>
                 </div>
               )}
@@ -304,17 +340,22 @@ export default function PosLoginPage() {
           </h1>
 
           <p className="relative z-20 text-sm xs:text-base sm:text-lg md:text-xl text-gray-200 max-w-xs xs:max-w-sm sm:max-w-2xl md:max-w-3xl mb-8 sm:mb-10 md:mb-12 leading-relaxed animate-fade-in-up-delay poetic-text text-center mx-auto">
-            Com base no seu plano {userInfo?.plano}, você tem acesso ao diagnóstico aprofundado.
-            Este processo irá analisar detalhadamente os pontos críticos da sua empresa para
-            oferecer recomendações personalizadas.
+            Com base no seu plano {userInfo?.plano}, você tem acesso ao
+            diagnóstico aprofundado. Este processo irá analisar detalhadamente
+            os pontos críticos da sua empresa para oferecer recomendações
+            personalizadas.
           </p>
 
           <div className="bg-slate-800/80 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/40 shadow-xl max-w-2xl mx-auto mb-12">
-            <h3 className="text-xl font-bold text-white mb-4">O que esperar do diagnóstico:</h3>
+            <h3 className="text-xl font-bold text-white mb-4">
+              O que esperar do diagnóstico:
+            </h3>
             <ul className="text-gray-300 text-left space-y-2 mb-6">
               <li className="flex items-start">
                 <span className="text-fuchsia-500 mr-2">•</span>
-                <span>Análise detalhada em múltiplas dimensões do seu negócio</span>
+                <span>
+                  Análise detalhada em múltiplas dimensões do seu negócio
+                </span>
               </li>
               <li className="flex items-start">
                 <span className="text-fuchsia-500 mr-2">•</span>
@@ -322,7 +363,9 @@ export default function PosLoginPage() {
               </li>
               <li className="flex items-start">
                 <span className="text-fuchsia-500 mr-2">•</span>
-                <span>Recomendações personalizadas de trilhas de aprendizagem</span>
+                <span>
+                  Recomendações personalizadas de trilhas de aprendizagem
+                </span>
               </li>
               <li className="flex items-start">
                 <span className="text-fuchsia-500 mr-2">•</span>
@@ -341,24 +384,36 @@ export default function PosLoginPage() {
 
               {/* Botão Dashboard RH */}
               <Link href="/dashboard-cliente" className="w-full">
-                <Button 
+                <Button
                   variant="outline"
                   className="w-full border-cyan-500 text-cyan-500 hover:bg-cyan-500/10 hover:text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
                 >
-                  <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  <svg
+                    className="mr-2 h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
                   </svg>
                   Acessar Dashboard RH
                 </Button>
               </Link>
 
-              {/* Botão Gerenciar Funcionários */}
-              <Button
-                onClick={() => router.push("/gerenciar-funcionarios")}
-                className="w-full bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
-              >
-                Gerenciar Funcionários
-              </Button>
+              {/* Botão Gerenciar Funcionários - Condicional */}
+              {ultimoDiagnosticoId && (
+                <Button
+                  onClick={() => router.push("/gerenciar-funcionarios")}
+                  className="w-full bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
+                >
+                  Gerenciar Funcionários
+                </Button>
+              )}
 
               {/* Botão Ver Último Relatório - Condicional */}
               {ultimoDiagnosticoId && (
@@ -372,14 +427,6 @@ export default function PosLoginPage() {
                 </Button>
               )}
             </div>
-
-          </div>
-
-          <div className="text-gray-400 text-sm max-w-2xl mx-auto">
-            <p>
-              O diagnóstico aprofundado leva em média 15-20 minutos para ser concluído.
-              Recomendamos que você reserve um tempo tranquilo para responder com atenção.
-            </p>
           </div>
         </div>
 
@@ -387,6 +434,6 @@ export default function PosLoginPage() {
           <Ondas />
         </div>
       </section>
-    </main >
+    </main>
   );
 }

@@ -231,7 +231,9 @@ export default function DashboardPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch("/api/admin/empresas/por-plano");
+        const response = await fetch("/api/admin/empresas/por-plano", {
+          credentials: 'include'
+        });
         const data = await response.json();
 
         const res = await fetch("/api/total-diagnosticos");

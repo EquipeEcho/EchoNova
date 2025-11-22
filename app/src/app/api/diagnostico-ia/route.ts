@@ -8,6 +8,8 @@ import { getChatProvider } from "@/lib/ai/providerFactory";
 import { promptDiagnosticoAprofundado, getTrilhasParaPrompt } from "@/lib/prompts";
 import AiSession from "@/models/AiSession";
 import DiagnosticoAprofundado from "@/models/DiagnosticoAprofundado";
+import Empresa from "@/models/Empresa";
+import Trilha from "@/models/Trilha";
 import type { HistoryMessage, IaResponse } from "@/lib/ai/ChatProvider";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);
@@ -98,21 +100,64 @@ export async function POST(req: NextRequest) {
       const structuredData = (iaResponse as any).dados_coletados
         ?? (iaResponse as any).dadosColetados
         ?? {};
-      
+      // Garante que o relatório final nunca seja nulo ou vazio
+      const finalReport = iaResponse.relatorio_final || "Relatório não gerado. Entre em contato com o suporte.";
       const novoDiagnostico = new DiagnosticoAprofundado({
-        // --- CORREÇÃO (Causa Raiz do Erro 404) ---
-        // Convertemos explicitamente a string do ID para um ObjectId do Mongoose.
-        // Isso garante que a referência seja salva corretamente no banco.
         empresa: new mongoose.Types.ObjectId(empresaId),
         sessionId: session._id.toString(),
         conversationHistory: session.conversationHistory,
         structuredData,
-        finalReport: iaResponse.relatorio_final,
+        finalReport,
       });
       await novoDiagnostico.save();
-      
       // Armazenamos o ID para retornar ao frontend
       finalDiagnosticId = novoDiagnostico._id.toString();
+
+      // --- Associação automática de categorias e trilhas à empresa ---
+      try {
+        const empresaDoc = await Empresa.findById(empresaId);
+        if (empresaDoc) {
+          const dados = structuredData as any;
+          const trilhasRec: Array<any> = dados?.trilhas_recomendadas || dados?.trilhasRecomendadas || [];
+          const categoriasSugeridas: string[] = dados?.categorias_para_associar || dados?.categoriasParaAssociar || [];
+
+          // Buscar trilhas por nome para obter categorias e IDs
+          const trilhasEncontradas: Array<{ _id: any; categoria: string; nome: string }> = [];
+          for (const rec of trilhasRec) {
+            if (!rec?.trilha_nome && !rec?.trilhaNome) continue;
+            const nomeTrilha = rec.trilha_nome || rec.trilhaNome;
+            const trilhaDB = await Trilha.findOne({ nome: nomeTrilha }).select("_id categoria nome");
+            if (trilhaDB) {
+              trilhasEncontradas.push({ _id: trilhaDB._id, categoria: trilhaDB.categoria, nome: trilhaDB.nome });
+            }
+          }
+
+          // Consolidar categorias a associar
+          const categoriasDeTrilhas = Array.from(new Set(trilhasEncontradas.map(t => t.categoria)));
+          const todasCategorias = Array.from(new Set([...(categoriasSugeridas || []), ...categoriasDeTrilhas]));
+
+          // Adicionar categorias novas evitando duplicatas
+          const existentes = new Set((empresaDoc.categoriasAssociadas || []).map((c: any) => c.categoria));
+          for (const cat of todasCategorias) {
+            if (!existentes.has(cat)) {
+              empresaDoc.categoriasAssociadas.push({ categoria: cat, motivoAssociacao: "Recomendação da IA" });
+            }
+          }
+
+          // Adicionar trilhas associadas evitando duplicatas
+          const trilhasExistentes = new Set((empresaDoc.trilhasAssociadas || []).map((e: any) => String(e.trilha)));
+          for (const t of trilhasEncontradas) {
+            if (!trilhasExistentes.has(String(t._id))) {
+              empresaDoc.trilhasAssociadas.push({ trilha: t._id, origem: "IA", motivoAssociacao: "Recomendação da IA" });
+            }
+          }
+
+          await empresaDoc.save();
+          console.log(`MCP: Empresa ${empresaId} associada a ${todasCategorias.length} categorias e ${trilhasEncontradas.length} trilhas.`);
+        }
+      } catch (assocErr) {
+        console.warn("Associação automática de categorias/trilhas falhou:", assocErr);
+      }
 
       await AiSession.findByIdAndDelete(session._id);
       console.log(`MCP: Sessão temporária ${session._id} removida.`);

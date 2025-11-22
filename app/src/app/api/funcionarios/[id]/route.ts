@@ -8,12 +8,12 @@ import bcrypt from "bcryptjs";
 // =======================================
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
 
-    const id = params.id;
+    const { id } = await params;
 
     const { searchParams } = new URL(req.url);
     const empresaId = searchParams.get("empresaId");
@@ -34,13 +34,23 @@ export async function PUT(
       "matricula",
       "status",
       "senha",
+      "trilhas",
     ];
 
     const updates: any = {};
 
     for (const campo of camposPermitidos) {
       if (campo !== "senha" && body[campo] !== undefined) {
-        updates[campo] = body[campo];
+        if (campo === "trilhas") {
+          // Transforma array de strings em objetos embedded
+          updates[campo] = (body[campo] || []).map((trilhaId: string) => ({
+            trilha: trilhaId,
+            status: "pendente",
+            dataInicio: null
+          }));
+        } else {
+          updates[campo] = body[campo];
+        }
       }
     }
 
@@ -52,7 +62,7 @@ export async function PUT(
       { _id: id, empresa: empresaId },
       updates,
       { new: true }
-    );
+    ).populate('trilhas', 'nome descricao');
 
     if (!funcionario) {
       return NextResponse.json(
@@ -100,12 +110,12 @@ export async function PUT(
 // =======================================
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
 
-    const id = params.id;
+    const { id } = await params;
 
     const { searchParams } = new URL(req.url);
     const empresaId = searchParams.get("empresaId");

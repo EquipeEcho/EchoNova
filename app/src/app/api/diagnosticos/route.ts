@@ -47,6 +47,58 @@ function calcularEstagio(media: number): string {
   return "Inicial";
 }
 
+function classificarLead(
+  perfil: { empresa: string; email: string; cnpj: string; setor: string; porte: string; setorOutro?: string },
+  dimensoesSelecionadas: string[],
+  respostasDimensoes: Record<string, Record<string, string>>
+): "frio" | "morno" | "quente" {
+  // Critérios para classificação de leads:
+  // QUENTE: Empresas que mostram urgência e necessidade de soluções (muitas respostas negativas)
+  // MORNO: Empresas com algumas necessidades identificadas
+  // FRIO: Empresas que estão bem ou não mostram necessidades claras
+
+  let pontosUrgencia = 0;
+  let totalPerguntas = 0;
+
+  // Analisa respostas negativas (opções 3 e 4 indicam problemas)
+  for (const dimensao of dimensoesSelecionadas) {
+    const respostas = respostasDimensoes[dimensao];
+    if (!respostas) continue;
+
+    for (const resposta of Object.values(respostas)) {
+      totalPerguntas++;
+      // Respostas "p*-3" e "p*-4" indicam problemas (pontuações 2 e 1)
+      if (resposta.includes('-3') || resposta.includes('-4')) {
+        pontosUrgencia += 2; // Peso maior para problemas graves
+      } else if (resposta.includes('-2')) {
+        pontosUrgencia += 1; // Peso médio para problemas moderados
+      }
+    }
+  }
+
+  // Critérios adicionais baseados no perfil
+  const setorTecnologico = ['tecnologia', 'informática', 'software'].some(s =>
+    perfil.setor.toLowerCase().includes(s) || (perfil.setorOutro || '').toLowerCase().includes(s)
+  );
+
+  const porteGrande = ['grande', '200'].some(p => perfil.porte.toLowerCase().includes(p));
+
+  // Bônus para setores tecnológicos e empresas maiores (mais propensos a investir)
+  if (setorTecnologico) pontosUrgencia += 1;
+  if (porteGrande) pontosUrgencia += 1;
+
+  // Classificação baseada nos pontos de urgência
+  const percentualProblemas = totalPerguntas > 0 ? (pontosUrgencia / totalPerguntas) * 100 : 0;
+
+  if (percentualProblemas >= 60 || pontosUrgencia >= 8) {
+    return "quente"; // Muitos problemas = alta urgência = lead quente
+  } else if (percentualProblemas >= 30 || pontosUrgencia >= 4) {
+    return "morno"; // Alguns problemas = interesse moderado = lead morno
+  } else {
+    return "frio"; // Poucos problemas = baixa urgência = lead frio
+  }
+}
+
 async function processarResultados(
   dimensoesSelecionadas: string[],
   respostasDimensoes: Record<string, Record<string, string>>,
@@ -191,6 +243,15 @@ export async function POST(req: Request) {
 
     console.log('Resultados processados:', resultadosProcessados);
 
+    // Classificar o lead baseado nas respostas
+    const leadScore = classificarLead(
+      dados.perfil,
+      dados.dimensoesSelecionadas,
+      dados.respostasDimensoes
+    );
+
+    console.log('Lead classificado como:', leadScore);
+
     // CRIAÇÃO DO DIAGNÓSTico COM O OBJETO 'perfil' SIMPLIFICADO
     const novoDiagnostico = await Diagnostico.create({
       empresa: empresa._id,
@@ -199,6 +260,7 @@ export async function POST(req: Request) {
       respostasDimensoes: dados.respostasDimensoes,
       resultados: resultadosProcessados,
       status: "concluido",
+      leadScore: leadScore, // Classificação do lead
       dataProcessamento: new Date(),
     });
     console.log(`Novo diagnóstico criado com ID: ${novoDiagnostico._id}`);
