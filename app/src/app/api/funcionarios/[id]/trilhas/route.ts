@@ -22,7 +22,7 @@ export async function GET(
     // Busca funcionário e popula trilhas e empresa
     const funcionario = await Funcionario.findById(id)
       .populate({
-        path: "trilhas",
+        path: "trilhas.trilha",
         model: Trilha,
       })
       .populate({

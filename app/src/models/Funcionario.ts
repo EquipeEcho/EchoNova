@@ -20,8 +20,8 @@ const FuncionarioSchema = new Schema(
       },
       status: {
         type: String,
-        enum: ["pendente", "em_andamento"],
-        default: "pendente",
+        // Temporariamente sem validação para correção de dados
+        default: "não_iniciado",
       },
       dataInicio: {
         type: Date,

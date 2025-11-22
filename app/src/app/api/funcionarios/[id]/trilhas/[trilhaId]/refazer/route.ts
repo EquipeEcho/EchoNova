@@ -41,7 +41,7 @@ export async function POST(
 
     // Verifica se a trilha já não está ativa
     const jaAtiva = funcionario.trilhas.some(
-      (t: any) => t.toString() === trilhaId
+      (t: any) => t.trilha.toString() === trilhaId
     );
 
     if (jaAtiva) {
@@ -51,8 +51,21 @@ export async function POST(
       );
     }
 
+    // Remove a trilha do histórico de concluídas
+    const trilhaConcluidaIndex = funcionario.trilhasConcluidas?.findIndex(
+      (tc: any) => tc.trilha.toString() === trilhaId
+    );
+
+    if (trilhaConcluidaIndex !== undefined && trilhaConcluidaIndex >= 0) {
+      funcionario.trilhasConcluidas.splice(trilhaConcluidaIndex, 1);
+    }
+
     // Adiciona a trilha de volta às trilhas ativas
-    funcionario.trilhas.push(trilhaId);
+    funcionario.trilhas.push({
+      trilha: trilhaId,
+      status: "não_iniciado",
+      dataInicio: null
+    });
     await funcionario.save();
 
     return NextResponse.json({

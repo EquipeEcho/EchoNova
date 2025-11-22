@@ -29,13 +29,27 @@ export async function POST(
 
     // Verifica se a trilha está atribuída ao funcionário
     const trilhaIndex = funcionario.trilhas.findIndex(
-      (t: any) => t.toString() === trilhaId
+      (t: any) => t.trilha.toString() === trilhaId
     );
 
     if (trilhaIndex === -1) {
       return NextResponse.json(
         { error: "Trilha não encontrada nas atribuições do funcionário" },
         { status: 404 }
+      );
+    }
+
+    // CORREÇÃO TEMPORÁRIA: Se o status for "pendente", corrigir para "não_iniciado"
+    if (funcionario.trilhas[trilhaIndex].status === "pendente") {
+      funcionario.trilhas[trilhaIndex].status = "não_iniciado";
+    }
+
+    // Verifica se a trilha está em andamento
+    const trilhaAtiva = funcionario.trilhas[trilhaIndex];
+    if (trilhaAtiva.status !== "em_andamento") {
+      return NextResponse.json(
+        { error: "A trilha deve estar em andamento para ser concluída" },
+        { status: 400 }
       );
     }
 

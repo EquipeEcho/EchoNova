@@ -1,65 +1,66 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-const TrilhaSchema = new mongoose.Schema({
+const FuncionarioSchema = new mongoose.Schema({
   nome: { type: String, required: true },
-  categoria: {
-    type: String,
-    enum: ["Comunicação", "Gestão de Tempo", "Inovação", "Liderança", "Diversidade"],
-    required: true,
-  },
-  status: {
-    type: String,
-    enum: ["ativa", "inativa", "rascunho"],
-    default: "ativa",
-  },
+  email: { type: String, required: true },
+  cargo: { type: String, required: true },
+  matricula: { type: String, required: true },
+  senha: { type: String, required: true },
+  ultimaAlteracaoSenha: { type: Date, default: null },
+  trilhas: [{
+    trilha: { type: mongoose.Schema.Types.ObjectId, ref: "Trilha" },
+    status: { type: String, enum: ["não_iniciado", "em_andamento", "pendente"], default: "não_iniciado" },
+    dataInicio: { type: Date }
+  }],
+  trilhasConcluidas: [{
+    trilha: { type: mongoose.Schema.Types.ObjectId, ref: "Trilha" },
+    dataConclusao: { type: Date, default: Date.now }
+  }],
+  empresa: { type: mongoose.Schema.Types.ObjectId, ref: "Empresa", required: true },
+  data_cadastro: { type: Date, default: Date.now }
 }, { timestamps: true });
 
-const Trilha = mongoose.models.Trilha || mongoose.model("Trilha", TrilhaSchema);
+const Funcionario = mongoose.models.Funcionario || mongoose.model("Funcionario", FuncionarioSchema);
 
-async function checkTrilhasSemCategoria() {
+async function fixFuncionarioStatus() {
   try {
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/echonova');
 
-    // Buscar trilhas onde categoria é null, undefined, vazia ou não está no enum
-    const trilhasSemCategoria = await Trilha.find({
-      $or: [
-        { categoria: null },
-        { categoria: undefined },
-        { categoria: '' },
-        { categoria: { $nin: ['Comunicação', 'Gestão de Tempo', 'Inovação', 'Liderança', 'Diversidade'] } }
-      ]
-    }).select('nome categoria status createdAt');
+    console.log('=== CORRIGINDO STATUS DOS FUNCIONÁRIOS ===');
 
-    console.log('=== TRILHAS SEM CATEGORIA VÁLIDA ===');
-    console.log('Encontradas:', trilhasSemCategoria.length);
+    // Buscar funcionários com status "pendente"
+    const funcionariosComPendente = await Funcionario.find({
+      'trilhas.status': 'pendente'
+    });
 
-    if (trilhasSemCategoria.length > 0) {
-      trilhasSemCategoria.forEach((trilha, index) => {
-        console.log(`${index + 1}. "${trilha.nome}"`);
-        console.log(`   - Categoria atual: "${trilha.categoria}"`);
-        console.log(`   - Status: ${trilha.status}`);
-        console.log(`   - Criado em: ${trilha.createdAt}`);
-        console.log('');
-      });
-    } else {
-      console.log('✅ Nenhuma trilha sem categoria encontrada.');
+    console.log(`Encontrados ${funcionariosComPendente.length} funcionários com status "pendente"`);
+
+    let totalCorrigidos = 0;
+
+    for (const funcionario of funcionariosComPendente) {
+      let changed = false;
+
+      for (const trilha of funcionario.trilhas) {
+        if (trilha.status === 'pendente') {
+          console.log(`Corrigindo funcionário ${funcionario._id}: ${trilha.status} → não_iniciado`);
+          trilha.status = 'não_iniciado';
+          changed = true;
+          totalCorrigidos++;
+        }
+      }
+
+      if (changed) {
+        await funcionario.save();
+      }
     }
 
-    // Também vamos ver todas as categorias existentes
-    const todasCategorias = await Trilha.distinct('categoria');
-    console.log('=== TODAS AS CATEGORIAS EXISTENTES ===');
-    console.log(todasCategorias);
+    console.log(`\\n✅ Correção concluída!`);
+    console.log(`- Status corrigidos: ${totalCorrigidos}`);
 
-    // Estatísticas por categoria
-    console.log('\\n=== ESTATÍSTICAS POR CATEGORIA ===');
-    for (const cat of ['Comunicação', 'Gestão de Tempo', 'Inovação', 'Liderança', 'Diversidade']) {
-      const count = await Trilha.countDocuments({ categoria: cat });
-      console.log(`${cat}: ${count} trilha(s)`);
-    }
-
-    const totalTrilhas = await Trilha.countDocuments();
-    console.log(`\\nTotal de trilhas: ${totalTrilhas}`);
+    // Verificar se ainda existem
+    const restantes = await Funcionario.countDocuments({ 'trilhas.status': 'pendente' });
+    console.log(`- Status "pendente" restantes: ${restantes}`);
 
     process.exit(0);
   } catch (error) {
@@ -68,4 +69,4 @@ async function checkTrilhasSemCategoria() {
   }
 }
 
-checkTrilhasSemCategoria();
+fixFuncionarioStatus();

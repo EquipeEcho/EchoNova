@@ -82,8 +82,8 @@ export async function POST(req: Request) {
         // já é subdoc; garantir status
         const idStr = String(asAny.trilha);
         if (!vistoAtivo.has(idStr)) {
-          if (!asAny.status || !["pendente", "em_andamento"].includes(asAny.status)) {
-            asAny.status = asAny.status === "iniciado" ? "em_andamento" : "pendente";
+          if (!asAny.status || !["não_iniciado", "em_andamento"].includes(asAny.status)) {
+            asAny.status = asAny.status === "iniciado" || asAny.status === "pendente" ? "não_iniciado" : "não_iniciado";
             report.funcionarios.statusFixed += 1;
           }
           novasTrilhasAtivas.push({ trilha: asAny.trilha, status: asAny.status, dataInicio: asAny.dataInicio });
@@ -93,7 +93,7 @@ export async function POST(req: Request) {
         // é ObjectId
         const idStr = String(asAny);
         if (!vistoAtivo.has(idStr)) {
-          novasTrilhasAtivas.push({ trilha: asAny, status: "pendente" });
+          novasTrilhasAtivas.push({ trilha: asAny, status: "não_iniciado" });
           vistoAtivo.add(idStr);
           report.funcionarios.trilhasConverted += 1;
         }

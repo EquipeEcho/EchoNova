@@ -105,6 +105,10 @@ export default function FuncionarioPage() {
     confirmarSenha: "",
   });
 
+  // Calcular estatísticas do dashboard
+  const trilhasConcluidas = funcionario?.trilhasConcluidas.length || 0;
+  const horasEstudadas = funcionario?.trilhasConcluidas.reduce((total, t) => total + (t.duracaoEstimada || 0), 0) || 0;
+
   useEffect(() => {
     const fetchFuncionario = async () => {
       try {
@@ -133,15 +137,16 @@ export default function FuncionarioPage() {
           cargo: data.cargo,
           empresa: data.empresa?.nome_empresa || user.empresaNome || "Empresa",
           trilhas: (data.trilhas || []).map((t: any) => ({
-            id: t._id,
-            nome: t.nome,
-            descricao: t.descricao,
+            id: t.trilha._id,
+            nome: t.trilha.nome,
+            descricao: t.trilha.descricao,
             progresso: 0,
-            status: "não_iniciado" as const,
-            categoria: t.categoria,
-            nivel: t.nivel,
-            duracaoEstimada: t.duracaoEstimada,
-            thumbnail: t.thumbnail,
+            status: t.status === "em_andamento" ? "em_andamento" : "não_iniciado",
+            categoria: t.trilha.categoria,
+            nivel: t.trilha.nivel,
+            duracaoEstimada: t.trilha.duracaoEstimada,
+            thumbnail: t.trilha.thumbnail,
+            dataInicio: t.dataInicio,
           })),
           trilhasConcluidas: (data.trilhasConcluidas || []).map((tc: any) => ({
             id: tc.trilha._id,
@@ -426,6 +431,42 @@ export default function FuncionarioPage() {
     }
   };
 
+  const handleIniciarTrilha = async (trilhaId: string) => {
+    if (!user) return;
+
+    try {
+      const res = await fetch(
+        `/api/funcionarios/${user.id}/trilhas/${trilhaId}/iniciar`,
+        {
+          method: "POST",
+          credentials: "include",
+        }
+      );
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Erro ao iniciar trilha");
+      }
+
+      toast.success("Trilha iniciada com sucesso! 🎯");
+
+      // Atualiza o status da trilha localmente
+      if (funcionario) {
+        setFuncionario({
+          ...funcionario,
+          trilhas: funcionario.trilhas.map((t) =>
+            t.id === trilhaId
+              ? { ...t, status: "em_andamento" as const, dataInicio: new Date().toISOString() }
+              : t
+          ),
+        });
+      }
+    } catch (e: any) {
+      console.error("Erro ao iniciar trilha:", e);
+      toast.error(e.message || "Erro ao iniciar trilha");
+    }
+  };
+
   if (loading)
     return (
       <div className="relative min-h-screen bg-linear-to-br from-gray-950 via-fuchsia-950 to-gray-900 flex items-center justify-center">
@@ -450,6 +491,70 @@ export default function FuncionarioPage() {
       <Ondas />
       <div className="relative z-10 max-w-7xl mx-auto px-2 py-15">
         <div className="bg-neutral-900/80 backdrop-blur-sm border border-neutral-700 rounded-2xl shadow-2xl p-6 md:p-10 lg:p-12">
+          {/* Dashboard */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold bg-linear-to-r from-fuchsia-400 to-pink-400 bg-clip-text text-transparent mb-6">
+              Bem-vindo, {funcionario?.nome}!
+            </h1>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm text-neutral-400">Trilhas Concluídas</p>
+                    <p className="text-2xl font-bold text-white">{trilhasConcluidas}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm text-neutral-400">Horas Estudadas</p>
+                    <p className="text-2xl font-bold text-white">{horasEstudadas}h</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm text-neutral-400">Trilhas em Andamento</p>
+                    <p className="text-2xl font-bold text-white">{funcionario?.trilhas.filter(t => t.status === "em_andamento").length || 0}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm text-neutral-400">Total de Trilhas</p>
+                    <p className="text-2xl font-bold text-white">{(funcionario?.trilhas.length || 0) + (funcionario?.trilhasConcluidas.length || 0)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Tabs */}
           <div className="flex flex-wrap gap-2 mb-8">
             {TABS.filter((t) => t !== "Alterar Senha").map((t) => (
@@ -661,9 +766,12 @@ export default function FuncionarioPage() {
                       <div className="flex gap-2">
                         <Button
                           className="flex-1 bg-fuchsia-700 hover:bg-fuchsia-600 text-white text-sm"
-                          onClick={() =>
-                            router.push(`/funcionario/trilha/${t.id}`)
-                          }
+                          onClick={async () => {
+                            if (t.status === "não_iniciado") {
+                              await handleIniciarTrilha(t.id);
+                            }
+                            router.push(`/funcionario/trilha/${t.id}`);
+                          }}
                         >
                           {t.status === "não_iniciado"
                             ? "Iniciar"

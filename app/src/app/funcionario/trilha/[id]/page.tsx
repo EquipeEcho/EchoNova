@@ -61,12 +61,61 @@ export default function TrilhaPage() {
 
         const data = await res.json();
         setTrilha(data);
+
+        // Verificar se a trilha está atribuída ao funcionário e iniciar se necessário
+        await checkAndStartTrilha();
       } catch (e: any) {
         console.error("Erro ao buscar trilha:", e);
         toast.error(e.message || "Erro ao carregar trilha");
         router.push("/pagina-funcionarios");
       } finally {
         setLoading(false);
+      }
+    };
+
+    const checkAndStartTrilha = async () => {
+      if (!user) return;
+
+      try {
+        // Buscar status da trilha do funcionário
+        const trilhasRes = await fetch(`/api/funcionarios/${user.id}/trilhas`, {
+          credentials: "include",
+        });
+
+        if (!trilhasRes.ok) {
+          router.push("/pagina-funcionarios");
+          return;
+        }
+
+        const funcionarioData = await trilhasRes.json();
+        const trilhaFuncionario = funcionarioData.trilhas?.find((t: any) => t.trilha._id === trilhaId);
+
+        if (!trilhaFuncionario) {
+          // Trilha não atribuída ao funcionário
+          toast.error("Trilha não encontrada em suas atribuições");
+          router.push("/pagina-funcionarios");
+          return;
+        }
+
+        if (trilhaFuncionario.status === "não_iniciado") {
+          // Iniciar a trilha automaticamente
+          const iniciarRes = await fetch(
+            `/api/funcionarios/${user.id}/trilhas/${trilhaId}/iniciar`,
+            {
+              method: "POST",
+              credentials: "include",
+            }
+          );
+
+          if (iniciarRes.ok) {
+            console.log("Trilha iniciada automaticamente");
+          } else {
+            console.error("Erro ao iniciar trilha automaticamente");
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao verificar/iniciar trilha:", error);
+        router.push("/pagina-funcionarios");
       }
     };
 
