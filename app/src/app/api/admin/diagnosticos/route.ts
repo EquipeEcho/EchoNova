@@ -25,6 +25,7 @@ export async function GET(request: Request) {
         select: "nome_empresa email cnpj",
         options: { strictPopulate: false } // Permite população mesmo se a referência estiver quebrada
       })
+      .select("+resultados") // Incluir resultados
       .sort({ createdAt: -1 }); // Ordena pelos mais recentes
       
     return NextResponse.json({ success: true, data: diagnosticos });
