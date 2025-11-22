@@ -125,7 +125,9 @@ export default function FuncionarioPage() {
 
         if (!res.ok) {
           const errorData = await res.json();
-          throw new Error(errorData.error || "Erro ao buscar dados");
+          toast.error(errorData.error || "Erro ao buscar dados");
+          router.push("/");
+          return;
         }
 
         const data = await res.json();
@@ -297,7 +299,8 @@ export default function FuncionarioPage() {
       });
       
       if (!trilhasRes.ok) {
-        throw new Error("Erro ao verificar status da senha");
+        toast.error("Erro ao verificar status da senha");
+        return;
       }
       
       const funcionarioData = await trilhasRes.json();
@@ -321,7 +324,8 @@ export default function FuncionarioPage() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Erro ao alterar senha");
+        toast.error(errorData.error || "Erro ao alterar senha");
+        return;
       }
 
       toast.success("Senha alterada com sucesso! Bem-vindo à plataforma.");
@@ -350,7 +354,8 @@ export default function FuncionarioPage() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Erro ao concluir trilha");
+        toast.error(errorData.error || "Erro ao concluir trilha");
+        return;
       }
 
       toast.success("Trilha concluída com sucesso! 🎉");
@@ -397,7 +402,8 @@ export default function FuncionarioPage() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Erro ao refazer trilha");
+        toast.error(errorData.error || "Erro ao refazer trilha");
+        return;
       }
 
       toast.success("Trilha adicionada novamente! Você pode refazê-la na aba Trilhas 📚");
@@ -445,7 +451,8 @@ export default function FuncionarioPage() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Erro ao iniciar trilha");
+        toast.error(errorData.error || "Erro ao iniciar trilha");
+        return;
       }
 
       toast.success("Trilha iniciada com sucesso! 🎯");
