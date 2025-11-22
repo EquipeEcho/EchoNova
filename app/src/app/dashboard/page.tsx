@@ -24,6 +24,7 @@ interface EmpresasPorPlano {
   [key: string]: any; // Add index signature to fix TypeScript error
 }
 
+
 // Tipagem para os dados das métricas
 interface MetricCardProps {
   title: string;
@@ -32,6 +33,22 @@ interface MetricCardProps {
   color: string;
   change?: string;
   changeType?: "positive" | "negative";
+}
+
+interface MetricsResponse {
+  ok: boolean;
+  diagnosticos: {
+    atual: number;
+    anterior: number;
+    crescimentoPercentual: number;
+  };
+  empresas: {
+    atual: number;
+    anterior: number;
+    retencaoPercentual: number;
+  };
+  historicoMensal: { year: number; month: number; total: number }[];
+  distribuicaoDimensoes: { dimensao: string; total: number }[];
 }
 
 // Componente para os cards de métricas
@@ -184,21 +201,46 @@ const EmpresasPorPlanoPieChart = ({ data }: { data: EmpresasPorPlano[] }) => {
   );
 };
 
+
 export default function DashboardPage() {
   const [empresasPorPlano, setEmpresasPorPlano] = useState<EmpresasPorPlano[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalDiagnosticos, setTotalDiagnosticos] = useState(null);
   const [error, setError] = useState<string | null>(null);
+  const [Metrics, setMetrics] = useState<MetricsResponse | null>(null);
 
   // Fetch data for charts
   useEffect(() => {
+    async function fetchMetrics() {
+        try {
+          const res = await fetch("/api/metrics");
+          const json = await res.json();
+
+          setMetrics(json);
+
+        } catch (err) {
+          console.error("Erro ao buscar métricas:", err);
+        } finally {
+          setLoading(false);
+        }
+    }
+
+    fetchMetrics();
+
+
     const fetchData = async () => {
       try {
         setLoading(true);
         const response = await fetch("/api/admin/empresas/por-plano");
         const data = await response.json();
+
+        const res = await fetch("/api/total-diagnosticos");
+        const dados = await res.json();
+
         
-        if (data.success) {
+        if (data.success && dados.success) {
           setEmpresasPorPlano(data.data);
+          setTotalDiagnosticos(dados.data);
         } else {
           setError(data.error || "Erro ao carregar dados");
         }
@@ -213,29 +255,29 @@ export default function DashboardPage() {
   }, []);
 
   // Métricas reais para os cards (você pode substituir por dados reais)
-  const metricCards = [
+   const metricCards = [
     {
       title: "Total de Empresas",
-      value: "142",
+      value: empresasPorPlano.length,
       icon: <Users className="h-8 w-8 text-blue-400" />,
       color: "bg-blue-500",
-      change: "12.5%",
+      change: Metrics?.empresas.retencaoPercentual + "%",
       changeType: "positive" as const
     },
     {
       title: "Diagnósticos Realizados",
-      value: "89",
+      value: setTotalDiagnosticos.length,
       icon: <FileText className="h-8 w-8 text-green-400" />,
       color: "bg-green-500",
-      change: "8.2%",
+      change: Metrics?.diagnosticos.crescimentoPercentual + "%" ,
       changeType: "positive" as const
     },
-    {
+    { 
       title: "Assinaturas Ativas",
-      value: "56",
+      value: empresasPorPlano.length,
       icon: <CreditCard className="h-8 w-8 text-purple-400" />,
       color: "bg-purple-500",
-      change: "3.1%",
+      change: "",
       changeType: "positive" as const
     },
     {
@@ -243,7 +285,7 @@ export default function DashboardPage() {
       value: "63%",
       icon: <TrendingUp className="h-8 w-8 text-yellow-400" />,
       color: "bg-yellow-500",
-      change: "2.4%",
+      change: "",
       changeType: "positive" as const
     },
   ];
@@ -365,12 +407,12 @@ export default function DashboardPage() {
                 <Activity className="h-6 w-6 text-blue-400 mr-2" />
                 <h3 className="text-gray-300 font-medium">Crescimento Mensal</h3>
               </div>
-              <p className="text-3xl font-bold text-white">+12.5%</p>
+              <p className="text-3xl font-bold text-white">{Metrics?.empresas.retencaoPercentual + "%"}</p>
               <p className="text-green-400 text-sm mt-1 flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                 </svg>
-                3.2% em relação ao mês anterior
+                { Metrics?.empresas.retencaoPercentual + "%" } em relação ao mês anterior
               </p>
             </div>
             <div className="bg-gray-700/30 p-5 rounded-xl border border-gray-600">
@@ -378,12 +420,12 @@ export default function DashboardPage() {
                 <UserCheck className="h-6 w-6 text-green-400 mr-2" />
                 <h3 className="text-gray-300 font-medium">Taxa de Retenção</h3>
               </div>
-              <p className="text-3xl font-bold text-white">87%</p>
+              <p className="text-3xl font-bold text-white">{Metrics?.empresas.retencaoPercentual + "%"}</p>
               <p className="text-green-400 text-sm mt-1 flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                 </svg>
-                1.5% em relação ao mês anterior
+               {Metrics?.empresas.retencaoPercentual + "%"} em relação ao mês anterior
               </p>
             </div>
             <div className="bg-gray-700/30 p-5 rounded-xl border border-gray-600">

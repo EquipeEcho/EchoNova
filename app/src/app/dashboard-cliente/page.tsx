@@ -280,6 +280,9 @@ export default function DashboardClientePage() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const { user: authUser, logout } = useAuthStore();
+  const [getFuncionarios, setFuncionarios] = useState(null);
+  const user = useAuthStore((s) => s.user);
+  
 
   // Dados fictícios para os gráficos (seriam substituídos por dados reais)
   const progressoTrilhasData: ProgressoTrilha[] = [
@@ -312,7 +315,7 @@ export default function DashboardClientePage() {
   const metricCards = [
     {
       title: "Trilhas Ativas",
-      value: "5",
+      value: setFuncionarios.length,
       icon: <BookOpen className="h-8 w-8 text-blue-400" />,
       color: "bg-blue-500",
       description: "Trilhas em andamento"
@@ -346,12 +349,24 @@ export default function DashboardClientePage() {
     const fetchUserData = async () => {
       try {
         setLoading(true);
-        const user = authUser || useAuthStore.getState().user;
+         
+      const user = authUser || useAuthStore.getState().user;
         
         if (!user) {
           router.push("/");
           return;
         }
+/*
+      const res = await fetch(`/api/funcionarios?empresaId=${user.id}`);
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || "Erro ao buscar funcionários");
+        }
+
+      const dados = await res.json();
+
+      setFuncionarios(dados);*/
 
         // Buscar dados reais do usuário
         const response = await fetch(`/api/empresa/${user.id}`);
