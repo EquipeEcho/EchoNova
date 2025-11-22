@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
-import { LogOut, BookOpen } from "lucide-react";
+import { LogOut, BookOpen, Pencil } from "lucide-react";
 
 // Tipagem para os dados que vamos manipular
 interface Empresa {
@@ -100,7 +100,7 @@ const EmpresaForm: FC<{
         </div>
       )}
       <div>
-        <Label htmlFor="nome_empresa" className="text-pink-300">Nome da Empresa</Label>
+        <Label htmlFor="nome_empresa" className="text-pink-300 mb-2">Nome da Empresa</Label>
         <Input
           id="nome_empresa"
           name="nome_empresa"
@@ -111,7 +111,7 @@ const EmpresaForm: FC<{
         />
       </div>
       <div>
-        <Label htmlFor="email" className="text-pink-300">Email</Label>
+        <Label htmlFor="email" className="text-pink-300 mb-2">Email</Label>
         <Input
           id="email"
           name="email"
@@ -123,7 +123,7 @@ const EmpresaForm: FC<{
         />
       </div>
       <div>
-        <Label htmlFor="cnpj" className="text-pink-300">CNPJ</Label>
+        <Label htmlFor="cnpj" className="text-pink-300 mb-2">CNPJ</Label>
         <Input
           id="cnpj"
           name="cnpj"
@@ -136,7 +136,7 @@ const EmpresaForm: FC<{
         {isAdmin && <p className="text-xs text-yellow-400 mt-1">CNPJ do administrador não pode ser alterado</p>}
       </div>
       <div>
-        <Label htmlFor="planoAtivo" className="text-pink-300">Plano Ativo</Label>
+        <Label htmlFor="planoAtivo" className="text-pink-300 mb-2">Plano Ativo</Label>
         <Select
           value={formData.planoAtivo || ""}
           onValueChange={(val) => setFormData((prev) => ({ ...prev, planoAtivo: val }))}
@@ -152,7 +152,7 @@ const EmpresaForm: FC<{
         </Select>
       </div>
       <div>
-        <Label htmlFor="senha" className="text-pink-300">Nova Senha (opcional)</Label>
+        <Label htmlFor="senha" className="text-pink-300 mb-2">Nova Senha (opcional)</Label>
         <PasswordInput
           id="senha"
           name="senha"
@@ -200,7 +200,6 @@ export default function AdminPage() {
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState("empresas");
-  const [creatingEmpresa, setCreatingEmpresa] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -481,43 +480,14 @@ export default function AdminPage() {
 
         <TabsContent value="empresas">
           <div className="mb-6 flex items-center gap-3 flex-wrap">
-            <Button onClick={handleAddNewEmpresa} className="bg-pink-600 hover:bg-pink-700 text-white shadow-md shadow-pink-600/30">Adicionar Nova Empresa</Button>
-            <Button onClick={async () => {
-              // Quick-create: open modal prefilled
-              setEditingEmpresa({ nome_empresa: "", email: "", cnpj: "" });
-              setIsDialogOpen(true);
-            }} variant="outline" className="border-pink-500 text-pink-400 hover:bg-pink-500/10 hover:text-white">Criar Empresa (form)</Button>
             <Button
-              onClick={async () => {
-                // Quick-create automatic company with minimal info
-                if (creatingEmpresa) return;
-                setCreatingEmpresa(true);
-                try {
-                  const ts = Date.now();
-                  const nome = `Empresa Teste ${ts}`;
-                  const email = `teste+${ts}@example.com`;
-                  // simple pseudo-cnpj (14 digits)
-                  const cnpj = ts.toString().padStart(14, "0").slice(-14);
-                  const res = await fetch('/api/admin/empresas', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ nome_empresa: nome, email, cnpj, senha: 'Teste123!' }),
-                  });
-                  const data = await res.json();
-                  if (!res.ok) throw new Error(data.error || 'Falha ao criar empresa de teste');
-                  toast.success('Empresa de teste criada');
-                  fetchData();
-                } catch (err: unknown) {
-                  const message = err instanceof Error ? err.message : String(err);
-                  toast.error(message || 'Erro ao criar empresa de teste');
-                } finally {
-                  setCreatingEmpresa(false);
-                }
-              }}
-              className="bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-600/30"
+              size="sm"
+              variant="outline"
+              onClick={handleAddNewEmpresa}
+              className="bg-slate-800 border-slate-800 text-pink-300 hover:bg-slate-700 hover:text-pink-400"
             >
-              {creatingEmpresa ? 'Criando...' : 'Criar Empresa de Teste'}
+              <Pencil className="h-3 w-3 mr-1 text-pink-400" />
+              Adicionar Nova Empresa (dev)
             </Button>
           </div>
           <div className="overflow-x-auto bg-slate-800/60 border border-slate-700/60 rounded-lg shadow-sm">

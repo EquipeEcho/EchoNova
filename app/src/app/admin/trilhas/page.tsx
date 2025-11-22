@@ -52,6 +52,7 @@ interface Trilha {
   objetivos: string[];
   duracaoEstimada: number;
   nivel: "Iniciante" | "Intermediário" | "Avançado";
+  categoria: "Comunicação" | "Gestão de Tempo" | "Inovação" | "Liderança" | "Diversidade";
   modulos: Modulo[];
   status: "ativa" | "inativa" | "rascunho";
   thumbnail?: string;
@@ -76,6 +77,7 @@ export default function AdminTrilhasPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("todas");
   const [filterNivel, setFilterNivel] = useState<string>("todos");
+  const [filterCategoria, setFilterCategoria] = useState<string>("todas");
   const [selectedTrilha, setSelectedTrilha] = useState<Trilha | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -163,34 +165,64 @@ export default function AdminTrilhasPage() {
 
     const matchesStatus = filterStatus === "todas" || trilha.status === filterStatus;
     const matchesNivel = filterNivel === "todos" || trilha.nivel === filterNivel;
+    const matchesCategoria = filterCategoria === "todas" || trilha.categoria === filterCategoria;
 
-    return matchesSearch && matchesStatus && matchesNivel;
+    return matchesSearch && matchesStatus && matchesNivel && matchesCategoria;
   });
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "ativa":
-        return "bg-green-500";
+        return "border border-green-300 text-green-300 bg-green-500/10 hover:bg-green-500/20 transition-colors";
       case "inativa":
         return "bg-red-500";
       case "rascunho":
-        return "bg-yellow-500";
+        return "bg-amber-400";
       default:
-        return "bg-gray-500";
+        return "bg-slate-500";
     }
+  };
+
+  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+    return status === 'ativa' ? 'outline' : 'default';
   };
 
   const getNivelColor = (nivel: string) => {
     switch (nivel) {
       case "Iniciante":
-        return "bg-blue-500";
+        return "border border-sky-400 text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 transition-colors";
       case "Intermediário":
-        return "bg-purple-500";
+        return "border border-yellow-400 text-yellow-300 bg-yellow-500/10 hover:bg-yellow-500/20 transition-colors";
       case "Avançado":
-        return "bg-orange-500";
+        return "border border-orange-400 text-orange-300 bg-orange-500/10 hover:bg-orange-500/20 transition-colors";
       default:
-        return "bg-gray-500";
+        return "bg-slate-500";
     }
+  };
+
+  const getNivelVariant = (nivel: string): "default" | "secondary" | "destructive" | "outline" => {
+    return 'outline';
+  };
+
+  const getCategoriaColor = (categoria: string) => {
+    switch (categoria) {
+      case "Comunicação":
+        return "border border-cyan-400 text-white bg-cyan-500/10 hover:bg-cyan-500/20 transition-colors";
+      case "Gestão de Tempo":
+        return "border border-emerald-400 text-white bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors";
+      case "Inovação":
+        return "border border-rose-400 text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 transition-colors";
+      case "Liderança":
+        return "border border-yellow-400 text-yellow-300 bg-yellow-500/10 hover:bg-yellow-500/20 transition-colors";
+      case "Diversidade":
+        return "border border-violet-400 text-violet-300 bg-violet-500/10 hover:bg-violet-500/20 transition-colors";
+      default:
+        return "border border-slate-400 text-slate-300 bg-slate-500/10 hover:bg-slate-500/20 transition-colors";
+    }
+  };
+
+  const getCategoriaVariant = (categoria: string): "default" | "secondary" | "destructive" | "outline" => {
+    return 'outline';
   };
 
   return (
@@ -200,9 +232,9 @@ export default function AdminTrilhasPage() {
         <div className="mb-10 pb-6 border-b border-pink-500/30 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 sticky top-0 bg-slate-900/90 backdrop-blur-sm z-10 -mx-4 px-4">
           <div className="flex items-start gap-4">
             <Link href="/admin" className="self-start">
-              <Button variant="outline" size="icon" className="border-pink-500/40 text-pink-400 hover:bg-pink-500/10 hover:text-white">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
+            <Button variant="outline" size="icon" className="bg-pink-500 border-pink-500 text-white hover:bg-pink-600">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
             </Link>
             <div>
               <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-linear-to-r from-pink-400 to-purple-400 tracking-tight">
@@ -215,17 +247,21 @@ export default function AdminTrilhasPage() {
           </div>
           <div className="flex gap-3 self-start">
             <Button
-              onClick={handleSeedTrilhas}
+              size="sm"
               variant="outline"
-              className="border-pink-500 text-pink-400 hover:bg-pink-500/10 hover:text-white transition-colors"
+              onClick={handleSeedTrilhas}
+              className="bg-slate-800 border-slate-800 text-pink-300 hover:bg-slate-700 hover:text-pink-400"
             >
-              Popular Trilhas Mock
+              <Pencil className="h-3 w-3 mr-1 text-pink-400" />
+              Popular Trilhas (dev)
             </Button>
             <Button
+              size="sm"
+              variant="outline"
               onClick={() => router.push("/admin/trilhas/nova")}
-              className="bg-pink-600 hover:bg-pink-700 text-white shadow-lg shadow-pink-600/30"
+              className="bg-slate-800 border-slate-800 text-pink-300 hover:bg-slate-700 hover:text-pink-400"
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="h-3 w-3 mr-1 text-pink-400" />
               Nova Trilha
             </Button>
           </div>
@@ -234,7 +270,7 @@ export default function AdminTrilhasPage() {
         {/* Filtros */}
         <Card className="mb-8 bg-slate-800/60 border border-slate-700/60 backdrop-blur rounded-lg shadow-md">
           <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div className="md:col-span-2">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-pink-400 h-4 w-4" />
@@ -272,6 +308,21 @@ export default function AdminTrilhasPage() {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <Select value={filterCategoria} onValueChange={setFilterCategoria}>
+                  <SelectTrigger className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500">
+                    <SelectValue placeholder="Categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas as Categorias</SelectItem>
+                    <SelectItem value="Comunicação">Comunicação</SelectItem>
+                    <SelectItem value="Gestão de Tempo">Gestão de Tempo</SelectItem>
+                    <SelectItem value="Inovação">Inovação</SelectItem>
+                    <SelectItem value="Liderança">Liderança</SelectItem>
+                    <SelectItem value="Diversidade">Diversidade</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -288,7 +339,7 @@ export default function AdminTrilhasPage() {
               <p className="text-gray-400">Nenhuma trilha encontrada.</p>
               <Button
                 onClick={() => router.push("/admin/trilhas/nova")}
-                className="mt-4 bg-fuchsia-600 hover:bg-fuchsia-700"
+                className="mt-4 bg-pink-600 hover:bg-pink-700 text-white"
               >
                 Criar Primeira Trilha
               </Button>
@@ -310,11 +361,14 @@ export default function AdminTrilhasPage() {
                     <div className="flex-1">
                       <CardTitle className="text-white text-lg mb-2 group-hover:text-pink-400 transition-colors">{trilha.nome}</CardTitle>
                       <div className="flex gap-2 mb-2">
-                        <Badge className={`${getStatusColor(trilha.status)} text-white`}>
+                        <Badge variant={getStatusVariant(trilha.status)} className={getStatusColor(trilha.status)}>
                           {trilha.status}
                         </Badge>
-                        <Badge className={`${getNivelColor(trilha.nivel)} text-white`}>
+                        <Badge variant={getNivelVariant(trilha.nivel)} className={getNivelColor(trilha.nivel)}>
                           {trilha.nivel}
+                        </Badge>
+                        <Badge variant={getCategoriaVariant(trilha.categoria)} className={getCategoriaColor(trilha.categoria)}>
+                          {trilha.categoria}
                         </Badge>
                       </div>
                     </div>
@@ -329,12 +383,12 @@ export default function AdminTrilhasPage() {
                       <Tag className="h-4 w-4 mr-2" />
                       <div className="flex flex-wrap gap-1">
                         {trilha.tags.slice(0, 3).map((tag, idx) => (
-                          <Badge key={idx} variant="outline" className="text-xs border-pink-500/30 text-pink-300/90 bg-pink-500/5">
+                          <Badge key={idx} variant="outline" className="text-xs border-pink-400 text-pink-300 bg-pink-500/10 hover:bg-pink-500/20 transition-colors">
                             {tag}
                           </Badge>
                         ))}
                         {trilha.tags.length > 3 && (
-                          <Badge variant="outline" className="text-xs border-slate-600 text-gray-300">
+                          <Badge variant="outline" className="text-xs border-slate-500 text-slate-300 bg-slate-500/10">
                             +{trilha.tags.length - 3}
                           </Badge>
                         )}
@@ -348,26 +402,26 @@ export default function AdminTrilhasPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="flex-1 border-pink-500 text-pink-400 hover:bg-pink-500/10 hover:text-white"
+                        className="flex-1 bg-slate-800 border-slate-800 text-pink-300 hover:bg-slate-700 hover:text-pink-400"
                         onClick={(e) => {
                           e.stopPropagation();
                           router.push(`/admin/trilhas/${trilha._id}`);
                         }}
                       >
-                        <Pencil className="h-3 w-3 mr-1" />
+                        <Pencil className="h-3 w-3 mr-1 text-pink-400" />
                         Editar
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-red-600 text-red-500 hover:bg-red-600/10"
+                        className="bg-slate-800 border-slate-800 text-red-400 hover:bg-slate-700 hover:text-red-300"
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedTrilha(trilha);
                           setIsDeleteDialogOpen(true);
                         }}
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-3 w-3 text-red-400 hover:text-red-300" />
                       </Button>
                     </div>
                   </div>
@@ -389,13 +443,16 @@ export default function AdminTrilhasPage() {
             {selectedTrilha && (
               <div className="space-y-4">
                 <div className="flex gap-2">
-                  <Badge className={`${getStatusColor(selectedTrilha.status)} text-white`}>
+                  <Badge variant={getStatusVariant(selectedTrilha.status)} className={getStatusColor(selectedTrilha.status)}>
                     {selectedTrilha.status}
                   </Badge>
-                  <Badge className={`${getNivelColor(selectedTrilha.nivel)} text-white`}>
+                  <Badge variant={getNivelVariant(selectedTrilha.nivel)} className={getNivelColor(selectedTrilha.nivel)}>
                     {selectedTrilha.nivel}
                   </Badge>
-                  <Badge variant="outline" className="border-slate-600 text-gray-300">
+                  <Badge variant={getCategoriaVariant(selectedTrilha.categoria)} className={getCategoriaColor(selectedTrilha.categoria)}>
+                    {selectedTrilha.categoria}
+                  </Badge>
+                  <Badge variant="outline" className="border-slate-500 text-slate-300 bg-slate-500/10">
                     {selectedTrilha.duracaoEstimada}h
                   </Badge>
                 </div>
@@ -404,7 +461,7 @@ export default function AdminTrilhasPage() {
                   <h4 className="font-semibold mb-2 text-pink-300">Tags:</h4>
                   <div className="flex flex-wrap gap-2">
                     {selectedTrilha.tags.map((tag, idx) => (
-                      <Badge key={idx} variant="outline" className="border-pink-500/40 text-pink-300 bg-pink-500/5">
+                      <Badge key={idx} variant="outline" className="border-pink-400 text-pink-300 bg-pink-500/10 hover:bg-pink-500/20 transition-colors">
                         {tag}
                       </Badge>
                     ))}
@@ -430,7 +487,7 @@ export default function AdminTrilhasPage() {
                             <p className="font-medium text-pink-300">{modulo.titulo}</p>
                             <p className="text-sm text-slate-400">{modulo.descricao}</p>
                           </div>
-                          <Badge variant="outline" className="border-pink-500/30 text-xs text-pink-300">
+                          <Badge variant="outline" className="border-pink-400 text-xs text-pink-300 bg-pink-500/10">
                             {modulo.tipo}
                           </Badge>
                         </div>
@@ -481,13 +538,13 @@ export default function AdminTrilhasPage() {
               <Button
                 variant="outline"
                 onClick={() => setIsDeleteDialogOpen(false)}
-                className="border-pink-500/40 text-pink-300 hover:bg-pink-500/10 hover:text-white"
+                className="bg-pink-500 border-pink-500 text-white hover:bg-pink-600"
               >
                 Cancelar
               </Button>
               <Button
                 onClick={handleDelete}
-                className="bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-600/30"
+                className="bg-red-600 hover:bg-red-700 text-white"
               >
                 Excluir
               </Button>

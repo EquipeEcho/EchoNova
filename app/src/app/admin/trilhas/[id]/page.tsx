@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
@@ -36,9 +36,32 @@ interface Modulo {
   ordem: number;
 }
 
-export default function NovaTrilhaPage() {
+interface Trilha {
+  _id: string;
+  nome: string;
+  descricao: string;
+  tags: string[];
+  areasAbordadas: string[];
+  objetivos: string[];
+  duracaoEstimada: number;
+  nivel: "Iniciante" | "Intermediário" | "Avançado";
+  categoria: "Comunicação" | "Gestão de Tempo" | "Inovação" | "Liderança" | "Diversidade";
+  modulos: Modulo[];
+  status: "ativa" | "inativa" | "rascunho";
+  metadados?: {
+    problemasRelacionados?: string[];
+    competenciasDesenvolvidas?: string[];
+    resultadosEsperados?: string[];
+  };
+}
+
+export default function EditarTrilhaPage() {
   const router = useRouter();
+  const params = useParams();
+  const trilhaId = params.id as string;
+
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
 
   // Estados do formulário
   const [nome, setNome] = useState("");
@@ -56,6 +79,53 @@ export default function NovaTrilhaPage() {
   const [problemasRelacionados, setProblemasRelacionados] = useState("");
   const [competenciasDesenvolvidas, setCompetenciasDesenvolvidas] = useState("");
   const [resultadosEsperados, setResultadosEsperados] = useState("");
+
+  useEffect(() => {
+    loadTrilha();
+  }, [trilhaId]);
+
+  const loadTrilha = async () => {
+    try {
+      setLoadingData(true);
+      const res = await fetch(`/api/trilhas/${trilhaId}`, {
+        credentials: 'include'
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        const trilha: Trilha = data;
+
+        // Preencher os campos do formulário
+        setNome(trilha.nome);
+        setDescricao(trilha.descricao);
+        setTags(trilha.tags.join(", "));
+        setAreasAbordadas(trilha.areasAbordadas.join(", "));
+        setObjetivos(trilha.objetivos.join("\n"));
+        setDuracaoEstimada(trilha.duracaoEstimada.toString());
+        setNivel(trilha.nivel);
+        setCategoria(trilha.categoria);
+        setStatus(trilha.status);
+        setModulos(trilha.modulos);
+
+        // Metadados
+        if (trilha.metadados) {
+          setProblemasRelacionados(trilha.metadados.problemasRelacionados?.join(", ") || "");
+          setCompetenciasDesenvolvidas(trilha.metadados.competenciasDesenvolvidas?.join(", ") || "");
+          setResultadosEsperados(trilha.metadados.resultadosEsperados?.join("\n") || "");
+        }
+      } else {
+        toast.error(data.error || "Erro ao carregar trilha");
+        router.push("/admin/trilhas");
+      }
+    } catch (error) {
+      console.error("Erro ao carregar trilha:", error);
+      toast.error("Erro ao carregar trilha");
+      router.push("/admin/trilhas");
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
   const addModulo = () => {
     const novoModulo: Modulo = {
@@ -113,8 +183,8 @@ export default function NovaTrilhaPage() {
         },
       };
 
-      const res = await fetch("/api/trilhas", {
-        method: "POST",
+      const res = await fetch(`/api/trilhas/${trilhaId}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: 'include',
         body: JSON.stringify(trilhaData),
@@ -123,47 +193,66 @@ export default function NovaTrilhaPage() {
       const data = await res.json();
 
       if (res.ok) {
-        toast.success("Trilha criada com sucesso!");
+        toast.success("Trilha atualizada com sucesso!");
         router.push("/admin/trilhas");
       } else {
-        toast.error(data.error || "Erro ao criar trilha");
+        toast.error(data.error || "Erro ao atualizar trilha");
       }
     } catch (error) {
-      console.error("Erro ao criar trilha:", error);
-      toast.error("Erro ao criar trilha");
+      console.error("Erro ao atualizar trilha:", error);
+      toast.error("Erro ao atualizar trilha");
     } finally {
       setLoading(false);
     }
   };
 
+  if (loadingData) {
+    return (
+      <div className="min-h-screen bg-slate-900 text-white">
+        <div className="container mx-auto px-4 py-10">
+          <div className="text-center text-white py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
+            <p className="mt-4">Carregando trilha...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-900 via-purple-900 to-slate-900">
-      <div className="container mx-auto px-4 py-8 max-w-5xl">
+    <div className="min-h-screen bg-slate-900 text-white">
+      <div className="container mx-auto px-4 pt-16 pb-10 max-w-6xl">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Link href="/admin/trilhas">
-            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold text-white">Nova Trilha</h1>
-            <p className="text-gray-300">Crie uma nova trilha de aprendizagem</p>
+        <div className="mb-10 pb-6 border-b border-pink-500/30 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 sticky top-0 bg-slate-900/90 backdrop-blur-sm z-10 -mx-4 px-4">
+          <div className="flex items-start gap-4">
+            <Link href="/admin/trilhas">
+              <Button variant="outline" size="icon" className="bg-pink-500 border-pink-500 text-white hover:bg-pink-600">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-linear-to-r from-pink-400 to-purple-400 tracking-tight">
+                Editar Trilha
+              </h1>
+              <p className="text-slate-400 mt-2 text-sm max-w-xl leading-relaxed">
+                Edite as informações da trilha selecionada
+              </p>
+            </div>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 max-w-5xl">
           {/* Informações Básicas */}
-          <Card className="bg-slate-800/50 border-slate-700">
+          <Card className="bg-slate-800/60 border border-slate-700/60 backdrop-blur rounded-lg shadow-md">
             <CardHeader>
               <CardTitle className="text-white">Informações Básicas</CardTitle>
-              <CardDescription className="text-gray-300">
+              <CardDescription className="text-slate-400">
                 Dados gerais sobre a trilha
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="nome" className="text-white">
+                <Label htmlFor="nome" className="text-white mb-2">
                   Nome da Trilha *
                 </Label>
                 <Input
@@ -171,13 +260,13 @@ export default function NovaTrilhaPage() {
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
                   placeholder="Ex: Liderança Transformadora"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor="descricao" className="text-white">
+                <Label htmlFor="descricao" className="text-white mb-2">
                   Descrição *
                 </Label>
                 <Textarea
@@ -186,18 +275,18 @@ export default function NovaTrilhaPage() {
                   onChange={(e) => setDescricao(e.target.value)}
                   placeholder="Descreva os principais objetivos e benefícios da trilha..."
                   rows={4}
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="nivel" className="text-white">
+                  <Label htmlFor="nivel" className="text-white mb-2">
                     Nível
                   </Label>
                   <Select value={nivel} onValueChange={(v: any) => setNivel(v)}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectTrigger className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -209,11 +298,11 @@ export default function NovaTrilhaPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="categoria" className="text-white">
+                  <Label htmlFor="categoria" className="text-white mb-2">
                     Categoria *
                   </Label>
                   <Select value={categoria} onValueChange={(v: any) => setCategoria(v)}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectTrigger className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -227,11 +316,11 @@ export default function NovaTrilhaPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="status" className="text-white">
+                  <Label htmlFor="status" className="text-white mb-2">
                     Status
                   </Label>
                   <Select value={status} onValueChange={(v: any) => setStatus(v)}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectTrigger className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -244,7 +333,7 @@ export default function NovaTrilhaPage() {
               </div>
 
               <div>
-                <Label htmlFor="duracaoEstimada" className="text-white">
+                <Label htmlFor="duracaoEstimada" className="text-white mb-2">
                   Duração Estimada (horas)
                 </Label>
                 <NumberInput
@@ -252,12 +341,12 @@ export default function NovaTrilhaPage() {
                   value={duracaoEstimada}
                   onChange={(e) => setDuracaoEstimada(e.target.value)}
                   placeholder="Ex: 20"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                 />
               </div>
 
               <div>
-                <Label htmlFor="tags" className="text-white">
+                <Label htmlFor="tags" className="text-white mb-2">
                   Tags (separadas por vírgula) *
                 </Label>
                 <Input
@@ -265,7 +354,7 @@ export default function NovaTrilhaPage() {
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
                   placeholder="liderança, gestão, comunicação"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                   required
                 />
                 <p className="text-xs text-gray-400 mt-1">
@@ -274,7 +363,7 @@ export default function NovaTrilhaPage() {
               </div>
 
               <div>
-                <Label htmlFor="areasAbordadas" className="text-white">
+                <Label htmlFor="areasAbordadas" className="text-white mb-2">
                   Áreas Abordadas (separadas por vírgula) *
                 </Label>
                 <Input
@@ -282,13 +371,13 @@ export default function NovaTrilhaPage() {
                   value={areasAbordadas}
                   onChange={(e) => setAreasAbordadas(e.target.value)}
                   placeholder="Liderança, Gestão de Pessoas, Comunicação"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor="objetivos" className="text-white">
+                <Label htmlFor="objetivos" className="text-white mb-2">
                   Objetivos de Aprendizagem (um por linha)
                 </Label>
                 <Textarea
@@ -297,7 +386,7 @@ export default function NovaTrilhaPage() {
                   onChange={(e) => setObjetivos(e.target.value)}
                   placeholder="Desenvolver habilidades de comunicação&#10;Aprender técnicas de gestão de conflitos"
                   rows={4}
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                 />
               </div>
             </CardContent>
@@ -313,7 +402,7 @@ export default function NovaTrilhaPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="problemasRelacionados" className="text-white">
+                <Label htmlFor="problemasRelacionados" className="text-white mb-2">
                   Problemas Relacionados (separados por vírgula)
                 </Label>
                 <Input
@@ -321,7 +410,7 @@ export default function NovaTrilhaPage() {
                   value={problemasRelacionados}
                   onChange={(e) => setProblemasRelacionados(e.target.value)}
                   placeholder="baixa-produtividade, falta-de-liderança, comunicação-ineficaz"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                 />
                 <p className="text-xs text-gray-400 mt-1">
                   Keywords de problemas que esta trilha ajuda a resolver
@@ -329,7 +418,7 @@ export default function NovaTrilhaPage() {
               </div>
 
               <div>
-                <Label htmlFor="competenciasDesenvolvidas" className="text-white">
+                <Label htmlFor="competenciasDesenvolvidas" className="text-white mb-2">
                   Competências Desenvolvidas (separadas por vírgula)
                 </Label>
                 <Input
@@ -337,12 +426,12 @@ export default function NovaTrilhaPage() {
                   value={competenciasDesenvolvidas}
                   onChange={(e) => setCompetenciasDesenvolvidas(e.target.value)}
                   placeholder="Liderança, Comunicação, Gestão de Conflitos"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                 />
               </div>
 
               <div>
-                <Label htmlFor="resultadosEsperados" className="text-white">
+                <Label htmlFor="resultadosEsperados" className="text-white mb-2">
                   Resultados Esperados (um por linha)
                 </Label>
                 <Textarea
@@ -351,7 +440,7 @@ export default function NovaTrilhaPage() {
                   onChange={(e) => setResultadosEsperados(e.target.value)}
                   placeholder="Melhoria na comunicação interna&#10;Redução de conflitos"
                   rows={3}
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                 />
               </div>
             </CardContent>
@@ -406,21 +495,21 @@ export default function NovaTrilhaPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
-                        <Label className="text-white text-sm">Título</Label>
+                        <Label className="text-white text-sm mb-2">Título</Label>
                         <Input
                           value={modulo.titulo}
                           onChange={(e) => updateModulo(index, "titulo", e.target.value)}
                           placeholder="Nome do módulo"
-                          className="bg-slate-600 border-slate-500 text-white"
+                          className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                         />
                       </div>
                       <div>
-                        <Label className="text-white text-sm">Tipo</Label>
+                        <Label className="text-white text-sm mb-2">Tipo</Label>
                         <Select
                           value={modulo.tipo}
                           onValueChange={(v) => updateModulo(index, "tipo", v)}
                         >
-                          <SelectTrigger className="bg-slate-600 border-slate-500 text-white">
+                          <SelectTrigger className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -435,35 +524,35 @@ export default function NovaTrilhaPage() {
                     </div>
 
                     <div>
-                      <Label className="text-white text-sm">Descrição</Label>
+                      <Label className="text-white text-sm mb-2">Descrição</Label>
                       <Textarea
                         value={modulo.descricao}
                         onChange={(e) => updateModulo(index, "descricao", e.target.value)}
                         placeholder="Descreva o conteúdo do módulo"
                         rows={2}
-                        className="bg-slate-600 border-slate-500 text-white"
+                        className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                       />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
-                        <Label className="text-white text-sm">Duração (minutos)</Label>
+                        <Label className="text-white text-sm mb-2">Duração (minutos)</Label>
                         <NumberInput
                           value={modulo.duracao}
                           onChange={(e) =>
                             updateModulo(index, "duracao", Number(e.target.value))
                           }
                           placeholder="45"
-                          className="bg-slate-600 border-slate-500 text-white"
+                          className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                         />
                       </div>
                       <div>
-                        <Label className="text-white text-sm">URL (opcional)</Label>
+                        <Label className="text-white text-sm mb-2">URL (opcional)</Label>
                         <Input
                           value={modulo.url}
                           onChange={(e) => updateModulo(index, "url", e.target.value)}
                           placeholder="https://..."
-                          className="bg-slate-600 border-slate-500 text-white"
+                          className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                         />
                       </div>
                     </div>
@@ -489,7 +578,7 @@ export default function NovaTrilhaPage() {
               className="bg-pink-600 hover:bg-pink-700 text-white shadow-lg shadow-pink-600/30 transition-colors"
             >
               <Save className="mr-2 h-4 w-4" />
-              {loading ? "Salvando..." : "Salvar Trilha"}
+              {loading ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </div>
         </form>
