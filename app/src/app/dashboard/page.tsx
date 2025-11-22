@@ -205,9 +205,10 @@ const EmpresasPorPlanoPieChart = ({ data }: { data: EmpresasPorPlano[] }) => {
 export default function DashboardPage() {
   const [empresasPorPlano, setEmpresasPorPlano] = useState<EmpresasPorPlano[]>([]);
   const [loading, setLoading] = useState(true);
-  const [totalDiagnosticos, setTotalDiagnosticos] = useState(null);
+  const [totalDiagnosticos, setTotalDiagnosticos] =  useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [Metrics, setMetrics] = useState<MetricsResponse | null>(null);
+  const [ totalEmpresas, setTotalEmpresas] = useState<number>(0);
 
   // Fetch data for charts
   useEffect(() => {
@@ -238,12 +239,14 @@ export default function DashboardPage() {
 
         const res = await fetch("/api/total-diagnosticos");
         const dados = await res.json();
+        const resEmpresas = await fetch("/api/total-empresas");
+        const dadosEmpresas = await resEmpresas.json();
 
-        
-        if (data.success && dados.success) {
+        if (data.success && dados.success && dadosEmpresas.success) {
           setEmpresasPorPlano(data.data);
           setTotalDiagnosticos(dados.data);
-        } else {
+          setTotalEmpresas(dadosEmpresas.data);
+        }else {
           setError(data.error || "Erro ao carregar dados");
         }
       } catch (err: any) {
@@ -260,7 +263,7 @@ export default function DashboardPage() {
    const metricCards = [
     {
       title: "Total de Empresas",
-      value: empresasPorPlano.length,
+      value: totalEmpresas,
       icon: <Users className="h-8 w-8 text-blue-400" />,
       color: "bg-blue-500",
       change: Metrics?.empresas.retencaoPercentual + "%",
@@ -268,7 +271,7 @@ export default function DashboardPage() {
     },
     {
       title: "Diagnósticos Realizados",
-      value: setTotalDiagnosticos.length,
+      value: totalDiagnosticos,
       icon: <FileText className="h-8 w-8 text-green-400" />,
       color: "bg-green-500",
       change: Metrics?.diagnosticos.crescimentoPercentual + "%" ,
@@ -284,7 +287,7 @@ export default function DashboardPage() {
     },
     {
       title: "Taxa de Conversão",
-      value: "63%",
+      value: Metrics?.empresas.retencaoPercentual + "%",
       icon: <TrendingUp className="h-8 w-8 text-yellow-400" />,
       color: "bg-yellow-500",
       change: "",
@@ -435,13 +438,7 @@ export default function DashboardPage() {
                 <DollarSign className="h-6 w-6 text-yellow-400 mr-2" />
                 <h3 className="text-gray-300 font-medium">Satisfação do Cliente</h3>
               </div>
-              <p className="text-3xl font-bold text-white">4.8/5</p>
-              <p className="text-green-400 text-sm mt-1 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                </svg>
-                0.2 em relação ao mês anterior
-              </p>
+              <p className="text-4xl font-bold text-white">4.8/5</p>
             </div>
           </div>
         </div>
