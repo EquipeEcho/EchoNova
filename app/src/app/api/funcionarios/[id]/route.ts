@@ -41,7 +41,16 @@ export async function PUT(
 
     for (const campo of camposPermitidos) {
       if (campo !== "senha" && body[campo] !== undefined) {
-        updates[campo] = body[campo];
+        if (campo === "trilhas") {
+          // Transforma array de strings em objetos embedded
+          updates[campo] = (body[campo] || []).map((trilhaId: string) => ({
+            trilha: trilhaId,
+            status: "pendente",
+            dataInicio: null
+          }));
+        } else {
+          updates[campo] = body[campo];
+        }
       }
     }
 

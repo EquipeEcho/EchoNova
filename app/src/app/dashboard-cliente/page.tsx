@@ -963,16 +963,26 @@ export default function DashboardClientePage() {
               <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700" title="Progresso de conclusão de trilhas por categoria">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-bold text-white">Progresso por Categoria</h3>
-                  <div className="flex space-x-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="text-gray-400 text-sm">Concluídas</span>
+                  <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-green-500 rounded"></div>
+                      <span className="text-gray-400 text-sm">Concluídas</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                      <span className="text-gray-400 text-sm">Em Andamento</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-gray-500 rounded"></div>
+                      <span className="text-gray-400 text-sm">Pendentes</span>
+                    </div>
                   </div>
                 </div>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={metrics.trilhasPorCategoria}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" stroke="#444" vertical={false} />
                       <XAxis
@@ -980,8 +990,9 @@ export default function DashboardClientePage() {
                         stroke="#888"
                         angle={-45}
                         textAnchor="end"
-                        height={60}
+                        height={80}
                         tickLine={false}
+                        interval={0}
                       />
                       <YAxis stroke="#888" tickLine={false} axisLine={false} />
                       <Tooltip
@@ -1005,7 +1016,6 @@ export default function DashboardClientePage() {
                           return null;
                         }}
                       />
-                      <Legend />
                       <Bar dataKey="concluidas" name="Concluídas" stackId="a" fill="#10B981" />
                       <Bar dataKey="emAndamento" name="Em Andamento" stackId="a" fill="#3B82F6" />
                       <Bar dataKey="pendentes" name="Pendentes" stackId="a" fill="#6B7280" />
@@ -1159,7 +1169,7 @@ export default function DashboardClientePage() {
             <h2 className="text-2xl font-bold text-white mb-6">
               Ações Rápidas
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Button
                 className="bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
                 onClick={() => router.push("/diagnostico-aprofundado")}
@@ -1189,6 +1199,14 @@ export default function DashboardClientePage() {
               >
                 <Target className="mr-2 h-5 w-5" />
                 Ver Resultados
+              </Button>
+              <Button
+                variant="outline"
+                className="border-orange-500 text-orange-500 hover:bg-orange-500/10 hover:text-white font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer"
+                onClick={() => router.push("/gerenciar-funcionarios")}
+              >
+                <Users className="mr-2 h-5 w-5" />
+                Gerenciar Colaboradores
               </Button>
               <Button
                 variant="outline"

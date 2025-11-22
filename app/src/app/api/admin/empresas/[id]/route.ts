@@ -96,7 +96,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
  * @param params Contém os parâmetros da rota, como o ID da empresa.
  */
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Autenticar e autorizar como admin
     const authResult = await authenticateAndAuthorize(request, "ADMIN");

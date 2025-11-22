@@ -48,6 +48,7 @@ export async function getTrilhasParaPrompt(): Promise<string> {
     });
 
     resultado += "**IMPORTANTE:** Ao recomendar trilhas, SEMPRE cite o nome EXATO de uma das trilhas acima.\n";
+    resultado += "**PROIBIDO:** NÃO crie, invente ou sugira trilhas que não existem na lista.\n";
     resultado += "Considere a categoria da trilha ao fazer recomendações - cada categoria aborda um conjunto específico de competências.\n\n";
 
     return resultado;
@@ -177,8 +178,9 @@ Você é um consultor sênior da EntreNova. Sua única missão é executar a met
 **REGRA CRÍTICA SOBRE TRILHAS:**
 - Você DEVE recomendar SOMENTE trilhas que estão listadas acima na seção "TRILHAS DE APRENDIZAGEM DISPONÍVEIS".
 - NÃO crie, invente ou sugira trilhas que não existem na lista.
+- NÃO use nomes de trilhas que não estejam explicitamente listadas acima.
 - Ao mencionar uma trilha no relatório, use o nome EXATO conforme aparece na lista.
-- Para CADA problema priorizado, você DEVE recomendar pelo menos UMA trilha específica.
+- Para CADA problema priorizado, você DEVE recomendar pelo menos UMA trilha específica da lista existente.
 - Escolha as trilhas que melhor se alinham com os problemas identificados pelo diagnóstico.
 - Se nenhuma trilha se adequar perfeitamente, escolha as mais próximas e explique claramente a correlação.
 - Inclua o nível (Iniciante/Intermediário/Avançado) e duração estimada de cada trilha recomendada.

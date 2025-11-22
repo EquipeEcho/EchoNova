@@ -18,7 +18,15 @@ interface Funcionario {
   cargo: string;
   dataCadastro: string;
   status: "ativo" | "inativo";
-  trilhas: Trilha[]; // Trilhas atribuídas ao funcionário
+  trilhas: {
+    trilha: Trilha;
+    status: string;
+    dataInicio: Date | null;
+  }[]; // Trilhas atribuídas ao funcionário com subdocumentos populados
+  trilhasConcluidas?: {
+    trilha: Trilha;
+    dataConclusao: Date;
+  }[]; // Trilhas concluídas
 }
 
 interface Trilha {
@@ -40,6 +48,8 @@ export default function GerenciarFuncionariosPage() {
   const [selectedFuncionario, setSelectedFuncionario] =
     useState<Funcionario | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [relatorioModalOpen, setRelatorioModalOpen] = useState(false);
+  const [funcionarioRelatorio, setFuncionarioRelatorio] = useState<Funcionario | null>(null);
   const [formData, setFormData] = useState({
     nome: "",
     email: "",
@@ -121,7 +131,7 @@ export default function GerenciarFuncionariosPage() {
         cargo: funcionario.cargo,
         senha: "",
         status: funcionario.status,
-        trilhas: funcionario.trilhas.map(t => t._id), // IDs das trilhas atribuídas
+        trilhas: funcionario.trilhas.map(t => t.trilha._id), // IDs das trilhas atribuídas
       });
     } else {
       setSelectedFuncionario(null);
@@ -305,6 +315,19 @@ export default function GerenciarFuncionariosPage() {
   );
 
   // ----------------------------------------------------
+  // Modal de relatório de trilhas
+  // ----------------------------------------------------
+  const handleOpenRelatorio = (funcionario: Funcionario) => {
+    setFuncionarioRelatorio(funcionario);
+    setRelatorioModalOpen(true);
+  };
+
+  const handleCloseRelatorio = () => {
+    setRelatorioModalOpen(false);
+    setFuncionarioRelatorio(null);
+  };
+
+  // ----------------------------------------------------
   // "Sair" = voltar para /pos-login SEM deslogar
   // ----------------------------------------------------
   const handleLogout = () => {
@@ -327,7 +350,7 @@ export default function GerenciarFuncionariosPage() {
       <Ondas />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-20">
-        <div className="bg-neutral-900/80 backdrop-blur-sm border border-neutral-700 rounded-2xl shadow-2xl p-6 md:p-10">
+        <div className="bg-neutral-900 backdrop-blur-sm border border-neutral-700 rounded-2xl shadow-2xl p-6 md:p-10">
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
             <div>
@@ -374,7 +397,7 @@ export default function GerenciarFuncionariosPage() {
           {/* Lista de Funcionários */}
           <div className="space-y-4">
             {filteredFuncionarios.length === 0 ? (
-              <div className="bg-neutral-900/70 border border-neutral-700 rounded-xl p-10 text-center text-neutral-400">
+              <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-10 text-center text-neutral-400">
                 {searchTerm
                   ? "Nenhum funcionário encontrado"
                   : "Nenhum funcionário cadastrado"}
@@ -383,12 +406,15 @@ export default function GerenciarFuncionariosPage() {
               filteredFuncionarios.map((funcionario) => (
                 <div
                   key={funcionario.id}
-                  className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-5 hover:border-fuchsia-700/50 transition-all"
+                  className="bg-neutral-800 border border-neutral-700 rounded-xl p-5 hover:border-fuchsia-700 transition-all"
                 >
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-white">
+                        <h3 
+                          className="text-lg font-semibold text-white cursor-pointer hover:text-fuchsia-400 transition-colors"
+                          onClick={() => handleOpenRelatorio(funcionario)}
+                        >
                           {funcionario.nome}
                         </h3>
                         <span
@@ -418,12 +444,12 @@ export default function GerenciarFuncionariosPage() {
                         <div className="mt-3">
                           <span className="text-neutral-500 text-sm">Trilhas atribuídas:</span>
                           <div className="flex flex-wrap gap-2 mt-1">
-                            {funcionario.trilhas.map((trilha) => (
+                            {funcionario.trilhas.map((item) => (
                               <span
-                                key={trilha._id}
+                                key={item.trilha._id}
                                 className="px-2 py-1 bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-600/40 rounded-full text-xs font-medium"
                               >
-                                {trilha.nome}
+                                {item.trilha.nome}
                               </span>
                             ))}
                           </div>
@@ -457,6 +483,169 @@ export default function GerenciarFuncionariosPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Relatório de Trilhas */}
+      {relatorioModalOpen && funcionarioRelatorio && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 md:p-8">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-white">
+                    Relatório de Trilhas - {funcionarioRelatorio.nome}
+                  </h2>
+                  <p className="text-neutral-400 text-sm mt-1">
+                    Acompanhe o progresso das trilhas atribuídas
+                  </p>
+                </div>
+                <button
+                  onClick={handleCloseRelatorio}
+                  className="text-neutral-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-neutral-800"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Estatísticas Gerais */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 bg-gray-500 rounded"></div>
+                    <span className="text-neutral-400 text-sm">Não Iniciadas</span>
+                  </div>
+                  <p className="text-2xl font-bold text-white">
+                    {funcionarioRelatorio.trilhas.filter(t => t.status === "pendente").length}
+                  </p>
+                </div>
+                <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                    <span className="text-neutral-400 text-sm">Em Andamento</span>
+                  </div>
+                  <p className="text-2xl font-bold text-white">
+                    {funcionarioRelatorio.trilhas.filter(t => t.status === "em_andamento").length}
+                  </p>
+                </div>
+                <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 bg-green-500 rounded"></div>
+                    <span className="text-neutral-400 text-sm">Concluídas</span>
+                  </div>
+                  <p className="text-2xl font-bold text-white">
+                    {funcionarioRelatorio.trilhasConcluidas?.length || 0}
+                  </p>
+                </div>
+                <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 bg-fuchsia-500 rounded"></div>
+                    <span className="text-neutral-400 text-sm">Total</span>
+                  </div>
+                  <p className="text-2xl font-bold text-white">
+                    {funcionarioRelatorio.trilhas.length + (funcionarioRelatorio.trilhasConcluidas?.length || 0)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Trilhas por Status */}
+              <div className="space-y-6">
+                {/* Não Iniciadas */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-400 mb-4 flex items-center gap-2">
+                    <div className="w-3 h-3 bg-gray-500 rounded"></div>
+                    Trilhas Não Iniciadas ({funcionarioRelatorio.trilhas.filter(t => t.status === "pendente").length})
+                  </h3>
+                  {funcionarioRelatorio.trilhas.filter(t => t.status === "pendente").length === 0 ? (
+                    <p className="text-neutral-500 text-sm">Nenhuma trilha não iniciada</p>
+                  ) : (
+                    <div className="grid gap-3">
+                      {funcionarioRelatorio.trilhas
+                        .filter(t => t.status === "pendente")
+                        .map((item) => (
+                          <div key={item.trilha._id} className="bg-neutral-800/40 border border-neutral-700 rounded-lg p-4">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h4 className="text-white font-medium">{item.trilha.nome}</h4>
+                                <p className="text-neutral-400 text-sm mt-1">{item.trilha.descricao}</p>
+                              </div>
+                              <span className="px-2 py-1 bg-gray-500/20 text-gray-400 border border-gray-600/40 rounded-full text-xs font-medium">
+                                Não Iniciada
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Em Andamento */}
+                <div>
+                  <h3 className="text-lg font-semibold text-blue-400 mb-4 flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                    Trilhas Em Andamento ({funcionarioRelatorio.trilhas.filter(t => t.status === "em_andamento").length})
+                  </h3>
+                  {funcionarioRelatorio.trilhas.filter(t => t.status === "em_andamento").length === 0 ? (
+                    <p className="text-neutral-500 text-sm">Nenhuma trilha em andamento</p>
+                  ) : (
+                    <div className="grid gap-3">
+                      {funcionarioRelatorio.trilhas
+                        .filter(t => t.status === "em_andamento")
+                        .map((item) => (
+                          <div key={item.trilha._id} className="bg-neutral-800/40 border border-neutral-700 rounded-lg p-4">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h4 className="text-white font-medium">{item.trilha.nome}</h4>
+                                <p className="text-neutral-400 text-sm mt-1">{item.trilha.descricao}</p>
+                                {item.dataInicio && (
+                                  <p className="text-blue-400 text-xs mt-2">
+                                    Iniciada em: {new Date(item.dataInicio).toLocaleDateString("pt-BR")}
+                                  </p>
+                                )}
+                              </div>
+                              <span className="px-2 py-1 bg-blue-500/20 text-blue-400 border border-blue-600/40 rounded-full text-xs font-medium">
+                                Em Andamento
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Concluídas */}
+                <div>
+                  <h3 className="text-lg font-semibold text-green-400 mb-4 flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded"></div>
+                    Trilhas Concluídas ({funcionarioRelatorio.trilhasConcluidas?.length || 0})
+                  </h3>
+                  {(!funcionarioRelatorio.trilhasConcluidas || funcionarioRelatorio.trilhasConcluidas.length === 0) ? (
+                    <p className="text-neutral-500 text-sm">Nenhuma trilha concluída</p>
+                  ) : (
+                    <div className="grid gap-3">
+                      {funcionarioRelatorio.trilhasConcluidas!
+                        .map((item) => (
+                          <div key={item.trilha._id} className="bg-neutral-800/40 border border-neutral-700 rounded-lg p-4">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h4 className="text-white font-medium">{item.trilha.nome}</h4>
+                                <p className="text-neutral-400 text-sm mt-1">{item.trilha.descricao}</p>
+                                <p className="text-green-400 text-xs mt-2">
+                                  Concluída em: {new Date(item.dataConclusao).toLocaleDateString("pt-BR")}
+                                </p>
+                              </div>
+                              <span className="px-2 py-1 bg-green-500/20 text-green-400 border border-green-600/40 rounded-full text-xs font-medium">
+                                Concluída
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Criar/Editar */}
       {modalOpen && (
@@ -584,7 +773,7 @@ export default function GerenciarFuncionariosPage() {
                   <p className="text-sm text-neutral-500 mb-3">
                     Selecione as trilhas que este funcionário deve seguir
                   </p>
-                  <div className="max-h-40 overflow-y-auto border border-neutral-700 rounded-lg p-3 bg-neutral-800/50">
+                  <div className="max-h-40 overflow-y-auto border border-neutral-700 rounded-lg p-3 bg-neutral-800">
                     {trilhasDisponiveis.length === 0 ? (
                       <p className="text-neutral-400 text-sm">
                         Nenhuma trilha disponível
@@ -593,7 +782,7 @@ export default function GerenciarFuncionariosPage() {
                       trilhasDisponiveis.map((trilha) => (
                         <label
                           key={trilha._id}
-                          className="flex items-center gap-3 py-2 cursor-pointer hover:bg-neutral-700/30 rounded px-2"
+                          className="flex items-center gap-3 py-2 cursor-pointer hover:bg-neutral-700 rounded px-2"
                         >
                           <input
                             type="checkbox"

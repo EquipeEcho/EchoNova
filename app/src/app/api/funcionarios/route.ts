@@ -17,7 +17,8 @@ export async function GET(req: Request) {
     }
 
     const funcionarios = await Funcionario.find({ empresa: empresaId })
-        .populate('trilhas', 'nome descricao')
+        .populate('trilhas.trilha', 'nome descricao')
+        .populate('trilhasConcluidas.trilha', 'nome descricao')
         .sort({ createdAt: -1 });
 
     return NextResponse.json(funcionarios);
@@ -68,7 +69,11 @@ export async function POST(req: Request) {
             matricula: data.matricula,
             senha: senhaHash,
             status: data.status,
-            trilhas: data.trilhas || [],
+            trilhas: (data.trilhas || []).map((trilhaId: string) => ({
+                trilha: trilhaId,
+                status: "pendente",
+                dataInicio: null
+            })),
             empresa: data.empresaId,
         });
 
