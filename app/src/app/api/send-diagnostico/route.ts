@@ -161,7 +161,7 @@ export async function POST(request: Request) {
     };
 
     // Envia o e-mail
-    transporter.sendMail(mailOptions);
+    await transporter.sendMail(mailOptions);
 
     return Response.json({ success: true, message: "E-mail enviado com sucesso!" });
   } catch (error: unknown) {

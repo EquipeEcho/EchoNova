@@ -65,7 +65,7 @@ const enviarEmail = async (dados: DiagnosticoData) => {
     const emailData = await emailResponse.json();
 
     if (emailData.success) {
-      toast.success("Diagnóstico enviado por e-mail!");
+      console.log("Diagnóstico enviado por e-mail!", dados.resultados);
     } else {
       console.warn("Falha ao enviar e-mail:", emailData.error);
       toast.error("Não foi possível enviar o e-mail do diagnóstico.");
