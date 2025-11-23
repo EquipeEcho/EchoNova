@@ -85,7 +85,7 @@ export default function FuncionarioPage() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-
+ // const [ getTrilhas, setTrilhas ] = useState(null);
   const [funcionario, setFuncionario] = useState<FuncionarioData | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabKey>("Perfil");
@@ -159,6 +159,7 @@ export default function FuncionarioPage() {
             nivel: tc.trilha.nivel,
             duracaoEstimada: tc.trilha.duracaoEstimada,
           })),
+
           conquistas: [],
           microcursosConcluidos: [],
           microcursosDisponiveis: [],

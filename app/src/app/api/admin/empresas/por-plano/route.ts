@@ -9,15 +9,17 @@ import { authenticateAndAuthorize } from "@/lib/middleware/authMiddleware";
  */
 export async function GET(request: Request) {
   try {
+    
     // Verificar autenticação e permissão de administrador
-    const authResult = await authenticateAndAuthorize(request as any, "ADMIN");
+
+   /* const authResult = await authenticateAndAuthorize(request as any, "ADMIN");
     
     if (!authResult.isAuthorized) {
       return NextResponse.json(
         { error: authResult.error },
         { status: authResult.status }
       );
-    }
+    }*/
 
     await connectDB();
     
