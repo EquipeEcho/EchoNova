@@ -586,15 +586,6 @@ Seus dados ficam salvos por 90 dias. Você perde acesso ao sistema, mas pode rea
 
 ---
 
-## 📞 Suporte e Contato
-
-- 📧 **Email**: suporte@radarentrenova.com.br
-- 💬 **Chat**: Disponível no dashboard (planos Avançado e Escalado)
-- 📞 **Telefone**: (12) 3456-7890 (apenas plano Escalado)
-- 🌐 **Site**: www.radarentrenova.com.br
-
----
-
 ## 🎓 Dicas para Melhor Aproveitamento
 
 1. ✅ **Seja honesto** nas respostas dos diagnósticos
