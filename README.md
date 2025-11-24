@@ -85,7 +85,8 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 | 10   | Alta       | Cadastro disponível somente após pagamento.              | 3          |
 | 11   | Alta       | Questionário aprofundado para relatório detalhado.       | 5          |
 
-### 🔵 Sprint 3 - Dashboard do Cliente - Em Progresso
+### 🔵 Sprint 3 - Dashboard do Cliente - Concluída
+[![MVP SPRINT 3](https://img.youtube.com/vi/i7YsbaNFY7E/0.jpg)](https://www.youtube.com/watch?v=i7YsbaNFY7E)
 
 ### 📈 Backlog da Sprint 3 - [Detalhes](./docs/Sprint-3/sprint3.backlog.md)
 | Rank | Prioridade | User Story                                                                                      | Estimativa |
@@ -95,7 +96,6 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 | 14   | Média      | Dashboard para visualizar empresas cadastradas e que completaram o questionário completo.       | 5          |
 | 15   | Alta       | Exibição das trilhas mais escolhidas no dashboard para apoio à criação de novos conteúdos.      | 3          |
 
----
 
 ## 🏃‍ DoR - Definition of Ready
 
