@@ -392,6 +392,8 @@ export default function DiagnosticoAprofundadoPage() {
       // Enviar respostas sequencialmente simulando um usuário real
       for (let i = 0; i < respostasTeste.length; i++) {
         const resposta = respostasTeste[i];
+        
+        console.log(`🧪 [TESTE] Enviando resposta ${i + 1}/${respostasTeste.length}: "${resposta.substring(0, 50)}${resposta.length > 50 ? '...' : ''}"`);
 
         const data = await retryWithBackoff(async () => {
           const res = await fetch("/api/diagnostico-ia", {
@@ -411,6 +413,8 @@ export default function DiagnosticoAprofundadoPage() {
 
           return await res.json();
         });
+        
+        console.log(`✅ [TESTE] Resposta ${i + 1} processada. Status: ${data.status}${data.progress ? ` - Pergunta ${data.progress.currentStep}/${data.progress.totalSteps}` : ''}`);
 
         // Verificar se o diagnóstico foi finalizado
         if (data.status === "finalizado" && data.finalDiagnosticId) {
@@ -418,8 +422,8 @@ export default function DiagnosticoAprofundadoPage() {
           break;
         }
 
-        // Delay maior entre chamadas para evitar rate limiting
-        const delay = 3000 + Math.random() * 2000; // 3-5 segundos + jitter
+        // Delay entre chamadas para evitar rate limiting (1-2 segundos)
+        const delay = 1000 + Math.random() * 1000; // 1-2 segundos + jitter
         await new Promise(resolve => setTimeout(resolve, delay));
       }
 

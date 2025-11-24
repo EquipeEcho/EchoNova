@@ -104,17 +104,6 @@ export default function AdminLoginPage() {
           </p>
         </div>
 
-        <div className="mt-4 p-4 bg-slate-900/40 border border-slate-700/60 rounded-lg">
-          <h3 className="text-pink-300 font-semibold mb-2">Credenciais de Acesso:</h3>
-          <div className="text-sm text-slate-300 space-y-1">
-            <p><strong>Email:</strong> admin@echonova.com</p>
-            <p><strong>Senha:</strong> admin123</p>
-          </div>
-          <p className="text-xs text-slate-500 mt-2">
-            Use essas credenciais para acessar o painel administrativo.
-          </p>
-        </div>
-
         <div className="mt-6 text-center">
           <button
             onClick={() => router.push("/")}
