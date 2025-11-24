@@ -95,6 +95,7 @@ export const perguntasMC: Pergunta[] = [
       { valor: "p6-1", texto: "CRM, BI e pesquisas estruturadas." },
       { valor: "p6-2", texto: "Algumas planilhas e relatórios." },
       { valor: "p6-3", texto: "Feedbacks informais, dados dispersos." },
+      { valor: "p6-4", texto: "Não temos ferramentas definidas." },
     ],
     required: true,
   },

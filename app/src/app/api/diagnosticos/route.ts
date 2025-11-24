@@ -105,30 +105,45 @@ async function processarResultados(
 ) {
   const provider = getChatProvider();
   const message = `Dimensões selecionadas: ${JSON.stringify(dimensoesSelecionadas)}\nRespostas das dimensões: ${JSON.stringify(respostasDimensoes)}`;
+  
+  console.log('📊 [DIAGNOSTICO] Processando respostas:');
+  console.log('📊 Dimensões:', dimensoesSelecionadas);
+  console.log('📊 Respostas:', JSON.stringify(respostasDimensoes, null, 2));
+  
   try {
     const response = await provider.sendMessage(message, [], promptMiniDiagnostico);
-    console.log('Resposta da IA:', response);
+    console.log('🤖 [IA] Resposta completa:', JSON.stringify(response, null, 2));
     // The AI should return { resultados: { ... } }
     if (response && typeof response === 'object' && 'resultados' in response) {
+      console.log('✅ [IA] Usando resultados da IA');
       return response.resultados;
     } else {
-      console.error('Resposta da IA não contém resultados:', response);
+      console.error('❌ [IA] Resposta da IA não contém resultados:', response);
       throw new Error('Resposta da IA inválida');
     }
   } catch (error) {
-    console.error('Erro ao processar resultados com IA:', error);
+    console.error('⚠️ [IA] Erro ao processar resultados com IA:', error);
     // Fallback to fixed logic if AI fails
-    console.log('Usando lógica de fallback');
+    console.log('🔄 [FALLBACK] Usando lógica de fallback');
   const resultadosFinais: Record<string, unknown> = {};
     for (const nomeDimensao of dimensoesSelecionadas) {
       const respostasDaDimensao = respostasDimensoes[nomeDimensao];
       if (!respostasDaDimensao) continue;
+      
+      console.log(`📝 [FALLBACK] Processando dimensão: ${nomeDimensao}`);
+      console.log(`📝 Respostas da dimensão:`, respostasDaDimensao);
+      
       const pontuacoesPerguntas = Object.entries(respostasDaDimensao).map(
-        ([id, valor]) => ({
-          id: id as string,
-          pontuacao: mapeamentoPontuacao[valor as string] || 0,
-        }),
+        ([id, valor]) => {
+          const pontuacao = mapeamentoPontuacao[valor as string] || 0;
+          console.log(`   ${id}: "${valor}" → ${pontuacao} pontos`);
+          return {
+            id: id as string,
+            pontuacao,
+          };
+        },
       );
+      
       const somaPontos = pontuacoesPerguntas.reduce(
         (acc, p) => acc + p.pontuacao,
         0,
@@ -138,6 +153,8 @@ async function processarResultados(
           ? somaPontos / pontuacoesPerguntas.length
           : 0;
       const estagio = calcularEstagio(media);
+      
+      console.log(`📊 Soma: ${somaPontos}, Média: ${media.toFixed(2)}, Estágio: ${estagio}`);
             const trilhasDeMelhoria = pontuacoesPerguntas
         .filter((p) => p.pontuacao <= 2)
         .map((p) => {
