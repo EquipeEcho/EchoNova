@@ -3,11 +3,12 @@ import type { ChatProvider, IaResponse, HistoryMessage } from "./ChatProvider";
 const baseUrl = process.env.OLLAMA_BASE_URL;
 const modelName = process.env.OLLAMA_MODEL_NAME;
 
-if (!baseUrl || !modelName) {
-  throw new Error("As variáveis de ambiente OLLAMA_BASE_URL e OLLAMA_MODEL_NAME são necessárias.");
-}
-
 export class OllamaProvider implements ChatProvider {
+  constructor() {
+    if (!baseUrl || !modelName) {
+      throw new Error("As variáveis de ambiente OLLAMA_BASE_URL e OLLAMA_MODEL_NAME são necessárias.");
+    }
+  }
   async sendMessage(
     message: string,
     history: HistoryMessage[],
