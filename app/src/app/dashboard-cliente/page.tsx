@@ -1029,96 +1029,144 @@ export default function DashboardClientePage() {
                 <div className="flex items-center justify-between mb-6">
                   {(() => {
                     const isSingle = (metrics.categoriasAssociadas?.length || 0) === 1;
+                    const total = metrics.trilhasPorCategoria.reduce((sum: number, item: any) => sum + item.total, 0);
                     return (
-                      <h3 className="text-xl font-bold text-white">
-                        {isSingle ? "Status da Categoria" : "Distribuição por Categoria"}
-                      </h3>
+                      <>
+                        <div>
+                          <h3 className="text-xl font-bold text-white">
+                            {isSingle ? "Status da Categoria" : "Distribuição por Categoria"}
+                          </h3>
+                          <p className="text-sm text-gray-400 mt-1">
+                            {isSingle ? `Categoria: ${metrics.categoriasAssociadas[0]}` : `${metrics.categoriasAssociadas?.length || 0} categorias identificadas`}
+                          </p>
+                        </div>
+                        <div className="flex space-x-2">
+                          <div className="w-3 h-3 bg-fuchsia-500 rounded-full"></div>
+                          <span className="text-gray-400 text-sm">Total: {total} trilhas</span>
+                        </div>
+                      </>
                     );
                   })()}
-                  <div className="flex space-x-2">
-                    <div className="w-3 h-3 bg-fuchsia-500 rounded-full"></div>
-                    <span className="text-gray-400 text-sm">{(metrics.categoriasAssociadas?.length || 0) === 1 ? "Pendentes x Andamento x Concluídas" : "Percentual por categoria"}</span>
-                  </div>
                 </div>
                 <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      {(() => {
-                        const isSingle = (metrics.categoriasAssociadas?.length || 0) === 1;
-                        if (isSingle) {
-                          const cat = metrics.categoriasAssociadas[0];
-                          const item = metrics.trilhasPorCategoria.find((x: any) => x.categoria === cat) || { pendentes: 0, emAndamento: 0, concluidas: 0 };
-                          const data = [
-                            { nome: "Pendentes", valor: item.pendentes, cor: "#6B7280" },
-                            { nome: "Em Andamento", valor: item.emAndamento, cor: "#3B82F6" },
-                            { nome: "Concluídas", valor: item.concluidas, cor: "#10B981" },
-                          ];
-                          return (
-                            <Pie
-                              data={data}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={true}
-                              label={(entry: any) => `${entry.nome}: ${entry.valor}`}
-                              outerRadius={80}
-                              dataKey="valor"
-                              nameKey="nome"
-                              stroke="#1f2937"
-                              strokeWidth={2}
-                            >
-                              {data.map((entry, index) => (
-                                <Cell key={`cell-status-${index}`} fill={entry.cor} />
-                              ))}
-                            </Pie>
-                          );
-                        }
-                        // Caso com múltiplas categorias
-                        return (
-                          <Pie
-                            data={metrics.categoriaDistribuicao}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={true}
-                            label={(entry: any) => `${entry.categoria}: ${entry.percentual}%`}
-                            outerRadius={80}
-                            fill="#A855F7"
-                            dataKey="percentual"
-                            nameKey="categoria"
-                            stroke="#1f2937"
-                            strokeWidth={2}
-                          >
-                            {metrics.categoriaDistribuicao.map((entry: any, index: number) => {
-                              const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088FE", "#A855F7"];
-                              return <Cell key={`cell-cat-${index}`} fill={COLORS[index % COLORS.length]} />;
-                            })}
-                          </Pie>
-                        );
-                      })()}
-                      <Tooltip
-                        content={({ active, payload }: any) => {
-                          if (active && payload && payload.length) {
-                            const p = payload[0];
+                  {(() => {
+                    const total = metrics.trilhasPorCategoria.reduce((sum: number, item: any) => sum + item.total, 0);
+                    if (total === 0) {
+                      return (
+                        <div className="flex items-center justify-center h-full">
+                          <p className="text-gray-400">Nenhuma trilha atribuída ainda</p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          {(() => {
                             const isSingle = (metrics.categoriasAssociadas?.length || 0) === 1;
+                            if (isSingle) {
+                              const cat = metrics.categoriasAssociadas[0];
+                              const item = metrics.trilhasPorCategoria.find((x: any) => x.categoria === cat) || { pendentes: 0, emAndamento: 0, concluidas: 0 };
+                              const data = [
+                                { nome: "Pendentes", valor: item.pendentes, cor: "#6B7280" },
+                                { nome: "Em Andamento", valor: item.emAndamento, cor: "#3B82F6" },
+                                { nome: "Concluídas", valor: item.concluidas, cor: "#10B981" },
+                              ].filter(d => d.valor > 0);
+                              const totalStatus = data.reduce((sum, d) => sum + d.valor, 0);
+                              return (
+                                <Pie
+                                  data={data}
+                                  cx="50%"
+                                  cy="50%"
+                                  labelLine={true}
+                                  label={(entry: any) => {
+                                    const percent = ((entry.valor / totalStatus) * 100).toFixed(1);
+                                    return `${entry.nome}: ${entry.valor} (${percent}%)`;
+                                  }}
+                                  outerRadius={80}
+                                  dataKey="valor"
+                                  nameKey="nome"
+                                  stroke="#1f2937"
+                                  strokeWidth={2}
+                                >
+                                  {data.map((entry, index) => (
+                                    <Cell key={`cell-status-${index}`} fill={entry.cor} />
+                                  ))}
+                                </Pie>
+                              );
+                            }
+                            // Caso com múltiplas categorias
+                            const COLORS = ["#8B5CF6", "#EC4899", "#F59E0B", "#10B981", "#3B82F6", "#EF4444", "#6366F1", "#14B8A6"];
+                            const categoriaData = metrics.categoriaDistribuicao
+                              .map((entry: any, index: number) => ({
+                                ...entry,
+                                cor: COLORS[index % COLORS.length]
+                              }))
+                              .sort((a: any, b: any) => b.percentual - a.percentual);
+                            
                             return (
-                              <div className="bg-gray-800 border border-gray-700 p-4 rounded-lg shadow-lg">
-                                <p className="text-white font-semibold">{isSingle ? p.payload.nome : p.payload.categoria}</p>
-                                <p className="text-gray-300">
-                                  {isSingle ? (
-                                    <>Quantidade: <span className="text-white font-bold">{p.value}</span></>
-                                  ) : (
-                                    <>Percentual: <span className="text-white font-bold">{p.value}%</span></>
-                                  )}
-                                </p>
-                                <p className="text-xs text-gray-400 mt-1">{isSingle ? metrics.categoriasAssociadas[0] : "Do total de trilhas associadas"}</p>
-                              </div>
+                              <Pie
+                                data={categoriaData}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={true}
+                                label={(entry: any) => `${entry.categoria}: ${entry.total} (${entry.percentual}%)`}
+                                outerRadius={80}
+                                dataKey="percentual"
+                                nameKey="categoria"
+                                stroke="#1f2937"
+                                strokeWidth={2}
+                              >
+                                {categoriaData.map((entry: any, index: number) => (
+                                  <Cell key={`cell-cat-${index}`} fill={entry.cor} />
+                                ))}
+                              </Pie>
                             );
-                          }
-                          return null;
-                        }}
-                      />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
+                          })()}
+                          <Tooltip
+                            content={({ active, payload }: any) => {
+                              if (active && payload && payload.length) {
+                                const p = payload[0];
+                                const isSingle = (metrics.categoriasAssociadas?.length || 0) === 1;
+                                const total = metrics.trilhasPorCategoria.reduce((sum: number, item: any) => sum + item.total, 0);
+                                
+                                if (isSingle) {
+                                  const percent = ((p.value / total) * 100).toFixed(1);
+                                  return (
+                                    <div className="bg-gray-800 border border-gray-700 p-4 rounded-lg shadow-lg">
+                                      <p className="text-white font-semibold">{p.payload.nome}</p>
+                                      <p className="text-gray-300">
+                                        Quantidade: <span className="text-white font-bold">{p.value}</span> trilhas
+                                      </p>
+                                      <p className="text-gray-300">
+                                        Proporção: <span className="text-white font-bold">{percent}%</span>
+                                      </p>
+                                    </div>
+                                  );
+                                }
+                                
+                                return (
+                                  <div className="bg-gray-800 border border-gray-700 p-4 rounded-lg shadow-lg">
+                                    <p className="text-white font-semibold">{p.payload.categoria}</p>
+                                    <p className="text-gray-300">
+                                      Quantidade: <span className="text-white font-bold">{p.payload.total}</span> trilhas
+                                    </p>
+                                    <p className="text-gray-300">
+                                      Proporção: <span className="text-white font-bold">{p.value}%</span>
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-2">
+                                      Importância relativa para os problemas identificados
+                                    </p>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
