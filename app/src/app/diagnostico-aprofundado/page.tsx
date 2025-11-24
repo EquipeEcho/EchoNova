@@ -61,6 +61,9 @@ interface Pergunta {
 interface ProgressState {
   currentStep: number;
   totalSteps: number;
+  stepTitle?: string;
+  currentQuestion?: number;
+  totalQuestions?: number;
 }
 
 const initialSetupQuestions = [
@@ -818,14 +821,21 @@ export default function DiagnosticoAprofundadoPage() {
 
       if (!sessionId) setSessionId(data.sessionId);
       
-      console.log("Dados coletados recebidos:", data.dados_coletados); // Debug
+      console.log("📊 Dados de progresso recebidos:", data.progress); // Debug
+      console.log("📦 Dados coletados recebidos:", data.dados_coletados); // Debug
       setDadosColetados(data.dados_coletados); // Salva os dados para o resumo
 
       if (data.progress) {
         setProgress({
           currentStep: data.progress.currentStep,
           totalSteps: data.progress.totalSteps,
+          stepTitle: data.progress.stepTitle,
+          currentQuestion: data.progress.currentQuestion,
+          totalQuestions: data.progress.totalQuestions,
         });
+        console.log(`✅ Barra de progresso atualizada: ${data.progress.currentStep + 1}/${data.progress.totalSteps} - ${data.progress.stepTitle || 'Sem título'}`);
+      } else {
+        console.warn("⚠️ API não retornou informações de progresso");
       }
 
       if (data.status === "finalizado" && data.finalDiagnosticId) {
@@ -837,9 +847,14 @@ export default function DiagnosticoAprofundadoPage() {
         );
       } else if (data.status === "confirmacao" || data.status === "confirmação") {
         setFase("confirmacao");
-      } else {
+      } else if (data.proxima_pergunta) {
         setPerguntaAtual(data.proxima_pergunta);
         setFase("diagnostico");
+      } else {
+        // Se não há próxima pergunta mas o status é "em_andamento", há um erro
+        console.error("❌ Erro: IA retornou status 'em_andamento' sem próxima pergunta", data);
+        setError("A IA não retornou a próxima pergunta. Por favor, tente novamente ou recarregue a página.");
+        toast.error("Erro no fluxo do diagnóstico. Tente novamente.");
       }
     } catch (err: unknown) {
         let message = err instanceof Error ? err.message : String(err);
@@ -946,6 +961,40 @@ export default function DiagnosticoAprofundadoPage() {
   
   const renderContent = () => {
     if (isLoading) return <Loader text="Processando..." />;
+    
+    // Se houver erro na fase de diagnóstico, mostrar mensagem com botão de retry
+    if (error && fase === "diagnostico") {
+      return (
+        <div className="bg-slate-800 p-8 rounded-lg shadow-xl w-full max-w-lg text-center">
+          <h2 className="text-xl font-bold text-red-400 mb-4">⚠️ Erro no Diagnóstico</h2>
+          <p className="text-slate-300 mb-6">{error}</p>
+          <div className="flex gap-4 justify-center">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setError(null);
+                // Tentar reprocessar a última resposta
+                if (resposta.trim()) {
+                  processarResposta(resposta);
+                }
+              }}
+              className="border-pink-500 text-pink-500 hover:bg-pink-500/10"
+            >
+              🔄 Tentar Novamente
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleRefazerDiagnostico}
+              className="border-slate-500 text-slate-300 hover:bg-slate-700"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Recomeçar Diagnóstico
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    
     if (error && fase !== "diagnostico") return <div className="text-red-400 text-center">{error}</div>;
 
     switch (fase) {
@@ -1102,8 +1151,14 @@ export default function DiagnosticoAprofundadoPage() {
 
         return (
           <div className="relative bg-slate-800 p-8 rounded-lg shadow-xl w-full max-w-xl">
-            {progress && progress.totalSteps > initialSetupQuestions.length && (
-              <ProgressBar currentStep={progress.currentStep} totalSteps={progress.totalSteps}/>
+            {progress && progress.totalSteps > 0 && (
+              <ProgressBar 
+                currentStep={progress.currentStep} 
+                totalSteps={progress.totalSteps}
+                stepTitle={progress.stepTitle}
+                currentQuestion={progress.currentQuestion}
+                totalQuestions={progress.totalQuestions}
+              />
             )}
 
             {perguntaAtual && (

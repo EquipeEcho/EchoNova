@@ -83,6 +83,25 @@ export async function POST(req: NextRequest) {
     const iaResponse = await provider.sendMessage(resposta_usuario, historico, promptComTrilhas);
     const iaTextForHistory = getTextForHistory(iaResponse);
 
+    // Validar e logar informações de progresso
+    if (iaResponse.status === "em_andamento") {
+      if (!iaResponse.progress) {
+        console.warn(`⚠️ MCP: IA não retornou 'progress' na resposta. Sessão: ${session._id}`);
+      } else {
+        console.log(`📊 MCP: Progresso - Pergunta ${iaResponse.progress.currentStep + 1}/${iaResponse.progress.totalSteps} - "${iaResponse.progress.stepTitle || 'Sem título'}" - Pergunta ${iaResponse.progress.currentQuestion || '?'}/${iaResponse.progress.totalQuestions || '?'} desta etapa`);
+      }
+      
+      // VALIDAÇÃO CRÍTICA: se status é "em_andamento", DEVE haver próxima pergunta
+      if (!iaResponse.proxima_pergunta) {
+        console.error(`❌ ERRO CRÍTICO: IA retornou status 'em_andamento' mas proxima_pergunta é null!`);
+        console.error(`❌ Dados da resposta:`, JSON.stringify(iaResponse, null, 2));
+        return NextResponse.json({ 
+          error: "Erro no fluxo do diagnóstico: IA não retornou a próxima pergunta.",
+          details: "A IA indicou que o diagnóstico deve continuar, mas não forneceu a próxima pergunta. Por favor, tente novamente."
+        }, { status: 500 });
+      }
+    }
+
     session.conversationHistory.push(
       { role: 'user', parts: [{ text: resposta_usuario }] },
       { role: 'model', parts: [{ text: iaTextForHistory }] }

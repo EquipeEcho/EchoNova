@@ -73,9 +73,9 @@
 │   │
 │   ├── 📁 ai/
 │   │   ├── 📄 ChatProvider.ts: **O Contrato da IA.** Define a estrutura padrão que toda comunicação com IA deve seguir, através das interfaces `IaResponse`, `HistoryMessage`, e `ChatProvider`. Garante que a aplicação seja agnóstica ao provedor de IA.
-│   │   ├── 📄 GeminiProvider.ts: Implementação específica do `ChatProvider` para se comunicar com a API do Google Gemini.
+│   │   ├── 📄 OpenAIProvider.ts: Implementação específica do `ChatProvider` para se comunicar com a API do OpenAI (ChatGPT).
 │   │   ├── 📄 OllamaProvider.ts: Implementação específica do `ChatProvider` para se comunicar com um servidor Ollama.
-│   │   ├── 📄 providerFactory.ts: **A Fábrica de IA.** Uma função que lê uma variável de ambiente (`AI_PROVIDER`) e decide qual provedor (Gemini, Ollama, etc.) instanciar e retornar, permitindo a troca de IAs sem alterar o código da aplicação.
+│   │   ├── 📄 providerFactory.ts: **A Fábrica de IA.** Uma função que lê uma variável de ambiente (`AI_PROVIDER`) e decide qual provedor (OpenAI, Ollama, etc.) instanciar e retornar, permitindo a troca de IAs sem alterar o código da aplicação.
 │   │   └── 📄 ai.readme.md: Documentação em Markdown sobre a arquitetura do núcleo de IA.
 │   │
 │   ├── 📁 stores/

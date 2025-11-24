@@ -33,27 +33,6 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 
-// Tipagem para os dados do gráfico de progresso
-interface ProgressoTrilha {
-  nome: string;
-  progresso: number;
-  cor: string;
-  [key: string]: any; // Add index signature for Recharts compatibility
-}
-
-// Tipagem para os dados do gráfico de desempenho
-interface DadosDesempenho {
-  mes: string;
-  pontos: number;
-  media: number;
-}
-
-// Tipagem para os dados do gráfico de progresso médio
-interface ProgressoMedio {
-  periodo: string;
-  progresso: number;
-}
-
 // Tipagem para os dados das métricas
 interface MetricCardProps {
   title: string;
@@ -61,20 +40,6 @@ interface MetricCardProps {
   icon: React.ReactNode;
   color: string;
   description?: string;
-}
-
-interface Trilha {
-  id: string;
-  nome: string;
-  descricao: string;
-  progresso: number;
-  status: "em_andamento" | "concluido" | "nao_iniciado";
-  dataInicio?: string;
-  dataConclusao?: string;
-  duracao: string;
-  modulos: number;
-  nivel: "iniciante" | "intermediario" | "avancado";
-  categoria: string;
 }
 
 // Componente para os cards de métricas
@@ -126,75 +91,112 @@ const MetricCard = ({
   </div>
 );
 
-// Componente para o gráfico de barras de progresso
-const ProgressoTrilhasChart = ({ data }: { data: ProgressoTrilha[] }) => {
-  const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088FE"];
+// Componente para o gráfico de barras de progresso por funcionário ou cargo
+const ProgressoPorFuncionarioChart = ({ funcionarios }: { funcionarios: any[] }) => {
+  const agruparPorCargo = funcionarios.length > 10;
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-gray-800 border border-gray-700 p-4 rounded-lg shadow-lg">
-          <p className="text-white font-semibold">{payload[0].payload.nome}</p>
-          <p className="text-gray-300">
-            Progresso:{" "}
-            <span className="text-white font-bold">{payload[0].value}%</span>
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
+  let data;
+  let titulo;
+
+  if (agruparPorCargo) {
+    // Agrupar por cargo
+    const cargosMap = new Map<string, { pendentes: number; emAndamento: number; concluidas: number; funcionarios: number }>();
+    
+    funcionarios.forEach(func => {
+      const cargo = func.cargo || 'Sem Cargo';
+      const existing = cargosMap.get(cargo) || { pendentes: 0, emAndamento: 0, concluidas: 0, funcionarios: 0 };
+      
+      existing.pendentes += func.trilhas.filter((t: any) => t.status === 'pendente').length;
+      existing.emAndamento += func.trilhas.filter((t: any) => t.status === 'em_andamento').length;
+      existing.concluidas += func.trilhasConcluidas?.length || 0;
+      existing.funcionarios += 1;
+      
+      cargosMap.set(cargo, existing);
+    });
+
+    data = Array.from(cargosMap.entries()).map(([cargo, stats]) => ({
+      nome: cargo,
+      pendentes: stats.pendentes,
+      emAndamento: stats.emAndamento,
+      concluidas: stats.concluidas,
+      funcionarios: stats.funcionarios,
+    }));
+
+    titulo = `Progresso por Cargo (${funcionarios.length} funcionários)`;
+  } else {
+    // Mostrar funcionários individuais
+    data = funcionarios.map(func => ({
+      nome: func.nome.split(' ')[0], // Primeiro nome para caber no gráfico
+      pendentes: func.trilhas.filter((t: any) => t.status === 'pendente').length,
+      emAndamento: func.trilhas.filter((t: any) => t.status === 'em_andamento').length,
+      concluidas: func.trilhasConcluidas?.length || 0,
+    }));
+
+    titulo = 'Progresso por Funcionário';
+  }
 
   return (
     <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-white">Progresso das Trilhas</h3>
-        <div className="flex space-x-2">
-          <div className="w-3 h-3 bg-indigo-500 rounded-full"></div>
-          <span className="text-gray-400 text-sm">Progresso (%)</span>
+        <h3 className="text-xl font-bold text-white">{titulo}</h3>
+        <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 bg-green-500 rounded"></div>
+            <span className="text-gray-400 text-sm">Concluídas</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 bg-blue-500 rounded"></div>
+            <span className="text-gray-400 text-sm">Em Andamento</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 bg-gray-500 rounded"></div>
+            <span className="text-gray-400 text-sm">Pendentes</span>
+          </div>
         </div>
       </div>
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={data}
-            margin={{
-              top: 20,
-              right: 30,
-              left: 20,
-              bottom: 60,
-            }}
+            margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
           >
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="#444"
-              vertical={false}
-            />
+            <CartesianGrid strokeDasharray="3 3" stroke="#444" vertical={false} />
             <XAxis
               dataKey="nome"
               stroke="#888"
               angle={-45}
               textAnchor="end"
-              height={60}
+              height={80}
               tickLine={false}
+              interval={0}
             />
-            <YAxis
-              stroke="#888"
-              tickLine={false}
-              axisLine={false}
-              domain={[0, 100]}
-              tickFormatter={(value: number) => `${value}%`}
+            <YAxis stroke="#888" tickLine={false} axisLine={false} />
+            <Tooltip
+              content={({ active, payload }: any) => {
+                if (active && payload && payload.length) {
+                  const data = payload[0].payload;
+                  const total = data.concluidas + data.emAndamento + data.pendentes;
+                  return (
+                    <div className="bg-gray-800 border border-gray-700 p-4 rounded-lg shadow-lg">
+                      <p className="text-white font-semibold mb-2">{data.nome}</p>
+                      {agruparPorCargo && (
+                        <p className="text-gray-300 text-sm mb-2">
+                          {data.funcionarios} funcionário{data.funcionarios !== 1 ? 's' : ''}
+                        </p>
+                      )}
+                      <p className="text-green-400">Concluídas: <span className="font-bold">{data.concluidas}</span></p>
+                      <p className="text-blue-400">Em Andamento: <span className="font-bold">{data.emAndamento}</span></p>
+                      <p className="text-gray-400">Pendentes: <span className="font-bold">{data.pendentes}</span></p>
+                      <p className="text-white mt-1">Total: <span className="font-bold">{total}</span></p>
+                    </div>
+                  );
+                }
+                return null;
+              }}
             />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend />
-            <Bar dataKey="progresso" name="Progresso (%)" radius={[4, 4, 0, 0]}>
-              {data.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={COLORS[index % COLORS.length]}
-                />
-              ))}
-            </Bar>
+            <Bar dataKey="concluidas" name="Concluídas" stackId="a" fill="#10B981" />
+            <Bar dataKey="emAndamento" name="Em Andamento" stackId="a" fill="#3B82F6" />
+            <Bar dataKey="pendentes" name="Pendentes" stackId="a" fill="#6B7280" />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -202,220 +204,143 @@ const ProgressoTrilhasChart = ({ data }: { data: ProgressoTrilha[] }) => {
   );
 };
 
-// Componente para o gráfico de pizza de distribuição
-const DistribuicaoTrilhasChart = ({ data }: { data: ProgressoTrilha[] }) => {
-  const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088FE"];
+// Componente para o gráfico de pizza de categorias de trilhas
+const CategoriasChart = ({ funcionarios, metrics }: { funcionarios: any[]; metrics: any }) => {
+  // Contar categorias únicas das trilhas associadas
+  const categoriasMap = new Map<string, number>();
+  
+  funcionarios.forEach(func => {
+    func.trilhas.forEach((t: any) => {
+      if (t.trilha?.categoria) {
+        const categoria = t.trilha.categoria;
+        categoriasMap.set(categoria, (categoriasMap.get(categoria) || 0) + 1);
+      }
+    });
+    // Incluir concluídas também
+    func.trilhasConcluidas?.forEach((tc: any) => {
+      if (tc.trilha?.categoria) {
+        const categoria = tc.trilha.categoria;
+        categoriasMap.set(categoria, (categoriasMap.get(categoria) || 0) + 1);
+      }
+    });
+  });
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-gray-800 border border-gray-700 p-4 rounded-lg shadow-lg">
-          <p className="text-white font-semibold">{payload[0].payload.nome}</p>
-          <p className="text-gray-300">
-            Progresso:{" "}
-            <span className="text-white font-bold">{payload[0].value}%</span>
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
+  const totalCategorias = categoriasMap.size;
+  const mostrarPorStatus = totalCategorias <= 1;
+
+  let data;
+  let titulo;
+  let subtitulo;
+
+  if (mostrarPorStatus) {
+    // Se só tem 1 categoria, mostrar por status
+    let totalPendentes = 0;
+    let totalEmAndamento = 0;
+    let totalConcluidas = 0;
+
+    funcionarios.forEach(func => {
+      totalPendentes += func.trilhas.filter((t: any) => t.status === 'pendente').length;
+      totalEmAndamento += func.trilhas.filter((t: any) => t.status === 'em_andamento').length;
+      totalConcluidas += func.trilhasConcluidas?.length || 0;
+    });
+
+    data = [
+      { nome: 'Pendentes', valor: totalPendentes, cor: '#6B7280' },
+      { nome: 'Em Andamento', valor: totalEmAndamento, cor: '#3B82F6' },
+      { nome: 'Concluídas', valor: totalConcluidas, cor: '#10B981' },
+    ].filter(item => item.valor > 0);
+
+    titulo = 'Status das Trilhas';
+    subtitulo = totalCategorias === 1 ? `Categoria: ${Array.from(categoriasMap.keys())[0]}` : 'Status geral';
+  } else {
+    // 2+ categorias: mostrar distribuição por categoria
+    const COLORS = ['#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#EF4444', '#6366F1', '#14B8A6'];
+    
+    data = Array.from(categoriasMap.entries())
+      .map(([categoria, count], index) => ({
+        nome: categoria,
+        valor: count,
+        cor: COLORS[index % COLORS.length],
+      }))
+      .sort((a, b) => b.valor - a.valor); // Ordenar por quantidade (mais importante primeiro)
+
+    titulo = 'Distribuição por Categoria';
+    subtitulo = `${totalCategorias} categorias identificadas`;
+  }
+
+  const total = data.reduce((sum, item) => sum + item.valor, 0);
 
   return (
     <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-white">
-          Distribuição de Trilhas
-        </h3>
+        <div>
+          <h3 className="text-xl font-bold text-white">{titulo}</h3>
+          <p className="text-sm text-gray-400 mt-1">{subtitulo}</p>
+        </div>
         <div className="flex space-x-2">
-          <div className="w-3 h-3 bg-indigo-500 rounded-full"></div>
-          <span className="text-gray-400 text-sm">Participação</span>
+          <div className="w-3 h-3 bg-fuchsia-500 rounded-full"></div>
+          <span className="text-gray-400 text-sm">Total: {total} trilhas</span>
         </div>
       </div>
       <div className="h-80">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              labelLine={true}
-              label={(entry: any) => `${entry.nome}: ${entry.progresso}%`}
-              outerRadius={80}
-              fill="#8884d8"
-              dataKey="progresso"
-              nameKey="nome"
-              stroke="#1f2937"
-              strokeWidth={2}
-            >
-              {data.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={COLORS[index % COLORS.length]}
-                />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
+        {total === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-gray-400">Nenhuma trilha atribuída ainda</p>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                labelLine={true}
+                label={(entry: any) => {
+                  const percent = ((entry.valor / total) * 100).toFixed(1);
+                  return `${entry.nome}: ${entry.valor} (${percent}%)`;
+                }}
+                outerRadius={80}
+                dataKey="valor"
+                nameKey="nome"
+                stroke="#1f2937"
+                strokeWidth={2}
+              >
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.cor} />
+                ))}
+              </Pie>
+              <Tooltip
+                content={({ active, payload }: any) => {
+                  if (active && payload && payload.length) {
+                    const p = payload[0];
+                    const percent = ((p.value / total) * 100).toFixed(1);
+                    return (
+                      <div className="bg-gray-800 border border-gray-700 p-4 rounded-lg shadow-lg">
+                        <p className="text-white font-semibold">{p.payload.nome}</p>
+                        <p className="text-gray-300">
+                          Quantidade: <span className="text-white font-bold">{p.value}</span> trilhas
+                        </p>
+                        <p className="text-gray-300">
+                          Proporção: <span className="text-white font-bold">{percent}%</span>
+                        </p>
+                        {!mostrarPorStatus && (
+                          <p className="text-xs text-gray-400 mt-2">
+                            Importância relativa para os problemas identificados
+                          </p>
+                        )}
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );
-};
-
-// Componente para o gráfico de progresso médio
-const ProgressoMedioChart = ({ data }: { data: ProgressoMedio[] }) => {
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-gray-800 border border-gray-700 p-4 rounded-lg shadow-lg">
-          <p className="text-white font-semibold">
-            {payload[0].payload.periodo}
-          </p>
-          <p className="text-gray-300">
-            Progresso Médio:{" "}
-            <span className="text-white font-bold">{payload[0].value}%</span>
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  return (
-    <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-white">
-          Progresso Médio das Trilhas
-        </h3>
-        <div className="flex space-x-2">
-          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-          <span className="text-gray-400 text-sm">Média (%)</span>
-        </div>
-      </div>
-      <div className="h-80">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={data}
-            margin={{
-              top: 20,
-              right: 30,
-              left: 20,
-              bottom: 60,
-            }}
-          >
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="#444"
-              vertical={false}
-            />
-            <XAxis
-              dataKey="periodo"
-              stroke="#888"
-              angle={-45}
-              textAnchor="end"
-              height={60}
-              tickLine={false}
-            />
-            <YAxis
-              stroke="#888"
-              tickLine={false}
-              axisLine={false}
-              domain={[0, 100]}
-              tickFormatter={(value: number) => `${value}%`}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend />
-            <Bar
-              dataKey="progresso"
-              name="Progresso Médio (%)"
-              radius={[4, 4, 0, 0]}
-              fill="#10B981"
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-};
-
-// Função para parsear trilhas do relatório markdown (fallback)
-const parseTrilhasFromMarkdown = (markdown: string): Trilha[] => {
-  const trilhas: Trilha[] = [];
-  const lines = markdown.split('\n');
-  let inTrilhasSection = false;
-  let currentTrilha: Partial<Trilha> | null = null;
-
-  for (const line of lines) {
-    if (line.includes('### Trilhas de Aprendizagem Recomendadas')) {
-      inTrilhasSection = true;
-      continue;
-    }
-
-    if (inTrilhasSection && line.startsWith('#### Desafio:')) {
-      // Save previous trilha if exists
-      if (currentTrilha && currentTrilha.nome) {
-        trilhas.push(currentTrilha as Trilha);
-      }
-      currentTrilha = {
-        id: String(trilhas.length + 1),
-        status: "nao_iniciado",
-        progresso: 0,
-        modulos: 0,
-        nivel: "iniciante",
-        categoria: "",
-      };
-      continue;
-    }
-
-    if (inTrilhasSection && currentTrilha && line.startsWith('**Trilha Recomendada:')) {
-      const match = line.match(/\*\*Trilha Recomendada:\s*(.+?)\*\*/);
-      if (match) {
-        currentTrilha.nome = match[1].trim();
-      }
-      continue;
-    }
-
-    if (inTrilhasSection && currentTrilha && line.startsWith('* **Nível:**')) {
-      const match = line.match(/\* \*\*Nível:\*\*\s*(.+)/);
-      if (match) {
-        const nivelRaw = match[1].trim().toLowerCase();
-        // Mapear para os valores esperados
-        let nivel: "iniciante" | "intermediario" | "avancado" = "iniciante";
-        if (nivelRaw.includes("avançado") || nivelRaw.includes("avancado")) {
-          nivel = "avancado";
-        } else if (nivelRaw.includes("intermediário") || nivelRaw.includes("intermediario")) {
-          nivel = "intermediario";
-        }
-        currentTrilha.nivel = nivel;
-      }
-      continue;
-    }
-
-    if (inTrilhasSection && currentTrilha && line.startsWith('* **Duração Estimada:**')) {
-      const match = line.match(/\* \*\*Duração Estimada:\*\*\s*(.+)/);
-      if (match) {
-        currentTrilha.duracao = match[1].trim();
-      }
-      continue;
-    }
-
-    if (inTrilhasSection && currentTrilha && line.startsWith('* **Justificativa:**')) {
-      const match = line.match(/\* \*\*Justificativa:\*\*\s*(.+)/);
-      if (match) {
-        currentTrilha.descricao = match[1].trim();
-      }
-      continue;
-    }
-  }
-
-  // Save last trilha
-  if (currentTrilha && currentTrilha.nome) {
-    trilhas.push(currentTrilha as Trilha);
-  }
-
-  return trilhas;
 };
 
 export default function DashboardClientePage() {
@@ -423,9 +348,7 @@ export default function DashboardClientePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [showTrilhasModal, setShowTrilhasModal] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [trilhas, setTrilhas] = useState<Trilha[]>([]);
   const router = useRouter();
   const { user: authUser, logout } = useAuthStore();
   const [metrics, setMetrics] = useState<any>(null);
@@ -433,33 +356,7 @@ export default function DashboardClientePage() {
   const [metricsUpdatedAt, setMetricsUpdatedAt] = useState<string | null>(null);
   const [showDiagnosticoModal, setShowDiagnosticoModal] = useState(false);
   const [showFuncionariosModal, setShowFuncionariosModal] = useState(false);
-
-  // Dados fictícios para os gráficos (seriam substituídos por dados reais)
-  const progressoTrilhasData: ProgressoTrilha[] = [
-    { nome: "Liderança", progresso: 75, cor: "#8884d8" },
-    { nome: "Comunicação", progresso: 60, cor: "#82ca9d" },
-    { nome: "Gestão de Tempo", progresso: 45, cor: "#ffc658" },
-    { nome: "Inovação", progresso: 30, cor: "#ff8042" },
-    { nome: "Diversidade", progresso: 90, cor: "#0088FE" },
-  ];
-
-  const progressoMedioData: ProgressoMedio[] = [
-    { periodo: "Semana 1", progresso: 25 },
-    { periodo: "Semana 2", progresso: 32 },
-    { periodo: "Semana 3", progresso: 45 },
-    { periodo: "Semana 4", progresso: 58 },
-    { periodo: "Semana 5", progresso: 65 },
-    { periodo: "Semana 6", progresso: 72 },
-  ];
-
-  const desempenhoData: DadosDesempenho[] = [
-    { mes: "Jan", pontos: 65, media: 70 },
-    { mes: "Fev", pontos: 72, media: 70 },
-    { mes: "Mar", pontos: 68, media: 70 },
-    { mes: "Abr", pontos: 75, media: 70 },
-    { mes: "Mai", pontos: 80, media: 70 },
-    { mes: "Jun", pontos: 85, media: 70 },
-  ];
+  const [funcionarios, setFuncionarios] = useState<any[]>([]);
 
   // Métricas para os cards (dinâmicas)
   const metricCards = [
@@ -469,8 +366,7 @@ export default function DashboardClientePage() {
       icon: <BookOpen className="h-8 w-8 text-blue-400" />,
       color: "bg-blue-500",
       description: "Soma das trilhas não concluídas",
-      clickable: true,
-      onClick: () => setShowTrilhasModal(true),
+      clickable: false,
       tooltip: "Total de trilhas associadas aos funcionários que ainda não foram concluídas",
     },
     {
@@ -546,45 +442,23 @@ export default function DashboardClientePage() {
           plano: data.empresa.planoAtivo || "Nenhum",
         });
 
-        // Buscar trilhas recomendadas do último diagnóstico
+        // Verificar se há diagnóstico
         const diagRes = await fetch("/api/diagnostico-aprofundado/ultimo", {
           credentials: 'include'
         });
         if (!diagRes.ok) {
-          setTrilhas([]);
           setShowDiagnosticoModal(true); // Mostrar modal se não há diagnóstico
-          return;
+        } else {
+          setShowDiagnosticoModal(false); // Esconder modal se há diagnóstico
         }
-        const diagData = await diagRes.json();
-        setShowDiagnosticoModal(false); // Esconder modal se há diagnóstico
-        // Extrair trilhas recomendadas do structuredData
-        let trilhasRecomendadas: Trilha[] = [];
-        if (diagData.structuredData && diagData.structuredData.trilhas_recomendadas) {
-          trilhasRecomendadas = diagData.structuredData.trilhas_recomendadas.map((t: any, idx: number) => ({
-            id: String(idx + 1),
-            nome: t.trilha_nome,
-            descricao: t.justificativa || "",
-            progresso: 0,
-            status: "nao_iniciado" as const,
-            dataInicio: undefined,
-            dataConclusao: undefined,
-            duracao: t.duracao || "",
-            modulos: 0,
-            nivel: t.nivel || "iniciante",
-            categoria: "",
-          }));
-        } else if (diagData.finalReport) {
-          // Fallback: parse do markdown se não houver structuredData
-          trilhasRecomendadas = parseTrilhasFromMarkdown(diagData.finalReport);
-        }
-        setTrilhas(trilhasRecomendadas);
 
-        // Verificar se há funcionários cadastrados
+        // Buscar funcionários para os gráficos
         const funcRes = await fetch(`/api/funcionarios?empresaId=${user.id}`, {
           credentials: 'include'
         });
         if (funcRes.ok) {
           const funcData = await funcRes.json();
+          setFuncionarios(funcData || []);
           if (!funcData || funcData.length === 0) {
             setShowFuncionariosModal(true); // Mostrar modal se não há funcionários
           }
@@ -956,171 +830,11 @@ export default function DashboardClientePage() {
             ))}
           </div>
 
-          {/* Gráficos */}
-          {metrics && (
+          {/* Gráficos de Progresso Individual */}
+          {funcionarios.length > 0 && metrics && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              {/* Gráfico de Barras: Progresso por Categoria */}
-              <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700" title="Progresso de conclusão de trilhas por categoria">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-white">Progresso por Categoria</h3>
-                  <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-green-500 rounded"></div>
-                      <span className="text-gray-400 text-sm">Concluídas</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                      <span className="text-gray-400 text-sm">Em Andamento</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-gray-500 rounded"></div>
-                      <span className="text-gray-400 text-sm">Pendentes</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={metrics.trilhasPorCategoria}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#444" vertical={false} />
-                      <XAxis
-                        dataKey="categoria"
-                        stroke="#888"
-                        angle={-45}
-                        textAnchor="end"
-                        height={80}
-                        tickLine={false}
-                        interval={0}
-                      />
-                      <YAxis stroke="#888" tickLine={false} axisLine={false} />
-                      <Tooltip
-                        content={({ active, payload }: any) => {
-                          if (active && payload && payload.length) {
-                            const data = payload[0].payload;
-                            const percentConcluidas = data.total > 0 
-                              ? ((data.concluidas / data.total) * 100).toFixed(1)
-                              : 0;
-                            return (
-                              <div className="bg-gray-800 border border-gray-700 p-4 rounded-lg shadow-lg">
-                                <p className="text-white font-semibold mb-2">{data.categoria}</p>
-                                <p className="text-green-400">Concluídas: <span className="font-bold">{data.concluidas}</span></p>
-                                <p className="text-blue-400">Em Andamento: <span className="font-bold">{data.emAndamento}</span></p>
-                                <p className="text-gray-400">Pendentes: <span className="font-bold">{data.pendentes}</span></p>
-                                <p className="text-white mt-1">Total: <span className="font-bold">{data.total}</span></p>
-                                <p className="text-xs text-gray-400 mt-2">Taxa de conclusão: {percentConcluidas}%</p>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      <Bar dataKey="concluidas" name="Concluídas" stackId="a" fill="#10B981" />
-                      <Bar dataKey="emAndamento" name="Em Andamento" stackId="a" fill="#3B82F6" />
-                      <Bar dataKey="pendentes" name="Pendentes" stackId="a" fill="#6B7280" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Gráfico de Pizza: Distribuição condicional */}
-              <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700" title="Distribuição por categoria ou status">
-                <div className="flex items-center justify-between mb-6">
-                  {(() => {
-                    const isSingle = (metrics.categoriasAssociadas?.length || 0) === 1;
-                    return (
-                      <h3 className="text-xl font-bold text-white">
-                        {isSingle ? "Status da Categoria" : "Distribuição por Categoria"}
-                      </h3>
-                    );
-                  })()}
-                  <div className="flex space-x-2">
-                    <div className="w-3 h-3 bg-fuchsia-500 rounded-full"></div>
-                    <span className="text-gray-400 text-sm">{(metrics.categoriasAssociadas?.length || 0) === 1 ? "Pendentes x Andamento x Concluídas" : "Percentual por categoria"}</span>
-                  </div>
-                </div>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      {(() => {
-                        const isSingle = (metrics.categoriasAssociadas?.length || 0) === 1;
-                        if (isSingle) {
-                          const cat = metrics.categoriasAssociadas[0];
-                          const item = metrics.trilhasPorCategoria.find((x: any) => x.categoria === cat) || { pendentes: 0, emAndamento: 0, concluidas: 0 };
-                          const data = [
-                            { nome: "Pendentes", valor: item.pendentes, cor: "#6B7280" },
-                            { nome: "Em Andamento", valor: item.emAndamento, cor: "#3B82F6" },
-                            { nome: "Concluídas", valor: item.concluidas, cor: "#10B981" },
-                          ];
-                          return (
-                            <Pie
-                              data={data}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={true}
-                              label={(entry: any) => `${entry.nome}: ${entry.valor}`}
-                              outerRadius={80}
-                              dataKey="valor"
-                              nameKey="nome"
-                              stroke="#1f2937"
-                              strokeWidth={2}
-                            >
-                              {data.map((entry, index) => (
-                                <Cell key={`cell-status-${index}`} fill={entry.cor} />
-                              ))}
-                            </Pie>
-                          );
-                        }
-                        // Caso com múltiplas categorias
-                        return (
-                          <Pie
-                            data={metrics.categoriaDistribuicao}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={true}
-                            label={(entry: any) => `${entry.categoria}: ${entry.percentual}%`}
-                            outerRadius={80}
-                            fill="#A855F7"
-                            dataKey="percentual"
-                            nameKey="categoria"
-                            stroke="#1f2937"
-                            strokeWidth={2}
-                          >
-                            {metrics.categoriaDistribuicao.map((entry: any, index: number) => {
-                              const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088FE", "#A855F7"];
-                              return <Cell key={`cell-cat-${index}`} fill={COLORS[index % COLORS.length]} />;
-                            })}
-                          </Pie>
-                        );
-                      })()}
-                      <Tooltip
-                        content={({ active, payload }: any) => {
-                          if (active && payload && payload.length) {
-                            const p = payload[0];
-                            const isSingle = (metrics.categoriasAssociadas?.length || 0) === 1;
-                            return (
-                              <div className="bg-gray-800 border border-gray-700 p-4 rounded-lg shadow-lg">
-                                <p className="text-white font-semibold">{isSingle ? p.payload.nome : p.payload.categoria}</p>
-                                <p className="text-gray-300">
-                                  {isSingle ? (
-                                    <>Quantidade: <span className="text-white font-bold">{p.value}</span></>
-                                  ) : (
-                                    <>Percentual: <span className="text-white font-bold">{p.value}%</span></>
-                                  )}
-                                </p>
-                                <p className="text-xs text-gray-400 mt-1">{isSingle ? metrics.categoriasAssociadas[0] : "Do total de trilhas associadas"}</p>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
+              <ProgressoPorFuncionarioChart funcionarios={funcionarios} />
+              <CategoriasChart funcionarios={funcionarios} metrics={metrics} />
             </div>
           )}
 
@@ -1287,167 +1001,6 @@ export default function DashboardClientePage() {
                 >
                   Fechar (Dashboard limitado)
                 </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Trilhas */}
-      {showTrilhasModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-neutral-900 border-b border-neutral-700 p-6 flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-white">
-                  Todas as Trilhas
-                </h2>
-                <p className="text-neutral-400 text-sm mt-1">
-                  Gerencie e acompanhe suas trilhas de aprendizagem
-                </p>
-              </div>
-              <button
-                onClick={() => setShowTrilhasModal(false)}
-                className="text-neutral-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-neutral-800"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-
-            <div className="p-6">
-              {/* Estatísticas rápidas */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <BookOpen className="h-5 w-5 text-blue-400" />
-                    <span className="text-neutral-400 text-sm">Total</span>
-                  </div>
-                  <p className="text-2xl font-bold text-white">
-                    {trilhas.length}
-                  </p>
-                </div>
-                <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Play className="h-5 w-5 text-blue-400" />
-                    <span className="text-neutral-400 text-sm">
-                      Em Andamento
-                    </span>
-                  </div>
-                  <p className="text-2xl font-bold text-white">
-                    {trilhas.filter((t) => t.status === "em_andamento").length}
-                  </p>
-                </div>
-                <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle className="h-5 w-5 text-green-400" />
-                    <span className="text-neutral-400 text-sm">Concluídas</span>
-                  </div>
-                  <p className="text-2xl font-bold text-white">
-                    {trilhas.filter((t) => t.status === "concluido").length}
-                  </p>
-                </div>
-                <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Clock className="h-5 w-5 text-gray-400" />
-                    <span className="text-neutral-400 text-sm">
-                      Não Iniciadas
-                    </span>
-                  </div>
-                  <p className="text-2xl font-bold text-white">
-                    {trilhas.filter((t) => t.status === "nao_iniciado").length}
-                  </p>
-                </div>
-              </div>
-
-              {/* Lista de Trilhas por Categoria */}
-              <div className="space-y-8">
-                {["Comunicação", "Gestão de Tempo", "Inovação", "Liderança", "Diversidade"].map((categoria) => {
-                  const trilhasCategoria = trilhas.filter(t => t.categoria === categoria);
-                  if (trilhasCategoria.length === 0) return null;
-
-                  return (
-                    <div key={categoria} className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <h3 className="text-xl font-bold text-white">{categoria}</h3>
-                        <span className="px-3 py-1 bg-neutral-700 text-neutral-300 rounded-full text-sm">
-                          {trilhasCategoria.length} trilha{trilhasCategoria.length !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-                      <div className="grid gap-4">
-                        {trilhasCategoria.map((trilha) => (
-                          <div
-                            key={trilha.id}
-                            className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-6 hover:border-fuchsia-700/50 transition-all"
-                          >
-                            <div className="flex flex-col gap-4">
-                              <div className="flex-1">
-                                <div className="flex flex-wrap items-center gap-2 mb-3">
-                                  <h4 className="text-lg font-semibold text-white">
-                                    {trilha.nome}
-                                  </h4>
-                                  <span
-                                    className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                                      trilha.status
-                                    )}`}
-                                  >
-                                    {getStatusText(trilha.status)}
-                                  </span>
-                                  <span
-                                    className={`px-3 py-1 rounded-full text-xs font-medium border ${getNivelColor(
-                                      trilha.nivel
-                                    )}`}
-                                  >
-                                    {trilha.nivel.charAt(0).toUpperCase() +
-                                      trilha.nivel.slice(1)}
-                                  </span>
-                                </div>
-                                <p className="text-neutral-400 mb-4">
-                                  {trilha.descricao}
-                                </p>
-
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                  <div className="flex items-center gap-2 text-sm text-neutral-400">
-                                    <BookOpen className="h-4 w-4" />
-                                    <span>{trilha.modulos} módulos</span>
-                                  </div>
-                                  <div className="flex items-center gap-2 text-sm text-neutral-400">
-                                    <Clock className="h-4 w-4" />
-                                    <span>{trilha.duracao}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2 text-sm text-neutral-400">
-                                    <Award className="h-4 w-4" />
-                                    <span>{trilha.categoria}</span>
-                                  </div>
-                                  {trilha.dataInicio && (
-                                    <div className="flex items-center gap-2 text-sm text-neutral-400">
-                                      <Calendar className="h-4 w-4" />
-                                      <span>
-                                        {new Date(trilha.dataInicio).toLocaleDateString(
-                                          "pt-BR"
-                                        )}
-                                      </span>
-                                    </div>
-                                  )}
-                                  {trilha.dataConclusao && (
-                                    <div className="flex items-center gap-2 text-sm text-green-400">
-                                      <CheckCircle className="h-4 w-4" />
-                                      <span>
-                                        Concluído em{" "}
-                                        {new Date(
-                                          trilha.dataConclusao
-                                        ).toLocaleDateString("pt-BR")}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
             </div>
           </div>

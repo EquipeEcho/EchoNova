@@ -162,51 +162,6 @@ export default function GerenciarFuncionariosPage() {
   };
 
   // ----------------------------------------------------
-  // Criar funcionário de teste (dados aleatórios)
-  // ----------------------------------------------------
-  const handleCreateTestFuncionario = async () => {
-    // garante que temos um usuário logado com id
-    if (!user?.id) {
-      toast.error("Erro: usuário não identificado.");
-      return;
-    }
-
-    // Gerar dados aleatórios
-    const randomNum = Math.floor(Math.random() * 10000);
-    const testData = {
-      nome: `Funcionário Teste ${randomNum}`,
-      email: `teste${randomNum}@teste.com`,
-      matricula: `TEST${randomNum}`,
-      cargo: "Cargo de Teste",
-      senha: "senha123",
-      status: "ativo" as "ativo" | "inativo",
-      trilhas: trilhasDisponiveis.length > 0
-        ? [trilhasDisponiveis[Math.floor(Math.random() * trilhasDisponiveis.length)]._id]
-        : [],
-      empresaId: user.id,
-    };
-
-    try {
-      const res = await fetch("/api/funcionarios", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(testData),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Erro ao criar funcionário de teste");
-      }
-
-      toast.success("Funcionário de teste criado com sucesso!");
-      await fetchFuncionarios(); // recarrega a lista
-    } catch (e: any) {
-      toast.error(e.message || "Erro ao criar funcionário de teste");
-    }
-  };
-
-  // ----------------------------------------------------
   // Criar / Editar funcionário (usa /api/funcionarios)
   // ----------------------------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
@@ -369,16 +324,10 @@ export default function GerenciarFuncionariosPage() {
                 + Novo Funcionário
               </Button>
               <Button
-                onClick={handleCreateTestFuncionario}
-                className="bg-orange-600 hover:bg-orange-500 text-white"
-              >
-                🧪 Funcionário de Teste
-              </Button>
-              <Button
                 onClick={handleLogout}
                 className="bg-gray-800 hover:bg-gray-700 text-white border border-neutral-700"
               >
-                Sair
+                Voltar
               </Button>
             </div>
           </div>

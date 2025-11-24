@@ -24,7 +24,7 @@ export interface HistoryMessage {
   parts: [{ text: string }];
 }
 
-// O "Contrato" que todo provedor de IA (Gemini, Ollama, etc.) deve seguir.
+// O "Contrato" que todo provedor de IA (OpenAI, Ollama, etc.) deve seguir.
 export interface ChatProvider {
   sendMessage(
     message: string,

@@ -37,6 +37,9 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "scripts/run-token-debug.ts",
+    "src/app/api/auth/status/route.ts",
+    "src/app/api/test-provider/route.ts"
   ]
 }
