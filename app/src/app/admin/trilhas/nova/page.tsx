@@ -137,33 +137,37 @@ export default function NovaTrilhaPage() {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-900 via-purple-900 to-slate-900">
-      <div className="container mx-auto px-4 py-8 max-w-5xl">
+    <div className="min-h-screen bg-slate-900 text-white font-sans p-4 sm:p-8">
+      <div className="container mx-auto max-w-5xl">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Link href="/admin/trilhas">
-            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold text-white">Nova Trilha</h1>
-            <p className="text-gray-300">Crie uma nova trilha de aprendizagem</p>
+        <header className="mb-8 pb-4 border-b border-pink-500/30">
+          <div className="flex items-center gap-4">
+            <Link href="/admin/trilhas">
+              <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-linear-to-r from-pink-400 to-purple-400 tracking-tight">
+                Nova Trilha
+              </h1>
+              <p className="text-slate-400 mt-2 text-sm">Crie uma nova trilha de aprendizagem para desenvolvimento dos funcionários</p>
+            </div>
           </div>
-        </div>
+        </header>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Informações Básicas */}
           <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
               <CardTitle className="text-white">Informações Básicas</CardTitle>
-              <CardDescription className="text-gray-300">
+              <CardDescription className="text-slate-300">
                 Dados gerais sobre a trilha
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="nome" className="text-white">
+                <Label htmlFor="nome" className="text-pink-300 mb-2">
                   Nome da Trilha *
                 </Label>
                 <Input
@@ -171,13 +175,13 @@ export default function NovaTrilhaPage() {
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
                   placeholder="Ex: Liderança Transformadora"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor="descricao" className="text-white">
+                <Label htmlFor="descricao" className="text-pink-300 mb-2">
                   Descrição *
                 </Label>
                 <Textarea
@@ -186,65 +190,65 @@ export default function NovaTrilhaPage() {
                   onChange={(e) => setDescricao(e.target.value)}
                   placeholder="Descreva os principais objetivos e benefícios da trilha..."
                   rows={4}
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="nivel" className="text-white">
+                  <Label htmlFor="nivel" className="text-pink-300 mb-2">
                     Nível
                   </Label>
                   <Select value={nivel} onValueChange={(v: any) => setNivel(v)}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectTrigger className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Iniciante">Iniciante</SelectItem>
-                      <SelectItem value="Intermediário">Intermediário</SelectItem>
-                      <SelectItem value="Avançado">Avançado</SelectItem>
+                    <SelectContent className="bg-slate-900 border border-pink-500/30">
+                      <SelectItem value="Iniciante" className="text-white">Iniciante</SelectItem>
+                      <SelectItem value="Intermediário" className="text-white">Intermediário</SelectItem>
+                      <SelectItem value="Avançado" className="text-white">Avançado</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
-                  <Label htmlFor="categoria" className="text-white">
+                  <Label htmlFor="categoria" className="text-pink-300 mb-2">
                     Categoria *
                   </Label>
                   <Select value={categoria} onValueChange={(v: any) => setCategoria(v)}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectTrigger className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Comunicação">Comunicação</SelectItem>
-                      <SelectItem value="Gestão de Tempo">Gestão de Tempo</SelectItem>
-                      <SelectItem value="Inovação">Inovação</SelectItem>
-                      <SelectItem value="Liderança">Liderança</SelectItem>
-                      <SelectItem value="Diversidade">Diversidade</SelectItem>
+                    <SelectContent className="bg-slate-900 border border-pink-500/30">
+                      <SelectItem value="Comunicação" className="text-white">Comunicação</SelectItem>
+                      <SelectItem value="Gestão de Tempo" className="text-white">Gestão de Tempo</SelectItem>
+                      <SelectItem value="Inovação" className="text-white">Inovação</SelectItem>
+                      <SelectItem value="Liderança" className="text-white">Liderança</SelectItem>
+                      <SelectItem value="Diversidade" className="text-white">Diversidade</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
-                  <Label htmlFor="status" className="text-white">
+                  <Label htmlFor="status" className="text-pink-300 mb-2">
                     Status
                   </Label>
                   <Select value={status} onValueChange={(v: any) => setStatus(v)}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectTrigger className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ativa">Ativa</SelectItem>
-                      <SelectItem value="inativa">Inativa</SelectItem>
-                      <SelectItem value="rascunho">Rascunho</SelectItem>
+                    <SelectContent className="bg-slate-900 border border-pink-500/30">
+                      <SelectItem value="ativa" className="text-white">Ativa</SelectItem>
+                      <SelectItem value="inativa" className="text-white">Inativa</SelectItem>
+                      <SelectItem value="rascunho" className="text-white">Rascunho</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="duracaoEstimada" className="text-white">
+                <Label htmlFor="duracaoEstimada" className="text-pink-300 mb-2">
                   Duração Estimada (horas)
                 </Label>
                 <NumberInput
@@ -252,12 +256,12 @@ export default function NovaTrilhaPage() {
                   value={duracaoEstimada}
                   onChange={(e) => setDuracaoEstimada(e.target.value)}
                   placeholder="Ex: 20"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                 />
               </div>
 
               <div>
-                <Label htmlFor="tags" className="text-white">
+                <Label htmlFor="tags" className="text-pink-300 mb-2">
                   Tags (separadas por vírgula) *
                 </Label>
                 <Input
@@ -265,16 +269,16 @@ export default function NovaTrilhaPage() {
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
                   placeholder="liderança, gestão, comunicação"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                   required
                 />
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-slate-400 mt-1">
                   Tags são usadas pela IA para matching semântico
                 </p>
               </div>
 
               <div>
-                <Label htmlFor="areasAbordadas" className="text-white">
+                <Label htmlFor="areasAbordadas" className="text-pink-300 mb-2">
                   Áreas Abordadas (separadas por vírgula) *
                 </Label>
                 <Input
@@ -282,13 +286,13 @@ export default function NovaTrilhaPage() {
                   value={areasAbordadas}
                   onChange={(e) => setAreasAbordadas(e.target.value)}
                   placeholder="Liderança, Gestão de Pessoas, Comunicação"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor="objetivos" className="text-white">
+                <Label htmlFor="objetivos" className="text-pink-300 mb-2">
                   Objetivos de Aprendizagem (um por linha)
                 </Label>
                 <Textarea
@@ -297,7 +301,7 @@ export default function NovaTrilhaPage() {
                   onChange={(e) => setObjetivos(e.target.value)}
                   placeholder="Desenvolver habilidades de comunicação&#10;Aprender técnicas de gestão de conflitos"
                   rows={4}
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                 />
               </div>
             </CardContent>
@@ -307,13 +311,13 @@ export default function NovaTrilhaPage() {
           <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
               <CardTitle className="text-white">Metadados para IA</CardTitle>
-              <CardDescription className="text-gray-300">
+              <CardDescription className="text-slate-300">
                 Informações usadas pela IA para recomendar esta trilha
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="problemasRelacionados" className="text-white">
+                <Label htmlFor="problemasRelacionados" className="text-pink-300 mb-2">
                   Problemas Relacionados (separados por vírgula)
                 </Label>
                 <Input
@@ -321,15 +325,15 @@ export default function NovaTrilhaPage() {
                   value={problemasRelacionados}
                   onChange={(e) => setProblemasRelacionados(e.target.value)}
                   placeholder="baixa-produtividade, falta-de-liderança, comunicação-ineficaz"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                 />
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-slate-400 mt-1">
                   Keywords de problemas que esta trilha ajuda a resolver
                 </p>
               </div>
 
               <div>
-                <Label htmlFor="competenciasDesenvolvidas" className="text-white">
+                <Label htmlFor="competenciasDesenvolvidas" className="text-pink-300 mb-2">
                   Competências Desenvolvidas (separadas por vírgula)
                 </Label>
                 <Input
@@ -337,12 +341,12 @@ export default function NovaTrilhaPage() {
                   value={competenciasDesenvolvidas}
                   onChange={(e) => setCompetenciasDesenvolvidas(e.target.value)}
                   placeholder="Liderança, Comunicação, Gestão de Conflitos"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                 />
               </div>
 
               <div>
-                <Label htmlFor="resultadosEsperados" className="text-white">
+                <Label htmlFor="resultadosEsperados" className="text-pink-300 mb-2">
                   Resultados Esperados (um por linha)
                 </Label>
                 <Textarea
@@ -351,7 +355,7 @@ export default function NovaTrilhaPage() {
                   onChange={(e) => setResultadosEsperados(e.target.value)}
                   placeholder="Melhoria na comunicação interna&#10;Redução de conflitos"
                   rows={3}
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                 />
               </div>
             </CardContent>
@@ -363,7 +367,7 @@ export default function NovaTrilhaPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-white">Módulos da Trilha</CardTitle>
-                  <CardDescription className="text-gray-300">
+                  <CardDescription className="text-slate-300">
                     Conteúdos que compõem a trilha
                   </CardDescription>
                 </div>
@@ -406,64 +410,64 @@ export default function NovaTrilhaPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
-                        <Label className="text-white text-sm">Título</Label>
+                        <Label className="text-pink-300 text-sm mb-2">Título</Label>
                         <Input
                           value={modulo.titulo}
                           onChange={(e) => updateModulo(index, "titulo", e.target.value)}
                           placeholder="Nome do módulo"
-                          className="bg-slate-600 border-slate-500 text-white"
+                          className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                         />
                       </div>
                       <div>
-                        <Label className="text-white text-sm">Tipo</Label>
+                        <Label className="text-pink-300 text-sm mb-2">Tipo</Label>
                         <Select
                           value={modulo.tipo}
                           onValueChange={(v) => updateModulo(index, "tipo", v)}
                         >
-                          <SelectTrigger className="bg-slate-600 border-slate-500 text-white">
+                          <SelectTrigger className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="video">Vídeo</SelectItem>
-                            <SelectItem value="podcast">Podcast</SelectItem>
-                            <SelectItem value="texto">Texto</SelectItem>
-                            <SelectItem value="avaliacao">Avaliação</SelectItem>
-                            <SelectItem value="atividade_pratica">Atividade Prática</SelectItem>
+                          <SelectContent className="bg-slate-900 border border-pink-500/30">
+                            <SelectItem value="video" className="text-white">Vídeo</SelectItem>
+                            <SelectItem value="podcast" className="text-white">Podcast</SelectItem>
+                            <SelectItem value="texto" className="text-white">Texto</SelectItem>
+                            <SelectItem value="avaliacao" className="text-white">Avaliação</SelectItem>
+                            <SelectItem value="atividade_pratica" className="text-white">Atividade Prática</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
 
                     <div>
-                      <Label className="text-white text-sm">Descrição</Label>
+                      <Label className="text-pink-300 text-sm mb-2">Descrição</Label>
                       <Textarea
                         value={modulo.descricao}
                         onChange={(e) => updateModulo(index, "descricao", e.target.value)}
                         placeholder="Descreva o conteúdo do módulo"
                         rows={2}
-                        className="bg-slate-600 border-slate-500 text-white"
+                        className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                       />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
-                        <Label className="text-white text-sm">Duração (minutos)</Label>
+                        <Label className="text-pink-300 text-sm mb-2">Duração (minutos)</Label>
                         <NumberInput
                           value={modulo.duracao}
                           onChange={(e) =>
                             updateModulo(index, "duracao", Number(e.target.value))
                           }
                           placeholder="45"
-                          className="bg-slate-600 border-slate-500 text-white"
+                          className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                         />
                       </div>
                       <div>
-                        <Label className="text-white text-sm">URL (opcional)</Label>
+                        <Label className="text-pink-300 text-sm mb-2">URL (opcional)</Label>
                         <Input
                           value={modulo.url}
                           onChange={(e) => updateModulo(index, "url", e.target.value)}
                           placeholder="https://..."
-                          className="bg-slate-600 border-slate-500 text-white"
+                          className="bg-slate-900/40 border-slate-700 text-slate-200 focus:border-pink-500 focus:ring-pink-500/30"
                         />
                       </div>
                     </div>

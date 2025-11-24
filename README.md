@@ -133,7 +133,6 @@ Este projeto visa criar uma solução para **diagnóstico inteligente** de trein
 
 ## 🔧 <span id="requisitos-não-funcionais">Requisitos Não Funcionais</span>
 
-- IA offline.  
 - Manual de instalação (no repositório).  
 - Manual do usuário (no repositório).  
 - Documentação da API.  
