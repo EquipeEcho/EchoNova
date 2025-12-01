@@ -100,6 +100,7 @@ export async function POST(req: Request) {
       email: empresa.email,
       nome_empresa: empresa.nome_empresa,
       plano: empresa.planoAtivo,
+      tipo_usuario: empresa.tipo_usuario,
     };
 
     // Verificar se é admin para aplicar política de segurança mais rigorosa

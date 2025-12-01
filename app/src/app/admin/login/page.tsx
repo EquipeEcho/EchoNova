@@ -34,12 +34,18 @@ export default function AdminLoginPage() {
         throw new Error(data.error || "Erro no login");
       }
 
+      // Verificar se o usuário é admin
+      if (data.user.tipo_usuario !== "ADMIN") {
+        throw new Error("Acesso negado: apenas administradores podem acessar este painel");
+      }
+
       toast.success("Login realizado com sucesso!");
 
       // Redirecionar para /admin
       router.push("/admin");
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao fazer login");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Erro ao fazer login";
+      toast.error(message);
     } finally {
       setLoading(false);
     }

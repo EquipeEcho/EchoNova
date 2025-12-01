@@ -10,7 +10,8 @@
     "format": "biome format --write ./src",
     "check": "biome check --apply ./src",
     "type-check": "tsc --noEmit",
-    "debug": "next dev --inspect"
+    "debug": "next dev --inspect",
+    "update-admin": "npx tsx src/scripts/updateAdmin.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.17",
