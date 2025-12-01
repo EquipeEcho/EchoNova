@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { connectDB } from "@/lib/mongodb";
 import Empresa from "@/models/Empresa";
 
